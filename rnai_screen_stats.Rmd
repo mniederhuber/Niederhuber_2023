@@ -1,0 +1,165 @@
+```{r setup}
+library(magrittr)
+library(reticulate)
+library(ggplot2)
+
+
+ACF = c('Acf', 'ISWI')
+ATAC = c('Atac2','Atac3', 'Gcn5', 'NC2beta','wds','D12','Hcf')
+BAP = 'osa'
+Brahma = c('Snr1','Act5C','Bap111','brm','mor','Bap55','osa','polybromo','Bicra')
+CAC = c('Acf','Chrac-16','ISWI')
+COMPASS = c('wds','Hcf')
+DOM = c('dom','Nipped-A','pont','Tip60','rept','Brd8')
+INO80 = c('pho','Act5C','Arp5','CG12659','Ino80','Arp8')
+ncBAP = 'Bicra'
+NORC = c('ISWI','tou')
+NuRD = c('Mi-2','MTA1-like','Caf1-55')
+NURF = c('Nurf-38','E(bx)')
+PBAP = 'polybromo'
+SAGA = c('Ada2b','Gcn5','Sgf29')
+SANT = 'Ada2b'
+TORC = c('ISWI','tou')
+
+SNF2_like = c('kis','okr','Chd1','Etl1')
+demethyl = c('lid','su(var)3-3')
+nuclear_pore = c('Mtor','Nup153')
+high_mobility_group = c('Dsp1','HmgD','HmgZ')
+
+#families
+
+ISWI <- c(ACF,CAC,NURF,TORC)
+SWISNF <- c(Brahma,DOM)
+CHD <- c(NuRD)
+INO80FAM <- c(INO80)
+
+```
+
+```{r}
+screen <- read.csv('_DATA/results_ForR.csv') %>%
+  dplyr::mutate(ACF = ifelse(Symbol %in% ACF,T,F),
+                Brahma = ifelse(Symbol %in% Brahma,T,F),
+                CAC = ifelse(Symbol %in% CAC,T,F),
+                DOM = ifelse(Symbol %in% DOM,T,F),
+                INO80 = ifelse(Symbol %in% INO80,T,F),
+                NuRD = ifelse(Symbol %in% NuRD,T,F),
+                NURF = ifelse(Symbol %in% NURF,T,F),
+                TORC = ifelse(Symbol %in% TORC,T,F),
+                SNF2_like = ifelse(Symbol %in% SNF2_like,T,F),
+                ISWI = ifelse(Symbol %in% ISWI,T,F),
+                SWISNF = ifelse(Symbol %in% SWISNF,T,F),
+                CHD = ifelse(Symbol %in% CHD,T,F),
+                INO80FAM = ifelse(Symbol %in% INO80FAM,T,F)) %>%
+  dplyr::mutate(class = dplyr::case_when(rowSums(.[,12:20]) >= 1 ~ 'Nucleosome Remodeler',
+                                         Symbol %in% demethyl ~ 'Demethylase',
+                                         Symbol %in% nuclear_pore ~ 'NPC',
+                                         Symbol %in% high_mobility_group ~ 'HMG',
+                                         T ~ 'OTHER'))
+
+                
+tested <- screen %>% dplyr::filter(status == 'tested')
+tested
+```
+
+
+```{r}
+#getPalette = colorRampPalette(RColorBrewer::brewer.pal(11, 'Spectral'))
+
+#tested %>%
+#  dplyr::select(Symbol, class) %>% 
+#  dplyr::group_by(class) %>%
+#  unique() %>%
+#  dplyr::count() %>%
+#  dplyr::ungroup() %>%
+#  dplyr::mutate(csum = rev(cumsum(rev(n))), 
+#                pos = csum - n/2) %>%
+#  ggplot(aes(x = "", y = n, fill = class)) +
+#  geom_bar(stat = 'identity', width = 1) +
+#  coord_polar("y") +
+#  geom_text(aes(x = 1.2, label = n), position = position_stack(vjust = 0.5), size = 5) + 
+#  scale_fill_grey() + 
+##  scale_fill_brewer(palette = "Spectral", name = 'Class') +
+#  ggrepel::geom_label_repel(aes(label = class, y = pos, x = 1.5), fill = 'white', force = 100, nudge_x = 0.2, color = 'black', size = 6) +
+#  theme_void() +
+#  theme(legend.position = "none")
+#ggsave('images/class_pie.png', width = 5, height = 5, dpi = 300)
+
+
+
+###  Ok I think this works well enough. But requires annotation with illustrator.
+### can't get repel to work with complex names.
+### Plots number of genes in each nuc remod complex in the screen, colored by complex.
+
+tested %>%
+  dplyr::filter(class == 'Nucleosome Remodeler') %>%
+  dplyr::select(Symbol,ACF:INO80FAM) %>%
+  tidyr::pivot_longer(cols = ACF:SNF2_like) %>%
+  dplyr::filter(value ) %>% 
+  unique() %>%
+  dplyr::mutate(family = dplyr::case_when(ISWI ~ 'ISWI',
+                                          SWISNF & !name == 'INO80' ~ 'SWI/SNF',
+                                          CHD ~ 'CHD',
+                                          INO80FAM ~ 'INO80',
+                                          name == 'SNF2_like' ~ 'SNF2-like')) %>%
+  dplyr::select(Symbol, name, family) %>%
+  dplyr::group_by(name, family) %>%
+  dplyr::count() %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(name = factor(name),
+                name = forcats::fct_reorder(name, family)) %>%
+  ggplot(aes(x = "", y = n,  fill = name)) +
+  geom_bar(stat = 'identity', width = 1) +
+  coord_polar("y", direction = -1) +
+  scale_fill_brewer(palette = 'Spectral', name = 'Complex') +
+  geom_text(aes(x = 1.2, label = n), position = position_stack(vjust = 0.5), size = 5) + 
+  theme_void() +
+  theme(legend.position = 'right')
+ggsave('images/complex_pie.png', width = 5, height = 5, dpi = 300)
+```
+
+
+```{r}
+### plotting number of rnai lines per gene
+### coule be useful in a supplemental fig?
+
+
+#tested %>%
+#  dplyr::select(Line, Symbol, class) %>%
+#  dplyr::group_by(Symbol, class) %>%
+#  unique() %>%
+#  dplyr::count() %>%
+#  dplyr::mutate(Symbol = factor(Symbol, levels = rev(sort(.$Symbol))),
+#                n = factor(n, levels = c(1,2,3,4,5))) %>%
+#  ggplot(aes(y = Symbol, x = "", fill = n)) +
+#  geom_tile(color = 1) + 
+#  scale_fill_viridis_d(name = 'RNAi Lines') +
+#  scale_x_discrete(expand = c(0,0)) +
+#  theme(axis.title = element_blank(),
+#        panel.background = element_blank(),
+#        panel.grid  = element_blank(),
+#        axis.text.x = element_blank(),
+#        axis.text.y = element_text(size = 12)) 
+#ggsave('images/line_count.png', width = 4, height = 8, dpi = 300)
+#
+```
+
+
+
+
+
+
+```{r}
+bycomplex <- read.csv('_DATA/tested_symbols.csv', header = F, na.strings = "") %>% 
+  tidyr::pivot_longer(cols = c(V2,V3,V4,V5)) %>% 
+  dplyr::select(V1, value) 
+  dplyr::filter(!is.na(value)) 
+
+
+screen
+bycomplex %>%
+  dplyr::group_by(value) %>%
+  dplyr::count() 
+  ggplot(aes())
+
+```
+
