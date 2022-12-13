@@ -1,0 +1,103 @@
+```{r setup}
+library(magrittr)
+library(ggplot2)
+library(GenomicRanges)
+source('~/NystLib/R/GRanges_methods.R')
+source('~/NystLib/R/peakUtils.R')
+source('scripts/utils.R')
+
+dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+
+brD <- data.frame('seqnames' = 'chrX',
+                  'start' = 1565708,
+                  'end' = 1567401) %>%
+  GRanges()
+
+#load fairePoolSheet, closing, opening FAIRE regions 
+load('~/McKay/FAIRE_dm6/faire_dm6.RDS')
+load('rData/sheets.RDS')
+load('rData/faireSheets.RDS')
+source('scripts/utils.R')
+
+#e93_dependent_closing_dm6 <- read.csv('~/McKay/FAIRE_E93/GEO_data/e93_dependent_closing_dm6.bed', header = F, sep = '\t')[,c(1,2,3)]
+#colnames(e93_dependent_closing_dm6) <- c('seqnames', 'start', 'end')
+
+#osa_3lw_faire_groups <- read.csv('deepPlots/osaIDR_3LW_FAIRE-K6-sorted.bed', sep = '\t', header = T) %>% data.table::setnames("X.chrom","seqnames")
+#grp.1 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 1) %>% GRanges()
+#grp.2 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 2) %>% GRanges()
+#grp.3 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 3) %>% GRanges()
+#grp.4 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 4) %>% GRanges()
+#grp.5 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 5) %>% GRanges()
+#grp.6 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 6) %>% GRanges()
+```
+
+```{r}
+sampleSheet
+
+read.table('Bed/yw-3LW-wing-aGFP-CnR-pel-rep2_dm6_trim_q5_dupsRemoved_150to700.bed')
+```
+
+
+```{r getPeaks-allFrags}
+
+
+peaks.allFrags <- getPeakData(sampleSheet %>% dplyr::filter(fraction == 'sup'), by = 'id', narrowPeak_colname = 'peak_allFrags') %>%
+  dplyr::mutate(frag = 'all')
+peaks.20to120 <- getPeakData(sampleSheet %>% dplyr::filter(fraction == 'sup'), by = 'id', narrowPeak_colname = 'peak_20to120') %>%
+  dplyr::mutate(frag = '20to120')
+peaks.150to700 <- getPeakData(sampleSheet %>% dplyr::filter(fraction == 'sup'), by = 'id', narrowPeak_colname = 'peak_150to700') %>% 
+  dplyr::mutate(frag = '150to700')
+
+peaks.byFrag <- dplyr::bind_rows(peaks.allFrags, peaks.20to120, peaks.150to700)
+
+peaks.byFrag.ranges <- peaks.byFrag %>% GRanges()
+
+peaks.byFrag.byID <- peaks.byFrag.ranges %>% split(., mcols(.)$id)
+
+
+union.byFrag <- peaks.byFrag.byID %>%
+  unlist() %>%
+  reduce()
+
+byFrag.df <- union.byFrag %>%
+  data.frame() %>%
+  dplyr::mutate(geneID = 1:nrow(.)) %>%
+  dplyr::mutate(frag_20to120 = ifelse(GRanges(.) %over% GRanges(peaks.20to120), T, F),
+                frag_150to700 = ifelse(GRanges(.) %over% GRanges(peaks.150to700), T, F),
+                frag_All = ifelse(GRanges(.) %over% GRanges(peaks.allFrags), T, F),
+                osa.rep1 = dplyr::case_when(GRanges(.) %over% peaks.byID$osaGFP.sup.rep1 ~ T,
+                                             T ~ F),
+                osa.rep2 = dplyr::case_when(GRanges(.) %over% peaks.byID$osaGFP.sup.rep2 ~ T,
+                                             T ~ F),               
+                yw.rep1 = dplyr::case_when(GRanges(.) %over% peaks.byID$yw.sup.rep1 ~ T,
+                                             T ~ F),
+                yw.rep2 = dplyr::case_when(GRanges(.) %over% peaks.byID$yw.sup.rep2 ~ T,
+                                             T ~ F),              
+                osa.idr = dplyr::case_when(GRanges(.) %over% idr.byGrp$osaGFP.sup ~ T,
+                                            T ~ F),
+                osa.idr.sig.05 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'osaGFP.sup' & IDR_Score >= 540)) ~ T,
+                                               T ~ F),
+                osa.idr.sig.3 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'osaGFP.sup' & IDR_Score >= 217)) ~ T,
+                                               T ~ F),
+                yw.idr = dplyr::case_when(GRanges(.) %over% idr.byGrp$yw.sup ~ T,
+                                           T ~ F),
+                yw.idr.sig.05 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup' & IDR_Score >= 540)) ~ T, 
+                                              T ~ F),
+                yw.idr.sig.3 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup' & IDR_Score >= 217)) ~ T, 
+                                              T ~ F),)
+    
+    
+    fragType = dplyr::case_when(GRanges(.) %over% GRanges(peaks.20to120) ~ '20to120',
+                                           GRanges(.) %over% GRanges(peaks.150to700) ~ '150to700',
+                                           GRanges(.) %over% GRanges(peaks.allFrags) ~ 'allFrags'),
+                yw.peak = ifelse(GRanges(.) %over% peaks.byFrag.byID$)
+
+byFrag.df
+```
+```{r}
+peaks.byFrag$
+peaks.byFrag %>%
+  dplyr::group_by()
+  ggplot(aes(width))
+```
+

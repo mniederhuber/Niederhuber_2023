@@ -1,0 +1,5 @@
+genotype	fraction	fragType	peak_IDR
+yw	sup	allFrags	/Users/m/McKay/osaGFP-3LW-CnR/IDR/yw-sup-IDR.narrowPeak
+osaGFP	sup	allFrags	/Users/m/McKay/osaGFP-3LW-CnR/IDR/osaGFP-sup-IDR.narrowPeak
+yw	sup	20to120	/Users/m/McKay/osaGFP-3LW-CnR/IDR_20to120/yw-sup-IDR.narrowPeak
+osaGFP	sup	20to120	/Users/m/McKay/osaGFP-3LW-CnR/IDR_20to120/osaGFP-sup-IDR.narrowPeak

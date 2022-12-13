@@ -1,0 +1,47 @@
+```{r setup}
+library(magrittr)
+
+source('scripts/utils.R')
+
+
+sampleSheet <- read.csv('sampleSheet.tsv', sep = '\t') %>%
+  dplyr::mutate(genotype = stringr::str_split_fixed(sample, '-', n = 6)[,1],
+                fraction = stringr::str_split_fixed(sample, '-', n = 6)[,6], 
+                .before = 2) %>%
+  dplyr::mutate(id = paste(genotype, fraction, rep, sep = '.'),
+                grp = paste(genotype, fraction, sep = '.'), .before = 1)
+
+
+idrSheet <- read.csv('idrSheet.tsv', sep = '\t') %>%
+  dplyr::mutate(grp = paste(genotype, fraction, fragType, sep = '.'))
+
+sampleSheet
+idrSheet
+
+save(sampleSheet, idrSheet, file = 'rData/sheets.RDS')
+```
+
+```{r faireSheets}
+#faireSheet <- read.csv('FAIRE_dm6_Sheet.tsv', header = T, sep = '\t')
+faireSheet <- read.csv('~/McKay/FAIRE_dm6/sampleSheet.tsv', header = T, sep = '\t') %>%
+  dplyr::mutate(grp = paste(stringr::str_split_fixed(sample, '_', n = 2)[,1],
+                            stringr::str_split_fixed(sample, '_', n = 2)[,2],
+                            sep = '.')) %>%
+  dplyr::mutate(sample = paste(grp,rep, sep = '.'))
+
+read.csv('~/McKay/FAIRE_dm6/sampleSheetPooled.tsv', header = T, sep = '\t') 
+fairePoolSheet <- read.csv('~/McKay/FAIRE_dm6/sampleSheetPooled.tsv', header = T, sep = '\t') %>%
+  dplyr::mutate(grp = paste(stringr::str_split_fixed(sample, '_', n = 2)[,1],
+                            stringr::str_split_fixed(sample, '_', n = 2)[,2],
+                            sep = '.'),
+                time = factor(stringr::str_split_fixed(sample, '_', n = 2)[,2], levels = c('3LW','6h','18h','24h','44h')),
+                .before = 1) %>%
+  dplyr::mutate(bigwig_rpgcNorm_zNorm = paste0('/Users/m/McKay/FAIRE_dm6/',bigwig_rpgcNorm_zNorm),
+                bigwig_rpgcNorm = paste0('/Users/m/McKay/FAIRE_dm6/',bigwig_rpgcNorm),
+                bam = paste0('/Users/m/McKay/FAIRE_dm6/', bam))
+
+
+save(faireSheet, fairePoolSheet, file = 'rData/faireSheets.RDS')
+
+
+```

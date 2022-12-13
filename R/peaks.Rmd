@@ -1,0 +1,625 @@
+```{r setup}
+library(magrittr)
+library(ggplot2)
+library(GenomicRanges)
+source('~/NystLib/R/GRanges_methods.R')
+source('~/NystLib/R/peakUtils.R')
+source('scripts/utils.R')
+
+dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+
+brD <- data.frame('seqnames' = 'chrX',
+                  'start' = 1565708,
+                  'end' = 1567401) %>%
+  GRanges()
+
+#load fairePoolSheet, closing, opening FAIRE regions 
+load('~/McKay/FAIRE_dm6/faire_dm6.RDS')
+load('rData/sheets.RDS')
+load('rData/faireSheets.RDS')
+source('scripts/utils.R')
+
+#e93_dependent_closing_dm6 <- read.csv('~/McKay/FAIRE_E93/GEO_data/e93_dependent_closing_dm6.bed', header = F, sep = '\t')[,c(1,2,3)]
+#colnames(e93_dependent_closing_dm6) <- c('seqnames', 'start', 'end')
+
+#osa_3lw_faire_groups <- read.csv('deepPlots/osaIDR_3LW_FAIRE-K6-sorted.bed', sep = '\t', header = T) %>% data.table::setnames("X.chrom","seqnames")
+#grp.1 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 1) %>% GRanges()
+#grp.2 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 2) %>% GRanges()
+#grp.3 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 3) %>% GRanges()
+#grp.4 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 4) %>% GRanges()
+#grp.5 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 5) %>% GRanges()
+#grp.6 <- osa_3lw_faire_groups %>% dplyr::filter(deepTools_group == 6) %>% GRanges()
+```
+
+
+```{r getPeaks-allFrags}
+
+peaks <- getPeakData(sampleSheet %>% dplyr::filter(fraction == 'sup'), by = 'id', narrowPeak_colname = 'peak_allFrags')
+
+idrPeaks <- getPeakData(idrSheet, by = 'grp', narrowPeak_colname = 'peak_IDR')
+colnames(idrPeaks)[7] <- 'IDR_Score'
+
+
+
+peaks.ranges <- peaks %>% GRanges()
+idr.ranges <- idrPeaks %>% GRanges()
+
+peaks.byID <- peaks.ranges %>% split(., mcols(.)$id)
+
+peaks.osa <- peaks.byID[c("osaGFP.sup.rep1","osaGFP.sup.rep2")]
+
+idr.byGrp <- idr.ranges %>% split(., mcols(.)$grp)
+
+
+union <- peaks.byID %>%
+  unlist() %>%
+  reduce()
+
+union.osa <- peaks.osa %>%
+  unlist() %>%
+  reduce()
+
+
+```
+
+
+
+
+
+#build the union peak set containing all yw and osaGFP peak calls then annotate
+
+# int(-125log2(0.05)) = 540
+```{r}
+# Write function to plot how peak numbers change with different IDR score thresholds and how that corresponds to confidence?
+#-125*log2(0.2)
+
+#nrow(idrPeaks %>% dplyr::filter(grp == 'osaGFP.sup' &  IDR_Score >= 290))
+
+
+IDRs <- seq(1,0.01, by = -0.01)
+scores <- -125*log2(IDRs)
+
+peaks_by_scores <- data.frame(IDRs, scores) %>%
+  dplyr::mutate(peaks = purrr::map_int(scores, function(x) nrow(dplyr::filter(idrPeaks, grp == 'osaGFP.sup' & IDR_Score >= x)))) %>%
+  dplyr::mutate(fracPeaks = peaks/max(peaks))
+
+peaks_by_scores %>%
+  ggplot(aes(scores, peaks, color = IDRs)) + 
+  geom_point() +
+  #ylim(0,1) +
+  geom_vline(xintercept = 540, linetype = 'longdash') +
+  geom_text(aes(x = 580, y =3000, label = "0.05")) +
+  geom_vline(xintercept = 415, linetype = 'longdash') +
+  geom_text(aes(x = 445, y =3000, label = "0.1")) +
+  #geom_vline(xintercept = 350, linetype = 'longdash') +
+  #geom_text(aes(x = 300, y =3000, label = "0.1285")) +
+  geom_vline(xintercept = 290, linetype = 'longdash') +
+  geom_text(aes(x = 260, y =3000, label = "0.2")) +
+  geom_vline(xintercept = 217, linetype = 'longdash') +
+  geom_text(aes(x = 190, y =3000, label = "0.3")) +
+  geom_vline(xintercept = 165, linetype = 'longdash') +
+  geom_text(aes(x = 140, y =3000, label = "0.4")) +
+  NULL
+
+
+
+
+```
+
+```{r union.df-annotated}
+cols <- c('seqnames','start','end','id','grp','peakCall')
+
+
+
+union.df <- union.osa %>%
+  data.frame() %>%
+  dplyr::mutate(geneID = 1:nrow(.), .before = 1) %>%
+  dplyr::mutate(osa.rep1 = dplyr::case_when(GRanges(.) %over% peaks.byID$osaGFP.sup.rep1 ~ T,
+                                             T ~ F),
+                osa.rep2 = dplyr::case_when(GRanges(.) %over% peaks.byID$osaGFP.sup.rep2 ~ T,
+                                             T ~ F),               
+                yw.rep1 = dplyr::case_when(GRanges(.) %over% peaks.byID$yw.sup.rep1 ~ T,
+                                             T ~ F),
+                yw.rep2 = dplyr::case_when(GRanges(.) %over% peaks.byID$yw.sup.rep2 ~ T,
+                                             T ~ F),              
+                osa.idr = dplyr::case_when(GRanges(.) %over% idr.byGrp$osaGFP.sup.allFrags ~ T,
+                                            T ~ F),
+                osa.idr.sig.05 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'osaGFP.sup.allFrags' & IDR_Score >= 540)) ~ T,
+                                               T ~ F),
+                osa.idr.sig.3 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'osaGFP.sup.allFrags' & IDR_Score >= 217)) ~ T,
+                                               T ~ F),
+                yw.idr = dplyr::case_when(GRanges(.) %over% idr.byGrp$yw.sup.allFrags ~ T,
+                                           T ~ F),
+                yw.idr.sig.05 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup.allFrags' & IDR_Score >= 540)) ~ T, 
+                                              T ~ F),
+                yw.idr.sig.3 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup.allFrags' & IDR_Score >= 217)) ~ T, 
+                                              T ~ F),
+                brD = dplyr::case_when(GRanges(.) %over% brD ~ T, 
+                                       T ~ F)) %>%
+             #   closing.L3_24h = dplyr::case_when(GRanges(.) %over% GRanges(closing.L3.24h) ~ T,
+             #                              T ~ F),
+             #   opening.L3_24h = dplyr::case_when(GRanges(.) %over% GRanges(opening.L3.24h) ~ T, 
+             #                              T ~ F),
+             #   static.L3_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.L3.24h) ~ T, 
+             #                              T ~ F)) %>%
+#                e93_closing_dependent = dplyr::case_when(GRanges(.) %over% GRanges(e93_dependent_closing_dm6) ~ T,
+#                                                         T ~ F),
+#                deepClusters = dplyr::case_when(GRanges(.) %over% grp.1 ~ 'grp.1',
+#                                                GRanges(.) %over% grp.2 ~ 'grp.2',
+#                                                GRanges(.) %over% grp.3 ~ 'grp.3',
+#                                                GRanges(.) %over% grp.4 ~ 'grp.4',
+#                                                GRanges(.) %over% grp.5 ~ 'grp.5',
+#                                                GRanges(.) %over% grp.6 ~ 'grp.6' )) %>%
+  #indexing to [1] below because with the larger sampleSheet this will return 3 bw paths, the first in the list should be zNorm from all dupsRemoved, the [2] for sqRemoved
+  dplyr::mutate(osaGFP.rep1.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                osaGFP.rep2.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                yw.rep1.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                yw.rep2.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                osaGFP.rep1.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep2.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep1.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep2.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep1.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags[1], GRanges(.)),
+                osaGFP.rep2.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags[1], GRanges(.)),
+                yw.rep1.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags[1], GRanges(.)),
+                yw.rep2.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags[1], GRanges(.)),
+                faire.3lw = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.3LW',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.6h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.6h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.18h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.18h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.24h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.24h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.44h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.44h',]$bigwig_rpgcNorm_zNorm, GRanges(.))) %>%
+  dplyr::mutate(L3.open = dplyr::case_when(.$faire.3lw > 3 ~ T,
+                                           T ~ F),
+                L3.closed = dplyr::case_when(.$faire.3lw < 0.5 ~ T,
+                                             T ~ F))
+
+
+osa.merge <- union.df %>% dplyr::filter(osa.idr) # essentially osa peaks after IDR scoring, but without filtering on overlap with yw peaks or IDR score
+osa.idr <- union.df %>% dplyr::filter(osa.idr & !yw.idr)
+
+osa.idr.05 <- union.df %>% dplyr::filter(osa.idr.sig.05 & !yw.idr)
+union.df
+```
+
+
+#Peak stats
+
+```{r peak-counts}
+
+mycolors = colorRampPalette(RColorBrewer::brewer.pal(20, 'Spectral'))(20)
+union.df
+
+peak.stats <- data.frame('osaGFP.sup.rep1' = nrow(peaks.byID$osaGFP.sup.rep1 %>% data.frame),
+                         'osaGFP.sup.rep2' = nrow(peaks.byID$osaGFP.sup.rep2 %>% data.frame),
+                         #'osaGFP.sup.union.rep1' = nrow(union.df %>% dplyr::filter(osa.rep1)),
+                         #'osaGFP.sup.union.rep2' = nrow(union.df %>% dplyr::filter(osa.rep2)),
+                         'osaGFP.idr' = nrow(union.df %>% dplyr::filter(osa.idr)),
+                         'osaGFP.idr.specific' = nrow(union.df %>% dplyr::filter(osa.idr & !yw.idr)),
+                         #'osaGFP.idr.sig.3' = nrow(union.df %>% dplyr::filter(osa.idr.sig.3)),
+                         #'osaGFP.idr.sig.05' = nrow(union.df %>% dplyr::filter(osa.idr.sig.05)),
+                         #'osaGFP.idr.sig.3.specific' = nrow(union.df %>% dplyr::filter(osa.idr.sig.3 & !yw.idr.sig.3)),
+                         #'osaGFP.idr.sig.05.specific' = nrow(union.df %>% dplyr::filter(osa.idr.sig.05 & !yw.idr.sig.05)),
+                         'yw.sup.rep1' = nrow(peaks.byID$yw.sup.rep1 %>% data.frame),
+                         'yw.sup.rep2' = nrow(peaks.byID$yw.sup.rep2 %>% data.frame),
+                         #'yw.sup.union.rep1' = nrow(union.df %>% dplyr::filter(yw.rep1)),
+                         #'yw.sup.union.rep2' = nrow(union.df %>% dplyr::filter(yw.rep2)),
+                         'yw.idr' = nrow(idr.byGrp$yw.sup.allFrags %>% data.frame),
+                         'yw.idr.specific' = nrow(union.df %>% dplyr::filter(!osa.idr & yw.idr))
+                         #'yw.idr.union' = nrow(union.df %>% dplyr::filter(yw.idr)),
+                         #'yw.idr.sig.3' = nrow(union.df %>% dplyr::filter(yw.idr.sig.3)),
+                         #'yw.idr.sig.05' = nrow(union.df %>% dplyr::filter(yw.idr.sig.05)),
+                         #'yw.idr.sig.3.specific' = nrow(union.df %>% dplyr::filter(yw.idr.sig.3 & !osa.idr.sig.3)),
+                         #'yw.idr.sig.05.specific' = nrow(union.df %>% dplyr::filter(yw.idr.sig.05 & !osa.idr.sig.05))) %>%
+                          ) %>% 
+  reshape2::melt(value.name = 'peaks', variable.name = 'peak_cat') %>%
+  dplyr::mutate(peak_cat = as.character(peak_cat)) %>%
+  dplyr::mutate(genotype = stringr::str_split_fixed(peak_cat, "[.]", n = 3)[,1]) %>%
+  dplyr::mutate(peak_cat = factor(peak_cat, levels = c('osaGFP.sup.rep1', 
+                                                          'osaGFP.sup.union.rep1',
+                                                          'osaGFP.sup.rep2',
+                                                          'osaGFP.sup.union.rep2',
+                                                          'osaGFP.idr',
+                                                          'osaGFP.idr.specific',
+                                                          'osaGFP.idr.sig.3',
+                                                          'osaGFP.idr.sig.3.specific',
+                                                          'osaGFP.idr.sig.05',
+                                                          'osaGFP.idr.sig.05.specific',
+                                                          'yw.sup.rep1', 
+                                                          'yw.sup.union.rep1',
+                                                          'yw.sup.rep2',
+                                                          'yw.sup.union.rep2',
+                                                          'yw.idr',
+                                                          'yw.idr.specific',
+                                                          'yw.idr.union',
+                                                          'yw.idr.sig.3',
+                                                          'yw.idr.sig.3.specific',
+                                                          'yw.idr.sig.05',
+                                                          'yw.idr.sig.05.specific')))
+
+peak.stats
+
+peak.stats %>%
+  ggplot(aes(genotype, peaks, fill = peak_cat)) +
+  geom_bar(position = position_dodge(), stat = 'identity') +
+  scale_fill_brewer(palette = "Spectral") +
+  #scale_fill_manual(values = mycolors) +
+  geom_text(aes(label = peaks), position = position_dodge(width = 0.9), vjust = -0.5) +
+  theme(axis.title.x = element_blank(),
+        axis.text = element_text(size = 12),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.title = element_blank())
+ggsave('rOut/peak-stats.png', width = 8, height = 6)
+
+
+
+```
+#deseq in osa union peaks
+```{r featureCounts-in-unionPeaks}
+
+union.Counts <- Rsubread::featureCounts(sampleSheet$bam,
+                        annot.ext = makeSAF(union.df),
+                        allowMultiOverlap = T,
+                        nthreads = 4,
+                        isPairedEnd = T)
+
+
+colnames(union.Counts$counts) <- sampleSheet$id
+
+union.dds <- DESeq2::DESeqDataSetFromMatrix(countData = union.Counts$counts, 
+                                            colData = sampleSheet, 
+                                            design = ~grp) %>%
+  DESeq2::DESeq(.)
+
+
+#join the deseq results to union.df columns
+osaGFP.dds <- DESeq2::results(union.dds, contrast = c('grp','osaGFP.sup','yw.sup')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(union.df,.) 
+
+osaGFP.dds
+
+
+```
+
+
+#faire wt timecoures with pooled data
+```{r faire-peaks}
+setwd('/Users/m/McKay/FAIRE_dm6/')
+faire_peaks <- getPeakData(fairePoolSheet, by = 'grp', narrowPeak_colname = 'peaks')
+
+faire.ranges <- faire_peaks %>% GRanges()
+
+faire.byGrp <- faire.ranges %>% split(., mcols(.)$grp)
+
+
+
+#plot for qfiltering
+faire_peaks %>%
+  data.frame() %>%
+  ggplot(aes(qValue, color = baseName)) + 
+  stat_ecdf(geom = "step") +
+  #geom_density(aes(qvalue, color = grp)) +
+  #xlim(0, 50) +
+  #geom_vline(xintercept = 5, alpha = 0.5) +
+  NULL
+
+#used qValue cutoff of 40 in published e93 gof data by SLN
+#but not taking top n peaks, just cutoff at qVal 40
+# TODO this seems to not be propogating the way I want, have peaks that are below cutoff in the final df
+faire_qCutoff <- lapply(faire.byGrp, function(peaks){
+   peaks.df <- data.frame(peaks) %>% dplyr::arrange(desc(qValue)) 
+   
+   peaks_qCutoff <- peaks.df %>% 
+     dplyr::filter(qValue >= 40) %>% 
+     GRanges()
+  
+   return(peaks_qCutoff)
+   #return(peaks.df)
+})
+faire_qCutoff %>% GRangesList() %>% unlist() %>% data.frame %>%
+  ggplot(aes(qValue, color = baseName)) + 
+  stat_ecdf(geom = "step") +
+  #geom_density(aes(qvalue, color = grp)) +
+  #xlim(0, 50) +
+  #geom_vline(xintercept = 5, alpha = 0.5) +
+  NULL
+```
+```{r}
+setwd('/Users/m/McKay/FAIRE_dm6/')
+
+faire.counts.osa <- Rsubread::featureCounts(faireSheet$bam,
+                                            annot.ext = makeSAF(union.df),
+                                            allowMultiOverlap = T, 
+                                            nthreads = 4)
+
+colnames(faire.counts.osa$counts) <- faireSheet$Sample
+
+faire.osa.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.counts.osa$counts, colData = faireSheet, design = ~grp) %>%
+  DESeq2::DESeq(.)
+
+
+faire.osa.results <- DESeq2::results(faire.osa.dds, contrast = c('grp', 'wt.3LW', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(union.df[,-c(7:10)])
+
+faire.osa.results
+```
+
+#by rep faire data for deseq
+```{r faire-byRep-deSeq}
+setwd('/Users/m/McKay/FAIRE_dm6/')
+
+#faire.all <- getPeakData(faireSheet, by = "sample", narrowPeak_colname = 'peaks') %>%
+#  GRanges()
+
+
+#faire.grp <- faire.all %>% split(., mcols(.)$grp)
+
+unionFaire<- faire_qCutoff %>%
+  GRangesList() %>%
+  unlist() %>%
+  reduce()
+
+unionFaire.df <-unionFaire %>%
+  data.frame() %>% 
+  dplyr::mutate(GeneID = 1:nrow(.), .before = 1) 
+
+#unionFaire.df <- data.frame(unionFaire) 
+
+#unionFaire.df %<>%
+#  dplyr::mutate(Chr = .$seqnames,
+#                Start = .$start,
+#                End = .$end,
+#                Strand = .$strand,
+#                GeneID = 1:nrow(.)) %>%
+#  dplyr::select(GeneID, everything())
+
+
+faire.counts <- Rsubread::featureCounts(faireSheet$bam,
+                          annot.ext = makeSAF(unionFaire.df),
+                          allowMultiOverlap = T,
+                          nthreads = 4)
+
+colnames(faire.counts$counts) <- faireSheet$Sample
+
+faire.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.counts$counts, colData = faireSheet, design = ~grp) %>%
+  DESeq2::DESeq(.)
+
+
+####### 
+
+faire_deseq_results <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)])
+
+closing.L3.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange >= 1)
+
+opening.L3.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange <= -1)
+
+static.L3.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange < 1 & log2FoldChange > -1)
+
+#l3 to 6h
+closing.L3.6h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.6h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange >= 1)
+
+opening.L3.6h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.6h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange <= -1)
+
+static.L3.6h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.3LW', 'wt.6h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange < 1 & log2FoldChange > -1)
+
+#6h to 18h
+closing.6h.18h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.18h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange >= 1)
+
+opening.6h.18h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.18h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange <= -1)
+
+static.6h.18h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.18h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange < 1 & log2FoldChange > -1)
+
+#6h to 24h
+closing.6h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange >= 1)
+
+opening.6h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange <= -1)
+
+static.6h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.6h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange < 1 & log2FoldChange > -1)
+
+#18h to 24h
+closing.18h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.18h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange >= 1)
+
+opening.18h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.18h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange <= -1)
+
+static.18h.24h <- DESeq2::results(faire.dds, contrast = c('grp', 'wt.18h', 'wt.24h')) %>%
+  data.frame() %>%
+  dplyr::bind_cols(unionFaire.df[,-c(7:10)]) %>%
+  dplyr::filter(log2FoldChange < 1 & log2FoldChange > -1)
+
+
+```
+
+Uyehara 2017 -- L3-24h 1333 closing, 2154 opening -- observe ~1/3 dynamic
+My analysis, without including peak calls -- 1523 closing, 2286 opening, 8581 static --> 30% dynamic
+But looking at the browser, a lot of these dynamic sites don't look like very significant peaks, they're called dynamic because they have significant changes in signal
+If I add in peak calls to further subset dynamic peaks... 1103 closing, 1127 opening, 4442 static --> 33% dynamic
+
+```{r faire-union-annotation}
+
+#without peak calls for dynamic categories
+#faire.df <- unionFaire.df %>%
+#  dplyr::mutate(wt.3lw = ifelse(GRanges(.) %over% faire_qCutoff$wt.3LW, T, F),
+#                wt.6h = ifelse(GRanges(.) %over% faire_qCutoff$wt.6h, T, F),
+#                wt.18h = ifelse(GRanges(.) %over% faire_qCutoff$wt.18h, T, F),
+#                wt.24h = ifelse(GRanges(.) %over% faire_qCutoff$wt.24h, T, F),
+#                wt.44h = ifelse(GRanges(.) %over% faire_qCutoff$wt.44h, T, F)) %>%
+#  dplyr::mutate(wt.L3_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.L3.24h )  ~ 'static',
+#                                             GRanges(.) %over% GRanges(opening.L3.24h)  ~ 'opening',
+#                                             GRanges(.) %over% GRanges(closing.L3.24h)  ~ 'closing'),
+#                wt.L3_6h = dplyr::case_when(GRanges(.) %over% GRanges(static.L3.6h) ~ 'static',
+#                                             GRanges(.) %over% GRanges(opening.L3.6h) ~ 'opening',
+#                                             GRanges(.) %over% GRanges(closing.L3.6h)  ~ 'closing'), 
+#                wt.6h_18h = dplyr::case_when(GRanges(.) %over% GRanges(static.6h.18h) ~ 'static',
+#                                             GRanges(.) %over% GRanges(opening.6h.18h) ~ 'opening',
+#                                             GRanges(.) %over% GRanges(closing.6h.18h) ~ 'closing'),               
+#                wt.18h_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.18h.24h) ~ 'static',
+#                                             GRanges(.) %over% GRanges(opening.18h.24h) ~ 'opening',
+#                                             GRanges(.) %over% GRanges(closing.18h.24h) ~ 'closing'),
+#                osa.IDR = ifelse(GRanges(.) %over% GRanges(osa.idr), T, F),
+#                osa.IDR.05 = ifelse(GRanges(.) %over% GRanges(osa.idr.05), T, F))    
+
+#with peak calls
+faire.df <- unionFaire.df %>%
+  dplyr::mutate(wt.3lw = ifelse(GRanges(.) %over% faire_qCutoff$wt.3LW, T, F),
+                wt.6h = ifelse(GRanges(.) %over% faire_qCutoff$wt.6h, T, F),
+                wt.18h = ifelse(GRanges(.) %over% faire_qCutoff$wt.18h, T, F),
+                wt.24h = ifelse(GRanges(.) %over% faire_qCutoff$wt.24h, T, F),
+                wt.44h = ifelse(GRanges(.) %over% faire_qCutoff$wt.44h, T, F)) %>%
+  dplyr::mutate(wt.L3_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.L3.24h ) & wt.3lw ~ 'static',
+                                             GRanges(.) %over% GRanges(opening.L3.24h) & wt.24h ~ 'opening',
+                                             GRanges(.) %over% GRanges(closing.L3.24h) & wt.3lw ~ 'closing'),
+                wt.L3_6h = dplyr::case_when(GRanges(.) %over% GRanges(static.L3.6h) & wt.3lw ~ 'static',
+                                             GRanges(.) %over% GRanges(opening.L3.6h) & wt.6h ~ 'opening',
+                                             GRanges(.) %over% GRanges(closing.L3.6h) & wt.3lw ~ 'closing'), 
+                wt.6h_18h = dplyr::case_when(GRanges(.) %over% GRanges(static.6h.18h) & wt.6h ~ 'static',
+                                             GRanges(.) %over% GRanges(opening.6h.18h) & wt.18h ~ 'opening',
+                                             GRanges(.) %over% GRanges(closing.6h.18h) & wt.6h ~ 'closing'),               
+                wt.6h_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.6h.24h) & wt.6h ~ 'static',
+                                             GRanges(.) %over% GRanges(opening.6h.24h) & wt.24h ~ 'opening',
+                                             GRanges(.) %over% GRanges(closing.6h.24h) & wt.6h ~ 'closing'),               
+                wt.18h_24h = dplyr::case_when(GRanges(.) %over% GRanges(static.18h.24h) & wt.18h ~ 'static',
+                                             GRanges(.) %over% GRanges(opening.18h.24h) & wt.24h ~ 'opening',
+                                             GRanges(.) %over% GRanges(closing.18h.24h) & wt.18h ~ 'closing'),
+#osa.idr defined above as specific to osa IDR peak calls, peaks can't have overlap with yw.IDR
+                osa.IDR = ifelse(GRanges(.) %over% GRanges(osa.idr), T, F),
+                osa.IDR.05 = ifelse(GRanges(.) %over% GRanges(osa.idr.05), T, F),
+faire.3lw = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.3LW',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+faire.6h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.6h',]$bigwig_rpgcNorm_zNorm, GRanges(.)), 
+faire.18h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.18h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+faire.24h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.24h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+faire.44h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.44h',]$bigwig_rpgcNorm_zNorm, GRanges(.)))
+
+#faire.df %>% dplyr::filter(wt.L3_24h == 'closing')
+```
+
+#splitting the deepTools generated osa-bound closing clusters
+```{r osa-bound-closing-clusters}
+#needed to manually uncomment the header in the deepTools output file - so this will break if the bed file gets regenerated
+osa.closing.clusters <- read.table('deepPlots/osaIDR_closing_timecourse-clusters.bed', header = T, sep = '\t')
+
+osa.closing.byCluster <- osa.closing.clusters %>%
+  GRanges() %>%
+  split(., mcols(.)$deepTools_group)
+
+
+osaGFP.dds %<>% 
+  dplyr::mutate(closing_Cluster = dplyr::case_when(GRanges(.) %over% osa.closing.byCluster$cluster_1 ~ 'cluster_1',
+                                                   GRanges(.) %over% osa.closing.byCluster$cluster_2 ~ 'cluster_2',
+                                                   GRanges(.) %over% osa.closing.byCluster$cluster_3 ~ 'cluster_3',
+                                                   GRanges(.) %over% osa.closing.byCluster$cluster_4 ~ 'cluster_4', 
+                                                   GRanges(.) %over% osa.closing.byCluster$cluster_5 ~ 'cluster_5', 
+                                                   GRanges(.) %over% osa.closing.byCluster$cluster_6 ~ 'cluster_6'))
+osaGFP.dds
+```
+```{r finalie the annotated dataframe }
+# using the faire.df L3-24h behavior annoation which incorporates faire peak calls and differential signal to define behavior within osa peaks
+osaGFP.df <- osaGFP.dds %>%
+  dplyr::mutate(L3_24h.FAIRE.cat = dplyr::case_when(GRanges(.) %over% GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'closing')) ~ 'closing', 
+                                                    GRanges(.) %over% GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'opening')) ~ 'opening',
+                                                    T ~ 'static'),
+               L3.FAIRE.Peak = ifelse(GRanges(.) %over% GRanges(faire.df %>% dplyr::filter(wt.3lw)), T, F),
+               L3.24h.log2 = faire.osa.results$log2FoldChange)
+
+GRanges(faire_deseq_results)
+osaGFP.df
+```
+
+
+#output useful bed files
+
+```{r output}
+write.table(osa.idr[c(2:4)], 'rOut/osaIDR.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_1') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_1.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_2') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_2.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_3') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_3.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_4') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_4.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_5') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_5.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(osaGFP.df %>% dplyr::filter(closing_Cluster == 'cluster_6') %>% .[c(2,3,4)], 'rOut/osaIDR-closing-cluster_6.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+
+faire.df
+#fairePeak bed files
+write.table(faire.df %>% dplyr::filter(wt.L3_24h == 'closing' & osa.IDR) %>% .[c(2,3,4)], 'rOut/L3-24h_closing_osaIDR.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(faire.df %>% dplyr::filter(wt.L3_24h == 'closing' & !osa.IDR) %>% .[c(2,3,4)], 'rOut/L3-24h_closing_NOosa.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(faire.df %>% dplyr::filter(wt.L3_24h == 'closing') %>% .[c(2,3,4)], 'rOut/L3-24h_closing.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(faire.df %>% dplyr::filter(wt.L3_24h == 'opening') %>% .[c(2,3,4)], 'rOut/L3-24h_opening.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+write.table(faire.df %>% dplyr::filter(wt.L3_24h == 'static') %>% .[c(2,3,4)], 'rOut/L3-24h_static.bed', row.names = F, col.names = F, quote = F, sep = '\t')
+
+save(union.Counts, union.dds, osaGFP.dds, osaGFP.df, file = 'rData/deseq.RDS')
+save(osa.idr, osa.idr.05, file = 'rData/osa-idr-peak-sets.RDS')
+#save(osaGFP.dds, union.df, file = 'rData/osa-DFs.RDS')
+#save(peaks.byID, file = 'rData/peaksByID.RData')
+
+#save outputs
+save(closing.L3.24h,
+     opening.L3.24h,
+     static.L3.24h,
+     closing.L3.6h,
+     opening.L3.6h,
+     static.L3.6h,
+     closing.6h.18h,
+     opening.6h.18h,
+     static.6h.18h,
+     closing.18h.24h,
+     opening.18h.24h,
+     static.18h.24h,
+     faire.dds, faire.df, file = 'rData/faire_dm6.RDS')
+```
+
+
+
+
+
+
+
+
+
+
+
+

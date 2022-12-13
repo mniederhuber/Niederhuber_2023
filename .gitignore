@@ -1,4 +1,5 @@
 /images
 /_FIGS
-
+R/BigWig
+R/Peaks
 .Rproj.user
