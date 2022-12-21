@@ -1,0 +1,35 @@
+#File	Fastq/wt_44h-Rep1_R1.fastq.gz
+#Total	2947162
+#Matched	3943	0.13379%
+#Name	Reads	ReadsPct
+TruSeq_Adapter_Index_1_6	2056	0.06976%
+Reverse_adapter	677	0.02297%
+PhiX_read2_adapter	171	0.00580%
+I5_Nextera_Transposase_1	158	0.00536%
+I7_Nextera_Transposase_2	104	0.00353%
+RNA_PCR_Primer_Index_1_(RPI1)_2,9	96	0.00326%
+I5_Primer_Nextera_XT_and_Nextera_Enrichment_[N/S/E]501	94	0.00319%
+PhiX_read1_adapter	77	0.00261%
+I7_Primer_Nextera_XT_and_Nextera_Enrichment_N701	72	0.00244%
+Nextera_LMP_Read2_External_Adapter	70	0.00238%
+I7_Adapter_Nextera_No_Barcode	64	0.00217%
+I5_Nextera_Transposase_2	62	0.00210%
+Nextera_LMP_Read1_External_Adapter	54	0.00183%
+TruSeq_Universal_Adapter	52	0.00176%
+I5_Adapter_Nextera	43	0.00146%
+I7_Nextera_Transposase_1	35	0.00119%
+RNA_PCR_Primer_(RP1)_part_#_15013198	29	0.00098%
+PCR_Primers	5	0.00017%
+TruSeq_Adapter_Index_12	5	0.00017%
+I7_Primer_Nextera_XT_Index_Kit_v2_N727	4	0.00014%
+TruSeq_Adapter_Index_15	4	0.00014%
+TruSeq_Adapter_Index_14	2	0.00007%
+I5_Primer_Nextera_XT_and_Nextera_Enrichment_[N/S/E]505	1	0.00003%
+I7_Primer_Nextera_XT_and_Nextera_Enrichment_N706	1	0.00003%
+RNA_PCR_Primer_Index_14_(RPI14)	1	0.00003%
+RNA_PCR_Primer_Index_15_(RPI15)	1	0.00003%
+RNA_PCR_Primer_Index_25_(RPI25)	1	0.00003%
+RNA_PCR_Primer_Index_34_(RPI34)	1	0.00003%
+RNA_PCR_Primer_Index_44_(RPI44)	1	0.00003%
+RNA_PCR_Primer_Index_46_(RPI46)	1	0.00003%
+TruSeq_Adapter_Index_7	1	0.00003%

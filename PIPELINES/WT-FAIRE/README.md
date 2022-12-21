@@ -3,9 +3,9 @@
 
 Based on McKay lab FAIRE pipeline...
 ```
-git clone git@github.com:mckaylabunc/faire-pipeline.git
+git clone git@github.com:mniederhuber/faire-pipeline.git
 cd faire-pipeline
-git checkout 911509a375a30712abba9723187843dd000f9bac
+git checkout wt-FAIRE 
 ```
 
 With modifications:
