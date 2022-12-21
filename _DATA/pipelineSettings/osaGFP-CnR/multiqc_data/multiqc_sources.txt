@@ -1,0 +1,38 @@
+Module	Section	Sample Name	Source
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.tsv
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5.tsv
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.tsv
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.tsv
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5.tsv
+Samtools	flagstat	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.tsv
+Samtools	flagstat	yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/AlignmentStats/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.tsv
+Bowtie 2	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2.txt
+Bowtie 2	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2.txt
+Bowtie 2	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2.txt
+Bowtie 2	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2.txt
+FastQC	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep2_R1	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/yw-3LW-wing-aGFP-CnR-sup-rep2_R1_fastqc.zip
+FastQC	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_fastqc.zip
+FastQC	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_fastqc.zip
+FastQC	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_fastqc.zip
+FastQC	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_fastqc.zip
+FastQC	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep1_R1	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/yw-3LW-wing-aGFP-CnR-sup-rep1_R1_fastqc.zip
+FastQC	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_fastqc.zip
+FastQC	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FastQC/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_fastqc.zip
+Picard	DuplicationMetrics	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/PCRdups/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_PCR_duplicates
+Picard	DuplicationMetrics	yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/PCRdups/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_PCR_duplicates
+Picard	DuplicationMetrics	yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/PCRdups/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_PCR_duplicates
+Picard	DuplicationMetrics	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/PCRdups/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_PCR_duplicates
+BBTools	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep2_adapterStats	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/yw-3LW-wing-aGFP-CnR-sup-rep2_adapterStats
+BBTools	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep1_adapterStats	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/yw-3LW-wing-aGFP-CnR-sup-rep1_adapterStats
+BBTools	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_adapterStats	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_adapterStats
+BBTools	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_adapterStats	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_adapterStats
+FastQ Screen	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FQscreen/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen.txt
+FastQ Screen	all_sections	osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FQscreen/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen.txt
+FastQ Screen	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FQscreen/yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen.txt
+FastQ Screen	all_sections	yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/FQscreen/yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen.txt
+FastQ Screen	all_sections	EXAMPLE_R1_trim_screen	/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/test/EXAMPLE_R1_trim_screen.txt

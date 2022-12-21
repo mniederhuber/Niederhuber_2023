@@ -1,0 +1,322 @@
+[2022-12-16 15:33:30,145] multiqc                                            [DEBUG  ]  No MultiQC config found: /nas/longleaf/apps/multiqc/1.7/lib/python2.7/site-packages/multiqc-1.7-py2.7.egg/multiqc_config.yaml
+[2022-12-16 15:33:30,146] multiqc                                            [DEBUG  ]  No MultiQC config found: /nas/longleaf/home/mjn15/.multiqc_config.yaml
+[2022-12-16 15:33:30,146] multiqc                                            [DEBUG  ]  No MultiQC config found: multiqc_config.yaml
+[2022-12-16 15:33:30,146] multiqc                                            [DEBUG  ]  Command used: /nas/longleaf/apps/multiqc/1.7/bin/multiqc . -f -x nohup.out -x *.err
+[2022-12-16 15:33:30,816] multiqc                                            [WARNING]  MultiQC Version v1.13 now available!
+[2022-12-16 15:33:30,816] multiqc                                            [INFO   ]  This is MultiQC v1.7
+[2022-12-16 15:33:30,816] multiqc                                            [DEBUG  ]  Command     : /nas/longleaf/apps/multiqc/1.7/bin/multiqc . -f -x nohup.out -x *.err
+[2022-12-16 15:33:30,816] multiqc                                            [DEBUG  ]  Working dir : /pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline
+[2022-12-16 15:33:30,816] multiqc                                            [INFO   ]  Template    : default
+[2022-12-16 15:33:30,817] multiqc                                            [DEBUG  ]  Ignoring files, directories and paths that match: nohup.out, *.err
+[2022-12-16 15:33:30,817] multiqc                                            [INFO   ]  Searching '.'
+[2022-12-16 15:33:30,818] multiqc                                            [DEBUG  ]  Analysing modules: custom_content, conpair, peddy, methylQA, phantompeakqualtools, qualimap, preseq, quast, qorts, rna_seqc, rsem, rseqc, busco, goleft_indexcov, disambiguate, supernova, deeptools, sargasso, verifybamid, mirtrace, happy, homer, macs2, theta2, snpeff, gatk, htseq, bcftools, featureCounts, dedup, damageprofiler, picard, prokka, samblaster, samtools, bamtools, jellyfish, vcftools, longranger, stacks, bbmap, bismark, biscuit, hicexplorer, hicup, hicpro, salmon, kallisto, slamdunk, star, hisat2, tophat, bowtie2, bowtie1, kat, leehom, adapterRemoval, clipandmerge, cutadapt, flexbar, trimmomatic, skewer, sortmerna, biobloomtools, fastq_screen, afterqc, fastp, fastqc, minionqc, clusterflow, bcl2fastq, interop, flash
+[2022-12-16 15:33:30,818] multiqc                                            [DEBUG  ]  Using temporary directory for creating report: /tmp/tmpZ1Ko2S
+[2022-12-16 15:33:30,850] multiqc                                            [DEBUG  ]  Ignoring directory as matched fn_ignore_dirs: ./multiqc_data
+[2022-12-16 15:33:31,768] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: nohup.out
+[2022-12-16 15:33:31,843] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,844] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted.bam
+[2022-12-16 15:33:31,844] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5.bam
+[2022-12-16 15:33:31,844] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,844] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_sorted.bam
+[2022-12-16 15:33:31,844] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,845] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,845] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked.bam
+[2022-12-16 15:33:31,845] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5.bam
+[2022-12-16 15:33:31,846] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,846] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_sorted.bam.bai
+[2022-12-16 15:33:31,846] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked.bam
+[2022-12-16 15:33:31,846] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,847] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5.bam
+[2022-12-16 15:33:31,847] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,847] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,847] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_sorted.bam.bai
+[2022-12-16 15:33:31,847] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_sorted.bam
+[2022-12-16 15:33:31,848] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked.bam
+[2022-12-16 15:33:31,848] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,848] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,848] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,848] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted.bam
+[2022-12-16 15:33:31,849] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,849] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,849] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_sorted.bam.bai
+[2022-12-16 15:33:31,849] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,849] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_sorted.bam
+[2022-12-16 15:33:31,850] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.bam
+[2022-12-16 15:33:31,850] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,850] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,850] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,850] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_sacCer3_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,851] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,851] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,851] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,851] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,851] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved.bam
+[2022-12-16 15:33:31,852] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted.bam
+[2022-12-16 15:33:31,852] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved.bam.bai
+[2022-12-16 15:33:31,852] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.bam
+[2022-12-16 15:33:31,852] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5.bam
+[2022-12-16 15:33:31,853] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted.bam
+[2022-12-16 15:33:31,853] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_sorted.bam.bai
+[2022-12-16 15:33:31,853] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.bam
+[2022-12-16 15:33:31,853] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.bam
+[2022-12-16 15:33:31,853] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_sorted.bam
+[2022-12-16 15:33:31,854] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked.bam
+[2022-12-16 15:33:33,302] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen.html
+[2022-12-16 15:33:33,318] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen.html
+[2022-12-16 15:33:33,319] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_screen.html
+[2022-12-16 15:33:33,320] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_screen.html
+[2022-12-16 15:33:33,321] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.sam
+[2022-12-16 15:33:33,373] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.sam
+[2022-12-16 15:33:33,374] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim.sam
+[2022-12-16 15:33:33,374] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim.sam
+[2022-12-16 15:33:34,432] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: dm6-sacCer3.fa
+[2022-12-16 15:33:34,647] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165926.err
+[2022-12-16 15:33:34,648] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091213.err
+[2022-12-16 15:33:34,703] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165928.err
+[2022-12-16 15:33:34,703] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152159.err
+[2022-12-16 15:33:34,703] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152195.err
+[2022-12-16 15:33:34,703] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62151666.err
+[2022-12-16 15:33:34,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152192.err
+[2022-12-16 15:33:34,870] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62151668.err
+[2022-12-16 15:33:34,870] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165902.err
+[2022-12-16 15:33:35,083] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62095088.err
+[2022-12-16 15:33:35,084] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097312.err
+[2022-12-16 15:33:35,084] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091232.err
+[2022-12-16 15:33:35,084] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097431.err
+[2022-12-16 15:33:35,299] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091265.err
+[2022-12-16 15:33:35,513] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165929.err
+[2022-12-16 15:33:35,727] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097230.err
+[2022-12-16 15:33:35,781] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62093215.err
+[2022-12-16 15:33:35,782] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165901.err
+[2022-12-16 15:33:35,782] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165903.err
+[2022-12-16 15:33:35,782] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097233.err
+[2022-12-16 15:33:35,945] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094294.err
+[2022-12-16 15:33:35,945] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165930.err
+[2022-12-16 15:33:36,056] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152741.err
+[2022-12-16 15:33:36,164] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152739.err
+[2022-12-16 15:33:36,218] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091263.err
+[2022-12-16 15:33:36,218] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152522.err
+[2022-12-16 15:33:36,218] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091195.err
+[2022-12-16 15:33:36,434] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097430.err
+[2022-12-16 15:33:36,435] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152332.err
+[2022-12-16 15:33:36,435] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152523.err
+[2022-12-16 15:33:36,542] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097232.err
+[2022-12-16 15:33:36,542] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152194.err
+[2022-12-16 15:33:36,650] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62095087.err
+[2022-12-16 15:33:36,761] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62095090.err
+[2022-12-16 15:33:36,761] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152738.err
+[2022-12-16 15:33:36,815] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094293.err
+[2022-12-16 15:33:36,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097429.err
+[2022-12-16 15:33:36,977] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097309.err
+[2022-12-16 15:33:36,978] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152525.err
+[2022-12-16 15:33:37,031] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097310.err
+[2022-12-16 15:33:37,085] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091262.err
+[2022-12-16 15:33:37,140] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165948.err
+[2022-12-16 15:33:37,194] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097231.err
+[2022-12-16 15:33:37,247] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094295.err
+[2022-12-16 15:33:37,355] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62095089.err
+[2022-12-16 15:33:37,729] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091259.err
+[2022-12-16 15:33:37,730] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152333.err
+[2022-12-16 15:33:37,836] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152524.err
+[2022-12-16 15:33:37,837] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152032.err
+[2022-12-16 15:33:37,837] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152335.err
+[2022-12-16 15:33:37,837] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62151669.err
+[2022-12-16 15:33:37,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152033.err
+[2022-12-16 15:33:37,944] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165927.err
+[2022-12-16 15:33:37,998] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094296.err
+[2022-12-16 15:33:38,052] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152160.err
+[2022-12-16 15:33:38,105] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152162.err
+[2022-12-16 15:33:38,270] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091196.err
+[2022-12-16 15:33:38,324] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152395.err
+[2022-12-16 15:33:38,324] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091241.err
+[2022-12-16 15:33:38,378] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62093212.err
+[2022-12-16 15:33:38,432] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152161.err
+[2022-12-16 15:33:38,432] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091197.err
+[2022-12-16 15:33:38,432] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152334.err
+[2022-12-16 15:33:38,432] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152397.err
+[2022-12-16 15:33:38,433] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152030.err
+[2022-12-16 15:33:38,486] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091238.err
+[2022-12-16 15:33:38,540] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152394.err
+[2022-12-16 15:33:38,541] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091264.err
+[2022-12-16 15:33:38,596] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62165904.err
+[2022-12-16 15:33:38,596] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097229.err
+[2022-12-16 15:33:38,597] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62091198.err
+[2022-12-16 15:33:38,597] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097432.err
+[2022-12-16 15:33:38,758] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62093214.err
+[2022-12-16 15:33:38,758] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62097311.err
+[2022-12-16 15:33:38,758] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152740.err
+[2022-12-16 15:33:38,758] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094291.err
+[2022-12-16 15:33:38,759] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152031.err
+[2022-12-16 15:33:38,759] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62093213.err
+[2022-12-16 15:33:38,759] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152396.err
+[2022-12-16 15:33:38,759] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62152193.err
+[2022-12-16 15:33:38,866] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62151667.err
+[2022-12-16 15:33:38,867] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: slurm-62094292.err
+[2022-12-16 15:33:38,867] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R2_trim.fastq.gz
+[2022-12-16 15:33:38,867] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R2.fastq.gz
+[2022-12-16 15:33:38,867] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R2.fastq.gz
+[2022-12-16 15:33:38,867] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim.fastq.gz
+[2022-12-16 15:33:38,868] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1.fastq.gz
+[2022-12-16 15:33:38,868] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R2.fastq.gz
+[2022-12-16 15:33:38,868] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R1.fastq.gz
+[2022-12-16 15:33:38,868] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim.fastq.gz
+[2022-12-16 15:33:38,868] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim.fastq.gz
+[2022-12-16 15:33:38,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R2_trim.fastq.gz
+[2022-12-16 15:33:38,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R2_trim.fastq.gz
+[2022-12-16 15:33:38,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R2_trim.fastq.gz
+[2022-12-16 15:33:38,869] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1.fastq.gz
+[2022-12-16 15:33:38,870] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R1.fastq.gz
+[2022-12-16 15:33:38,870] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim.fastq.gz
+[2022-12-16 15:33:38,870] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R2.fastq.gz
+[2022-12-16 15:33:39,154] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_fastqc.html
+[2022-12-16 15:33:39,154] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_fastqc.html
+[2022-12-16 15:33:39,171] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_fastqc.html
+[2022-12-16 15:33:39,179] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim_fastqc.html
+[2022-12-16 15:33:39,179] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_R1_fastqc.html
+[2022-12-16 15:33:39,180] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_R1_fastqc.html
+[2022-12-16 15:33:39,180] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_fastqc.html
+[2022-12-16 15:33:39,181] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim_fastqc.html
+[2022-12-16 15:34:00,480] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_60.bam
+[2022-12-16 15:34:00,480] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_50.bam
+[2022-12-16 15:34:00,481] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_30.bam
+[2022-12-16 15:34:00,481] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_70.bam
+[2022-12-16 15:34:00,481] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_100.bam
+[2022-12-16 15:34:00,481] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_10.bam
+[2022-12-16 15:34:00,482] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_90.bam
+[2022-12-16 15:34:00,482] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_40.bam
+[2022-12-16 15:34:00,482] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_40.bam
+[2022-12-16 15:34:00,482] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_10.bam
+[2022-12-16 15:34:00,483] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_20.bam
+[2022-12-16 15:34:00,483] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_10.bam
+[2022-12-16 15:34:00,483] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_40.bam
+[2022-12-16 15:34:00,483] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_50.bam
+[2022-12-16 15:34:00,885] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_60.bam
+[2022-12-16 15:34:00,886] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_60.bam
+[2022-12-16 15:34:00,886] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_80.bam
+[2022-12-16 15:34:00,886] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_60.bam
+[2022-12-16 15:34:00,887] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_50.bam
+[2022-12-16 15:34:00,887] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_100.bam
+[2022-12-16 15:34:00,887] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_50.bam
+[2022-12-16 15:34:00,887] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_80.bam
+[2022-12-16 15:34:00,887] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_30.bam
+[2022-12-16 15:34:00,888] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_20.bam
+[2022-12-16 15:34:00,888] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_30.bam
+[2022-12-16 15:34:00,888] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_70.bam
+[2022-12-16 15:34:00,888] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_30.bam
+[2022-12-16 15:34:00,889] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_80.bam
+[2022-12-16 15:34:00,889] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_20.bam
+[2022-12-16 15:34:00,889] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_100.bam
+[2022-12-16 15:34:00,889] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_90.bam
+[2022-12-16 15:34:00,890] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_90.bam
+[2022-12-16 15:34:00,890] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_70.bam
+[2022-12-16 15:34:00,890] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_80.bam
+[2022-12-16 15:34:00,890] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_90.bam
+[2022-12-16 15:34:00,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_30.bam
+[2022-12-16 15:34:00,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_100.bam
+[2022-12-16 15:34:00,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_20.bam
+[2022-12-16 15:34:00,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_90.bam
+[2022-12-16 15:34:00,891] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_70.bam
+[2022-12-16 15:34:00,892] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_10.bam
+[2022-12-16 15:34:00,892] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_40.bam
+[2022-12-16 15:34:00,892] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_50.bam
+[2022-12-16 15:34:00,892] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_60.bam
+[2022-12-16 15:34:00,893] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_10.bam
+[2022-12-16 15:34:00,893] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_70.bam
+[2022-12-16 15:34:00,893] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_80.bam
+[2022-12-16 15:34:00,893] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsMarked_20.bam
+[2022-12-16 15:34:00,894] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsMarked_40.bam
+[2022-12-16 15:34:02,217] multiqc                                            [DEBUG  ]  No samples found: custom_content
+[2022-12-16 15:34:02,242] multiqc                                            [DEBUG  ]  No samples found: conpair
+[2022-12-16 15:34:02,268] multiqc                                            [DEBUG  ]  No samples found: peddy
+[2022-12-16 15:34:02,296] multiqc                                            [DEBUG  ]  No samples found: methylQA
+[2022-12-16 15:34:02,323] multiqc                                            [DEBUG  ]  No samples found: phantompeakqualtools
+[2022-12-16 15:34:02,359] multiqc                                            [DEBUG  ]  No samples found: qualimap
+[2022-12-16 15:34:02,384] multiqc                                            [DEBUG  ]  No samples found: preseq
+[2022-12-16 15:34:02,407] multiqc                                            [DEBUG  ]  No samples found: quast
+[2022-12-16 15:34:02,433] multiqc                                            [DEBUG  ]  No samples found: qorts
+[2022-12-16 15:34:02,455] multiqc                                            [DEBUG  ]  No samples found: rna_seqc
+[2022-12-16 15:34:02,476] multiqc                                            [DEBUG  ]  No samples found: rsem
+[2022-12-16 15:34:02,529] multiqc                                            [DEBUG  ]  No samples found: rseqc
+[2022-12-16 15:34:02,553] multiqc                                            [DEBUG  ]  No samples found: busco
+[2022-12-16 15:34:02,577] multiqc                                            [DEBUG  ]  No samples found: goleft_indexcov
+[2022-12-16 15:34:02,598] multiqc                                            [DEBUG  ]  No samples found: disambiguate
+[2022-12-16 15:34:02,626] multiqc                                            [DEBUG  ]  No samples found: supernova
+[2022-12-16 15:34:02,690] multiqc                                            [DEBUG  ]  No samples found: deeptools
+[2022-12-16 15:34:02,712] multiqc                                            [DEBUG  ]  No samples found: sargasso
+[2022-12-16 15:34:02,733] multiqc                                            [DEBUG  ]  No samples found: verifybamid
+[2022-12-16 15:34:02,761] multiqc                                            [DEBUG  ]  No samples found: mirtrace
+[2022-12-16 15:34:02,791] multiqc                                            [DEBUG  ]  No samples found: happy
+[2022-12-16 15:34:02,833] multiqc                                            [DEBUG  ]  No samples found: homer
+[2022-12-16 15:34:02,862] multiqc                                            [DEBUG  ]  No samples found: macs2
+[2022-12-16 15:34:02,890] multiqc                                            [DEBUG  ]  No samples found: theta2
+[2022-12-16 15:34:02,917] multiqc                                            [DEBUG  ]  No samples found: snpeff
+[2022-12-16 15:34:02,960] multiqc                                            [DEBUG  ]  No samples found: gatk
+[2022-12-16 15:34:02,987] multiqc                                            [DEBUG  ]  No samples found: htseq
+[2022-12-16 15:34:03,017] multiqc                                            [DEBUG  ]  No samples found: bcftools
+[2022-12-16 15:34:03,044] multiqc                                            [DEBUG  ]  No samples found: featureCounts
+[2022-12-16 15:34:03,075] multiqc                                            [DEBUG  ]  No samples found: dedup
+[2022-12-16 15:34:03,106] multiqc                                            [DEBUG  ]  No samples found: damageprofiler
+[2022-12-16 15:34:03,200] multiqc.modules.picard.picard                      [INFO   ]  Found 4 MarkDuplicates reports
+[2022-12-16 15:34:03,230] multiqc                                            [DEBUG  ]  No samples found: prokka
+[2022-12-16 15:34:03,260] multiqc                                            [DEBUG  ]  No samples found: samblaster
+[2022-12-16 15:34:03,336] multiqc.modules.samtools.samtools                  [INFO   ]  Found 12 flagstat reports
+[2022-12-16 15:34:03,364] multiqc                                            [DEBUG  ]  No samples found: bamtools
+[2022-12-16 15:34:03,394] multiqc                                            [DEBUG  ]  No samples found: jellyfish
+[2022-12-16 15:34:03,435] multiqc                                            [DEBUG  ]  No samples found: vcftools
+[2022-12-16 15:34:03,468] multiqc                                            [DEBUG  ]  No samples found: longranger
+[2022-12-16 15:34:03,502] multiqc                                            [DEBUG  ]  No samples found: stacks
+[2022-12-16 15:34:03,590] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Parsing ./Logs/yw-3LW-wing-aGFP-CnR-sup-rep2_adapterStats
+[2022-12-16 15:34:03,592] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Found stats output for sample yw-3LW-wing-aGFP-CnR-sup-rep2_adapterStats with 41 rows
+[2022-12-16 15:34:03,592] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Parsing ./Logs/yw-3LW-wing-aGFP-CnR-sup-rep1_adapterStats
+[2022-12-16 15:34:03,593] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Found stats output for sample yw-3LW-wing-aGFP-CnR-sup-rep1_adapterStats with 33 rows
+[2022-12-16 15:34:03,594] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Parsing ./Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_adapterStats
+[2022-12-16 15:34:03,595] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Found stats output for sample osaGFP-3LW-wing-aGFP-CnR-sup-rep1_adapterStats with 39 rows
+[2022-12-16 15:34:03,595] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Parsing ./Logs/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_adapterStats
+[2022-12-16 15:34:03,596] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  Found stats output for sample osaGFP-3LW-wing-aGFP-CnR-sup-rep2_adapterStats with 38 rows
+[2022-12-16 15:34:03,596] multiqc.modules.bbmap.bbmap                        [INFO   ]  Found 4 reports
+[2022-12-16 15:34:03,596] multiqc.modules.bbmap.bbmap                        [DEBUG  ]  section stats has 4 entries
+[2022-12-16 15:34:03,652] multiqc                                            [DEBUG  ]  No samples found: bismark
+[2022-12-16 15:34:03,691] multiqc                                            [DEBUG  ]  No samples found: biscuit
+[2022-12-16 15:34:03,714] multiqc                                            [DEBUG  ]  No samples found: hicexplorer
+[2022-12-16 15:34:03,738] multiqc                                            [DEBUG  ]  No samples found: hicup
+[2022-12-16 15:34:03,766] multiqc                                            [DEBUG  ]  No samples found: hicpro
+[2022-12-16 15:34:03,801] multiqc                                            [DEBUG  ]  No samples found: salmon
+[2022-12-16 15:34:03,830] multiqc                                            [DEBUG  ]  No samples found: kallisto
+[2022-12-16 15:34:03,856] multiqc                                            [DEBUG  ]  No samples found: slamdunk
+[2022-12-16 15:34:03,884] multiqc                                            [DEBUG  ]  No samples found: star
+[2022-12-16 15:34:03,907] multiqc                                            [DEBUG  ]  No samples found: hisat2
+[2022-12-16 15:34:03,932] multiqc                                            [DEBUG  ]  No samples found: tophat
+[2022-12-16 15:34:03,963] multiqc.modules.bowtie2.bowtie2                    [INFO   ]  Found 4 reports
+[2022-12-16 15:34:03,994] multiqc                                            [DEBUG  ]  No samples found: bowtie1
+[2022-12-16 15:34:04,016] multiqc                                            [DEBUG  ]  No samples found: kat
+[2022-12-16 15:34:04,037] multiqc                                            [DEBUG  ]  No samples found: leehom
+[2022-12-16 15:34:04,058] multiqc                                            [DEBUG  ]  No samples found: adapterRemoval
+[2022-12-16 15:34:04,082] multiqc                                            [DEBUG  ]  No samples found: clipandmerge
+[2022-12-16 15:34:04,105] multiqc                                            [DEBUG  ]  No samples found: cutadapt
+[2022-12-16 15:34:04,132] multiqc                                            [DEBUG  ]  No samples found: flexbar
+[2022-12-16 15:34:04,157] multiqc                                            [DEBUG  ]  No samples found: trimmomatic
+[2022-12-16 15:34:04,180] multiqc                                            [DEBUG  ]  No samples found: skewer
+[2022-12-16 15:34:04,204] multiqc                                            [DEBUG  ]  No samples found: sortmerna
+[2022-12-16 15:34:04,225] multiqc                                            [DEBUG  ]  No samples found: biobloomtools
+[2022-12-16 15:34:04,262] multiqc.modules.fastq_screen.fastq_screen          [INFO   ]  Found 5 reports
+[2022-12-16 15:34:04,292] multiqc                                            [DEBUG  ]  No samples found: afterqc
+[2022-12-16 15:34:04,315] multiqc                                            [DEBUG  ]  No samples found: fastp
+[2022-12-16 15:34:06,420] multiqc.modules.fastqc.fastqc                      [INFO   ]  Found 8 reports
+[2022-12-16 15:34:07,821] multiqc                                            [DEBUG  ]  No samples found: minionqc
+[2022-12-16 15:34:07,849] multiqc                                            [DEBUG  ]  No samples found: clusterflow
+[2022-12-16 15:34:07,874] multiqc                                            [DEBUG  ]  No samples found: bcl2fastq
+[2022-12-16 15:34:07,898] multiqc                                            [DEBUG  ]  No samples found: interop
+[2022-12-16 15:34:07,920] multiqc                                            [DEBUG  ]  No samples found: flash
+[2022-12-16 15:34:07,963] multiqc                                            [INFO   ]  Compressing plot data
+[2022-12-16 15:34:08,904] multiqc                                            [WARNING]  Deleting    : multiqc_data   (-f was specified)
+[2022-12-16 15:34:08,984] multiqc                                            [INFO   ]  Report      : multiqc_report.html
+[2022-12-16 15:34:08,984] multiqc                                            [INFO   ]  Data        : multiqc_data
+[2022-12-16 15:34:08,985] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_picard_dups.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,986] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_samtools_flagstat.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,987] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_bowtie2.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,988] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_fastq_screen.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,989] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_fastqc.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,990] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_general_stats.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,991] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_sources.txt' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:08,992] multiqc                                            [DEBUG  ]  Moving data file from '/tmp/tmpZ1Ko2S/multiqc_data/multiqc_data.json' to '/pine/scr/m/j/mjn15/osaGFP-cnr/cutNrun-pipeline/multiqc_data'
+[2022-12-16 15:34:09,321] multiqc                                            [INFO   ]  MultiQC complete

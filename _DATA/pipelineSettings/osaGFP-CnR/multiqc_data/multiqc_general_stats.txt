@@ -1,0 +1,29 @@
+Sample	FastQC_mqc-generalstats-fastqc-percent_duplicates	FastQC_mqc-generalstats-fastqc-avg_sequence_length	FastQC_mqc-generalstats-fastqc-total_sequences	FastQC_mqc-generalstats-fastqc-percent_fails	FastQC_mqc-generalstats-fastqc-percent_gc	Bowtie 2_mqc-generalstats-bowtie_2-overall_alignment_rate	Samtools Flagstat_mqc-generalstats-samtools_flagstat-mapped_passed	Picard_mqc-generalstats-picard-PERCENT_DUPLICATION
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1	94.4947406148	76.0	31827468.0	36.3636363636	48.0			
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_R1_trim	90.9295056633	65.5506895864	31826251.0	27.2727272727	48.0			
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2						64.24		
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim							40891150	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5							37204812	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved							1115816	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted								0.970009
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1	94.0606669955	76.0	24745834.0	27.2727272727	48.0			
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_R1_trim	91.17280504	66.122971333	24743588.0	18.1818181818	48.0			
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2						66.83		
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim							33074006	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5							29543884	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved							1007184	
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted								0.965909
+yw-3LW-wing-aGFP-CnR-sup-rep1_R1	96.4081467525	76.0	16078831.0	27.2727272727	51.0			
+yw-3LW-wing-aGFP-CnR-sup-rep1_R1_trim	95.4955665958	68.4135603302	16078399.0	18.1818181818	51.0			
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2						53.1		
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim							17075674	
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5							14804770	
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_dupsRemoved							227484	
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_trim_q5_sorted								0.984634
+yw-3LW-wing-aGFP-CnR-sup-rep2_R1	95.3199944301	76.0	52897301.0	27.2727272727	48.0			
+yw-3LW-wing-aGFP-CnR-sup-rep2_R1_trim	92.1353853753	65.7156138876	52896064.0	18.1818181818	47.0			
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2						58.65		
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim							62052098	
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5							53032194	
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_dupsRemoved							1106488	
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_trim_q5_sorted								0.979136

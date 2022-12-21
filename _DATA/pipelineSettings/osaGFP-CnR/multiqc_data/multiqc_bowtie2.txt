@@ -1,0 +1,5 @@
+Sample	overall_alignment_rate	paired_aligned_none	paired_total	paired_aligned_multi	paired_aligned_one	total_reads
+osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2	64.24	11380676	31826251	2861401	17584174	31826251
+osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2	66.83	8206585	24743588	2728952	13808051	24743588
+yw-3LW-wing-aGFP-CnR-sup-rep1_dm6-sacCer3_bowtie2	53.1	7540562	16078399	1829294	6708543	16078399
+yw-3LW-wing-aGFP-CnR-sup-rep2_dm6-sacCer3_bowtie2	58.65	21870015	52896064	6659203	24366846	52896064

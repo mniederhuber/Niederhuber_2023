@@ -1,0 +1,16 @@
+#Fastq_screen version: 0.11.1	#Aligner: bowtie2	#Reads in subset: 100000
+Genome	#Reads_processed	#Unmapped	%Unmapped	#One_hit_one_genome	%One_hit_one_genome	#Multiple_hits_one_genome	%Multiple_hits_one_genome	#One_hit_multiple_genomes	%One_hit_multiple_genomes	Multiple_hits_multiple_genomes	%Multiple_hits_multiple_genomes
+Drosophila	99992	43947	43.94	28503	28.51	5386	5.39	16460	16.46	5696	5.70
+yakuba	99992	78155	78.16	148	0.15	29	0.03	16356	16.36	5304	5.30
+Human	99992	91126	91.13	4192	4.19	1828	1.83	265	0.27	2581	2.58
+aPasteurianus	99992	99431	99.44	459	0.46	74	0.07	1	0.00	27	0.03
+yeast	99992	97991	97.99	1222	1.22	86	0.09	58	0.06	635	0.64
+wolbachia	99992	99598	99.60	346	0.35	42	0.04	6	0.01	0	0.00
+bovine	99992	97537	97.54	71	0.07	48	0.05	350	0.35	1986	1.99
+ecoli	99992	99929	99.94	51	0.05	2	0.00	2	0.00	8	0.01
+pseudomonas	99992	99893	99.90	69	0.07	1	0.00	8	0.01	21	0.02
+variovorax	99992	99924	99.94	42	0.04	2	0.00	11	0.01	13	0.01
+mouse	99992	97315	97.32	12	0.01	7	0.01	243	0.24	2415	2.42
+rabbit	99992	97420	97.43	7	0.01	8	0.01	274	0.27	2283	2.28
+
+%Hit_no_genomes: 34.28
