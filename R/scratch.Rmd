@@ -1,0 +1,10 @@
+```{r}
+load('rData/sheets.rda')
+
+
+
+cnr.ss
+faire.osaDeGrad.ss
+faire.wt.ss
+```
+
