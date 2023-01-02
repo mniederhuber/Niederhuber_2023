@@ -1,10 +1,104 @@
 ```{r}
+library(magrittr)
+library(GenomicRanges)
+library(ggplot2)
 load('rData/sheets.rda')
-
+source('~/NystLib/R/peakUtils.R')
 
 
 cnr.ss
-faire.osaDeGrad.ss
-faire.wt.ss
+
+faire.ss <- dplyr::bind_rows(faire.osaDeGrad.ss, faire.wt.ss)
+faire.peaks <- getPeakData(faire.ss, by = 'grp', narrowPeak_colname = 'peaks')
+
+
+faire.ss
+mcols(faire.peaks %>% GRanges())
+
+
+faire.peaks <- getPeakData(faire.ss, by = 'id', narrowPeak_colname = 'peaks')
+faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$grp)
+faire.byEx <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment)
+
+faire.union <- faire.byGrp %>%
+  unlist() %>%
+  reduce()
+
+faire.byGrp
+```
+
+
+```{r scratch-done}
+lapply(faire.byID, function(x) {
+  x %<>% data.frame()
+  
+  q <- quantile(x$qValue, probs = 0.75)
+  
+  x %>%
+    dplyr::filter(qValue >= q) %>%
+    dplyr::mutate(qCutoff = q) 
+    
+})
+
+
+#function to filter qValues - set at 75% cutoff 
+#takes grouped FAIRE granges object - ie. all replicates for same sample - and filters out bottom 25% peaks by qval per replicate
+qFilter <- function(df, id) {
+  df %<>% data.frame() %>% dplyr::filter(id == !!id) #filter peak list to specific replicate, "!!" evaluates variable
+  q <- quantile(df$qValue, probs = 0.75) #find the 75% qVal
+  df.filtered <- df %>% 
+    dplyr::filter(qValue >= q) %>% 
+    dplyr::mutate(qCutoff = q) 
+  
+  return(df.filtered) #return the filtered peak list
+} 
+
+#wrapper to pass faire peak lists by experiment with replicate ids to qFilter()
+grp_qFilter <- function(x) {
+  grp <- x$grp
+  ids <- unique(x$id) #unique replicate ids
+  
+  #for each unique replicate id, pass experiment peak granges and replicate name to qFilter, then bind the output list
+  grp.filtered <- purrr::map(ids, function(y) qFilter(x, y)) %>% dplyr::bind_rows()
+  
+  return(grp.filtered)
+}
+  
+
+faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x)) %>% GRangesList()
+
+faire.byGrp
+
+unique(butt$osaGFP.deGrad_control_faire$)
+lapply(faire.byGrp, function(x) test(x)) 
+
+unique(test$osaGFP.deGrad_control_faire[[2]]$qCutoff)
+
+unique(test$osaGFP.deGrad_control_faire$qCutoff)
+unique(faire.byGrp$osaGFP.deGrad_control_faire$id)
+faire.byID$osaGFP.deGrad_control_faire.Rep1 %>% data.frame() %>% hist(x = .$qValue) #quantile(.$qValue)
+faire.byID$osaGFP.deGrad_control_faire.Rep1 %>% data.frame() %>%
+  dplyr::group_by(qValue) %>%
+  dplyr::summarise(quantile = quantile(qValue, c(0.25, 0.5, 0.75)))
+
+quantile(faire.byID %>% data.frame() %>% .$qValue, probs = 0.75)
+
+```
+
+
+```{r}
+faire.union %>%
+  data.frame() %>%
+  dplyr::mutate(peak = 1:nrow(.),
+                assay = 'FAIRE',
+                WT.3LW = ifelse(GRanges(.) %over% faire.byGrp$wt.3LW, T, F),
+                WT.6h = ifelse(GRanges(.) %over% faire.byGrp$wt.6h, T, F),
+                WT.24h = ifelse(GRanges(.) %over% faire.byGrp$wt.24h, T, F),
+                WT.44h = ifelse(GRanges(.) %over% faire.byGrp$wt.44h, T, F),
+                osaGFP.control = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_control_faire, T, F),
+                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
+                )
+                
+
 ```
 
