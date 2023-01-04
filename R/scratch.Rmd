@@ -4,11 +4,13 @@ library(GenomicRanges)
 library(ggplot2)
 load('rData/sheets.rda')
 source('~/NystLib/R/peakUtils.R')
+source('utils.R')
 
 
 cnr.ss
 
-faire.ss <- dplyr::bind_rows(faire.osaDeGrad.ss, faire.wt.ss)
+
+#faire.ss <- dplyr::bind_rows(faire.osaDeGrad.ss, faire.wt.ss)
 faire.peaks <- getPeakData(faire.ss, by = 'grp', narrowPeak_colname = 'peaks')
 
 
@@ -24,21 +26,26 @@ faire.union <- faire.byGrp %>%
   unlist() %>%
   reduce()
 
-faire.byGrp
+faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantil = 0.75))
+
+
+
+
+### get CUT&RUN peaks
+cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
+cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
+cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
+
+
+lapply(cnr.byGrp, function(x) grp_qFilter(x, q = 10)) 
+
+cnr.union <- cnr.byID %>%
+  unlist() %>%
+  reduce()
 ```
 
 
 ```{r scratch-done}
-lapply(faire.byID, function(x) {
-  x %<>% data.frame()
-  
-  q <- quantile(x$qValue, probs = 0.75)
-  
-  x %>%
-    dplyr::filter(qValue >= q) %>%
-    dplyr::mutate(qCutoff = q) 
-    
-})
 
 
 #function to filter qValues - set at 75% cutoff 
@@ -47,48 +54,38 @@ qFilter <- function(df, id) {
   df %<>% data.frame() %>% dplyr::filter(id == !!id) #filter peak list to specific replicate, "!!" evaluates variable
   q <- quantile(df$qValue, probs = 0.75) #find the 75% qVal
   df.filtered <- df %>% 
-    dplyr::filter(qValue >= q) %>% 
+    #dplyr::filter(qValue >= q) %>% 
     dplyr::mutate(qCutoff = q) 
   
   return(df.filtered) #return the filtered peak list
 } 
 
-#wrapper to pass faire peak lists by experiment with replicate ids to qFilter()
+#wrapper to pass faire peak lists (grangeslist) by experiment with replicate ids to qFilter()
 grp_qFilter <- function(x) {
   grp <- x$grp
   ids <- unique(x$id) #unique replicate ids
   
   #for each unique replicate id, pass experiment peak granges and replicate name to qFilter, then bind the output list
-  grp.filtered <- purrr::map(ids, function(y) qFilter(x, y)) %>% dplyr::bind_rows()
+  grp.filtered <- lapply(ids, function(y) qFilter(x, y)) 
   
-  return(grp.filtered)
+  grp.list <- grp.filtered %>% GenomicRanges::GRangesList()
+  
+  grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
+  
+  return(grp.repShared)  
 }
-  
 
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x)) %>% GRangesList()
+faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x)) 
 
-faire.byGrp
-
-unique(butt$osaGFP.deGrad_control_faire$)
-lapply(faire.byGrp, function(x) test(x)) 
-
-unique(test$osaGFP.deGrad_control_faire[[2]]$qCutoff)
-
-unique(test$osaGFP.deGrad_control_faire$qCutoff)
-unique(faire.byGrp$osaGFP.deGrad_control_faire$id)
-faire.byID$osaGFP.deGrad_control_faire.Rep1 %>% data.frame() %>% hist(x = .$qValue) #quantile(.$qValue)
-faire.byID$osaGFP.deGrad_control_faire.Rep1 %>% data.frame() %>%
-  dplyr::group_by(qValue) %>%
-  dplyr::summarise(quantile = quantile(qValue, c(0.25, 0.5, 0.75)))
-
-quantile(faire.byID %>% data.frame() %>% .$qValue, probs = 0.75)
-
+faire.qF
 ```
 
 
 ```{r}
-faire.union %>%
+
+faire.df <- faire.union %>%
   data.frame() %>%
+  dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
   dplyr::mutate(peak = 1:nrow(.),
                 assay = 'FAIRE',
                 WT.3LW = ifelse(GRanges(.) %over% faire.byGrp$wt.3LW, T, F),
@@ -96,8 +93,41 @@ faire.union %>%
                 WT.24h = ifelse(GRanges(.) %over% faire.byGrp$wt.24h, T, F),
                 WT.44h = ifelse(GRanges(.) %over% faire.byGrp$wt.44h, T, F),
                 osaGFP.control = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_control_faire, T, F),
-                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
-                )
+                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_nubG4_faire, T, F)) %>%
+  dplyr::filter(WT.3LW | WT.6h | WT.24h | WT.24h | WT.44h | osaGFP.control | osaGFP.deGrad) %>% #drop regions that don't have a good quality reproducible peak called
+#get osaGFP deGrad cnr bigwig scores...
+  dplyr::mutate(osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+#get faire bigwig scores... 
+                faire.3LW = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.6h = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.24h = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.44h = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+             
+
+
+  dplyr::mutate(osaGFP.rep2.bw = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+faire.ss
+cnr.ss
+faire.ss[faire.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]
+                osaGFP.rep2.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                yw.rep1.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                yw.rep2.All.zScore = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$zNorm_bigwig_allFrags_rpgcNorm[1], GRanges(.)),
+                osaGFP.rep1.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep2.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep1.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep2.All.spikeNorm = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep1.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags[1], GRanges(.)),
+                osaGFP.rep2.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags[1], GRanges(.)),
+                yw.rep1.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags[1], GRanges(.)),
+                yw.rep2.All.bw = get_bw_score(sampleSheet[sampleSheet$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags[1], GRanges(.)),
+                faire.3lw = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.3LW',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.6h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.6h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.18h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.18h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.24h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.24h',]$bigwig_rpgcNorm_zNorm, GRanges(.)),
+                faire.44h = get_bw_score(fairePoolSheet[fairePoolSheet$grp == 'wt.44h',]$bigwig_rpgcNorm_zNorm, GRanges(.))) %>%
                 
 
 ```
