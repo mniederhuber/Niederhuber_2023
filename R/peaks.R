@@ -15,7 +15,7 @@ cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
 cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$Grp)
 
 #filter cnr peaks by q val >= 10 and called in each replicate
-cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, q = 10))
+cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps'))
 
 #make union cnr peak list
 cnr.union <- cnr.byID %>%
@@ -29,7 +29,7 @@ faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$Grp) #split by po
 faire.byExp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment) #split by experiment
 
 #filter by replicate specific qValue and only peaks that intersect between replicates
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantile = 0.75)) 
+faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
 
 #make union FAIRE peak list - includes any/all peak calls for all experiments/reps
 faire.union <- faire.byID %>%
@@ -58,8 +58,33 @@ faire.df <- faire.union %>%
                 osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
                 yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
                 yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-#get faire bigwig scores... 
                 faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+
+### build annoated CnR peak dataframe
+cnr.df <- cnr.union %>%
+  data.frame() %>%
+  dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
+  dplyr::mutate(peak = 1:nrow(.),
+                assay = 'CnR',
+                osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
+                yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F)) %>%
+  dplyr::filter(osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
+  #get bigwig scores within peaks...
+  dplyr::mutate(osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+
+
+#TODO - what's missing from these annotations?
+# - differential enrichment data
+# - closing vs opening
+# - unique vs shared
+# 

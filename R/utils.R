@@ -1,7 +1,7 @@
 
 #DONE - add functionality to return only qfiltered peaks that are reproduced in each replicate - subsetByOverlaps() ? 
 #wrapper to pass faire peak lists (grangeslist) by experiment with replicate ids to qFilter()
-grp_qFilter <- function(x, quantile = NULL, q = NULL) {
+grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOverlaps', 'intersect'))  {
   grp <- x$grp
   ids <- unique(x$id) #unique replicate ids
   
@@ -9,9 +9,14 @@ grp_qFilter <- function(x, quantile = NULL, q = NULL) {
   grp.filtered <- lapply(ids, function(y) qFilter(x, y, quantile, q)) 
   
   grp.list <- grp.filtered %>% GenomicRanges::GRangesList()
-  
-  grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
-  
+
+  #TODO - cleaner way to write this?
+  if(operation == 'subsetByOverlaps'){
+    grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
+  }
+  if(operation == 'intersect'){
+    grp.repShared <- Reduce(GenomicRanges::intersect, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
+  }
   return(grp.repShared)  
 }
 
@@ -29,4 +34,4 @@ qFilter <- function(df, id, quantile = NULL, q = NULL) {
     dplyr::mutate(qCutoff = q) 
   
   return(df.filtered) #return the filtered peak list
-} 
+}
