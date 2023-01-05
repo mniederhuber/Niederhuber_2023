@@ -35,3 +35,38 @@ qFilter <- function(df, id, quantile = NULL, q = NULL) {
   
   return(df.filtered) #return the filtered peak list
 }
+
+
+#The SAF format includes five required columns for each feature: feature identifier, chromosome name, start position, end position and strand
+makeSAF <- function(df) {
+  # df.filtered <- dplyr::filter(df, grp_rep == x)  
+  # df.renamed <- dplyr::mutate(df, Chr = seqnames, .before = 2)  
+  df.saf <- df %>%
+    dplyr::select(peak, seqnames, start, end, strand) 
+  
+  colnames(df.saf) <- c('GeneID', 'Chr', 'Start', 'End','Strand')
+  
+  return(df.saf)
+}
+
+gviz_chip_tracks <- function(sampleSheet, ylim, ...){
+  chip_tracks <- purrr::map(sampleSheet %>% 
+                              dplyr::mutate(sample = factor(sample, levels = unique(sample))) %>% 
+                              split(.$sample), ~{
+                                Gviz::DataTrack(range = .$BigwigZnorm, genome = "dm6", type = "histogram", 
+                                                name = .$id, 
+                                                group = .$grp,
+                                                fill.histogram = .$color,
+                                                col.histogram = .$color, 
+                                                #background.title = .$color,
+                                                background.title = "white",
+                                                fontcolor.title = "black",
+                                                col.axis = "black",
+                                                rotation.title = 0,
+                                                #title.width = 1000,
+                                                #cex.title = 0.2,
+                                                ylim = ylim)
+                              })
+  
+  return(chip_tracks)
+}
