@@ -26,9 +26,7 @@ faire.union <- faire.byGrp %>%
   unlist() %>%
   reduce()
 
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantil = 0.75, operation = 'subsetByOverlaps'))
-
-
+faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps'))
 
 
 ### get CUT&RUN peaks
@@ -45,40 +43,7 @@ cnr.union <- cnr.byID %>%
 ```
 
 
-```{r scratch-done}
 
-
-#function to filter qValues - set at 75% cutoff 
-#takes grouped FAIRE granges object - ie. all replicates for same sample - and filters out bottom 25% peaks by qval per replicate
-qFilter <- function(df, id) {
-  df %<>% data.frame() %>% dplyr::filter(id == !!id) #filter peak list to specific replicate, "!!" evaluates variable
-  q <- quantile(df$qValue, probs = 0.75) #find the 75% qVal
-  df.filtered <- df %>% 
-    #dplyr::filter(qValue >= q) %>% 
-    dplyr::mutate(qCutoff = q) 
-  
-  return(df.filtered) #return the filtered peak list
-} 
-
-#wrapper to pass faire peak lists (grangeslist) by experiment with replicate ids to qFilter()
-grp_qFilter <- function(x) {
-  grp <- x$grp
-  ids <- unique(x$id) #unique replicate ids
-  
-  #for each unique replicate id, pass experiment peak granges and replicate name to qFilter, then bind the output list
-  grp.filtered <- lapply(ids, function(y) qFilter(x, y)) 
-  
-  grp.list <- grp.filtered %>% GenomicRanges::GRangesList()
-  
-  grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
-  
-  return(grp.repShared)  
-}
-
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x)) 
-
-faire.qF
-```
 
 
 ```{r}
@@ -124,7 +89,8 @@ peaks <- dplyr::bind_rows(f.df, c.df) %>%
 
 
 ```{r}
-#TODO - download BAM files
+#DONE - download BAM files
+#TODO - confirm all deseq parameters 
 cnr.Counts <- Rsubread::featureCounts(cnr.ss$bam,
                         annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
                         allowMultiOverlap = T,
@@ -157,10 +123,18 @@ faire.dds.df <- DESeq2::results(faire.dds, contrast = c('grp','wt.3LW','wt.24h')
 
 names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
-#####
+##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF 
+# closing --> must be from FAIRE data, must be called a reproducible peak at 3LW, must have a log2(3LW/24h) >= 1 
+# static --> must be from FAIRE data, no peak call requirement, must have -1 > log2(3LW/24h) < 1
+# opening --> must be from FAIRE data, must be a reproducible peak call at 24h, must have a log2(3LW/24h) <= -1
 
-peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df)
-
+peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
+  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(assay == 'faire' & WT.3LW &  faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
+                                                    assay == 'faire' & faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
+                                                    assay == 'faire' & WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
+                                                    T ~ 'NA'))
+peaks
+peaks %>% dplyr::filter(faireCat.3LW_24h == 'static' & assay == 'faire' )
 ```
 
 

@@ -70,12 +70,12 @@ peaks <- dplyr::bind_rows(faire.df, cnr.df) %>%
                 faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
 
-#TODO - what's missing from these annotations?
-# - differential enrichment data
+#DONE - what's missing from these annotations?
+# - deseq annotation
 # - closing vs opening
 
 
-##### deseq #####
+##### Run deSeq2 #####
 
 # CnR
 cnr.Counts <- Rsubread::featureCounts(cnr.ss$bam,
@@ -111,7 +111,18 @@ faire.dds.df <- DESeq2::results(faire.dds, contrast = c('grp','wt.3LW','wt.24h')
 
 names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
-#####
+##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF #####
 
-peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df)
+# closing --> must be from FAIRE data, must be called a reproducible peak at 3LW, must have a log2(3LW/24h) >= 1 
+# static --> must be from FAIRE data, no peak call requirement, must have -1 > log2(3LW/24h) < 1
+# opening --> must be from FAIRE data, must be a reproducible peak call at 24h, must have a log2(3LW/24h) <= -1
+
+#TODO - currently gives ~500 closing, ~1100 opening, ~5400 static -- notably ~50% fewer closing regions than I or SLN previously annotated
+
+peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
+  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(assay == 'faire' & WT.3LW & faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
+                                                    assay == 'faire' & faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
+                                                    assay == 'faire' & WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
+                                                    T ~ 'NA'))
+  
 # 

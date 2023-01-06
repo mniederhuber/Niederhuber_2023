@@ -9,7 +9,7 @@ grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOve
   grp.filtered <- lapply(ids, function(y) qFilter(x, y, quantile, q)) 
   
   grp.list <- grp.filtered %>% GenomicRanges::GRangesList()
-
+  
   #TODO - cleaner way to write this?
   if(operation == 'subsetByOverlaps'){
     grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
