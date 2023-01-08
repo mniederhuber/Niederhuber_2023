@@ -1,141 +1,182 @@
 ```{r}
 library(magrittr)
-library(GenomicRanges)
 library(ggplot2)
-load('rData/sheets.rda')
-source('~/NystLib/R/peakUtils.R')
-source('utils.R')
+library(GenomicRanges)
+
+library(org.Dm.eg.db)
+library(AnnotationDbi)
+
+dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+
+load('rData/peaks.rda')
 
 
-cnr.ss
 
 
-#faire.ss <- dplyr::bind_rows(faire.osaDeGrad.ss, faire.wt.ss)
-faire.peaks <- getPeakData(faire.ss, by = 'grp', narrowPeak_colname = 'peaks')
 
 
-faire.ss
-mcols(faire.peaks %>% GRanges())
-
-
-faire.peaks <- getPeakData(faire.ss, by = 'id', narrowPeak_colname = 'peaks')
-faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$grp)
-faire.byEx <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment)
-
-faire.union <- faire.byGrp %>%
-  unlist() %>%
-  reduce()
-
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps'))
-
-
-### get CUT&RUN peaks
-cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
-cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
-cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
-
-
-cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps'))
-
-cnr.union <- cnr.byID %>%
-  unlist() %>%
-  reduce()
 ```
 
-
-
-
+#heatmap of osa binding sites vs control
 
 ```{r}
-f.df <- faire.union %>% data.frame() %>% dplyr::mutate(assay = 'faire')
-c.df <- cnr.union %>% data.frame() %>% dplyr::mutate(assay = 'cnr')
+library(EnrichedHeatmap)
+library(ComplexHeatmap)
+#TODO -- what can be functionalized here? -- EnrichedHeatmap() calls? -- definitely normalizeToMatrix()
 
-peaks <- dplyr::bind_rows(f.df, c.df) %>%
-  dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
-  dplyr::arrange(seqnames, start, end) %>%
-  dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.byGrp$wt.3LW, T, F),
-                WT.6h = ifelse(GRanges(.) %over% faire.byGrp$wt.6h, T, F),
-                WT.24h = ifelse(GRanges(.) %over% faire.byGrp$wt.24h, T, F),
-                WT.44h = ifelse(GRanges(.) %over% faire.byGrp$wt.44h, T, F),
-                osaGFP.control = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_control_faire, T, F),
-                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
-                osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
-                yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F),
-                cnr.peakCat = dplyr::case_when(osa.cnr & yw.cnr ~ 'shared',
-                                               osa.cnr & !yw.cnr ~ 'osa',
-                                               !osa.cnr & yw.cnr ~ 'control',
-                                               T ~ 'other')) %>%
-  dplyr::filter(assay == 'faire' & WT.3LW |
-                  assay == 'faire' & WT.6h | 
-                  assay == 'faire' & WT.24h | 
-                  assay == 'faire' & WT.24h | 
-                  assay == 'faire' & WT.44h | 
-                  assay == 'faire' & osaGFP.control | 
-                  assay == 'faire' & osaGFP.deGrad | 
-                  assay == 'cnr' & osa.cnr | 
-                  assay == 'cnr' & yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
-#get osaGFP deGrad cnr bigwig scores...
-  dplyr::mutate(peak = 1:nrow(.),
-                osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-#get faire bigwig scores... 
-                faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+
+bws <- purrr::map(cnr.ss$id, function(x) {
+  fp <- cnr.ss[cnr.ss['id'] == x,]$bigwig_allFrags_sacCer3_spikeNorm
+  rtracklayer::import.bw(fp)
+})
+
+names(bws) <- cnr.ss$id
+
+osaPeaks <- peaks %>% dplyr::filter(osa.cnr & !yw.cnr & assay == 'cnr') %>% GRanges() %>% resize(width = 1, fix = "center")
+
+mats <- purrr::map(bws, function(x) {
+  normalizeToMatrix(x, osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+}) 
+names(mats) <- names(bws)
+
+common_min = min(unlist(mats))
+common_max = max(unlist(mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+osa.count <- osaPeaks %>%
+  data.frame() %>%
+  nrow()
+
+osa.count[1] <- as.character(osa.count[1])
+  
+names(osa.count) <- 'Osa Peak'
+
+groups <- ifelse(osaPeaks$osa.cnr, 'Osa Peak', NA)
+
+#TODO - I don't think there's a good way to functionalize EnrichedHeatmap() because of the unique features of the first map and annotation...
+hm <- EnrichedHeatmap(mats$osaGFP.sup.rep1,
+                      axis_name = c(-2000, 0, 2000),
+                      pos_line = F,
+                      column_title = 'Osa Rep1',
+                      col = col_fun,
+                      name = 'spikeNorm Score',
+                      top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,5))),
+                      left_annotation = c(rowAnnotation(textbox = anno_textbox(align_to = groups,
+                                                                               as.list(osa.count),
+                                                                               side = 'left',
+                                                                               background_gp = gpar(fill = NA, col = NA),
+                                                                               gp = gpar(col = 'black'), 
+                                                                               padding = unit(0, 'mm'))))) +
+  EnrichedHeatmap(mats$osaGFP.sup.rep2,
+                  axis_name = c(-2000, 0, 2000),
+                  pos_line = F,
+                  column_title = 'Osa Rep2',
+                  col = col_fun, 
+                  show_heatmap_legend = FALSE,
+                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5)))) +
+  EnrichedHeatmap(mats$yw.sup.rep1,
+                  axis_name = c(-2000, 0, 2000),
+                  pos_line = F,
+                  column_title = 'Control Rep1',
+                  col = col_fun, 
+                  show_heatmap_legend = FALSE,
+                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5)))) +  
+  EnrichedHeatmap(mats$yw.sup.rep2,
+                  axis_name = c(-2000, 0, 2000),
+                  pos_line = F,
+                  column_title = 'Control Rep2',
+                  col = col_fun, 
+                  show_heatmap_legend = FALSE,
+                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5))))
+
+png('rPlots/bwSignal_OsaPeaks.png', width = 6, height = 8, units = 'in', res = 300)
+draw(hm, row_title = NULL, merge_legend = T)
+dev.off()
 ```
 
 
-```{r}
-#DONE - download BAM files
-#TODO - confirm all deseq parameters 
-cnr.Counts <- Rsubread::featureCounts(cnr.ss$bam,
-                        annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
-                        allowMultiOverlap = T,
-                        nthreads = 4,
-                        isPairedEnd = T)
-
-colnames(cnr.Counts$counts) <- cnr.ss$id
-
-cnr.dds <- DESeq2::DESeqDataSetFromMatrix(countData = cnr.Counts$counts,  colData = cnr.ss,  design = ~grp) %>% DESeq2::DESeq(.)
-
-cnr.dds.df <- DESeq2::results(cnr.dds, contrast = c('grp','osaGFP.sup','yw.sup')) %>% data.frame() 
-
-names(cnr.dds.df) <- paste0('cnr.',names(cnr.dds.df))
-
-##### 
-faire.ss.WT <- faire.ss[faire.ss$experiment == 'WT FAIRE Wing Timecourse',]
-
-faire.Counts <- Rsubread::featureCounts(faire.ss.WT$bam, #just use Bam from WT timecourse - single-end data
-                        annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
-                        allowMultiOverlap = T,
-                        nthreads = 4,
-                        isPairedEnd = F)
-
-colnames(faire.Counts$counts) <- faire.ss.WT$id
-
-faire.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.Counts$counts,  colData = faire.ss.WT,  design = ~grp) %>%
-  DESeq2::DESeq(.)
-
-faire.dds.df <- DESeq2::results(faire.dds, contrast = c('grp','wt.3LW','wt.24h')) %>% data.frame() 
-
-names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
-
-##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF 
-# closing --> must be from FAIRE data, must be called a reproducible peak at 3LW, must have a log2(3LW/24h) >= 1 
-# static --> must be from FAIRE data, no peak call requirement, must have -1 > log2(3LW/24h) < 1
-# opening --> must be from FAIRE data, must be a reproducible peak call at 24h, must have a log2(3LW/24h) <= -1
-
-peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
-  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(assay == 'faire' & WT.3LW &  faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
-                                                    assay == 'faire' & faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
-                                                    assay == 'faire' & WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
-                                                    T ~ 'NA'))
-peaks
-peaks %>% dplyr::filter(faireCat.3LW_24h == 'static' & assay == 'faire' )
+##Where are osaGFP binding sites?
+  - bed file
+  - browser shots
+  - proximity to TSS vs distal
+  
+```{r peak-distancetoTSS}
+#I'm not sure this is informative to include background distribution...
+peaks %>% 
+  dplyr::bind_rows(., dm6.1kb) %>%
+  dplyr::filter(assay == 'cnr' & faireCat.3LW_24h != 'NA' | assay == '1kb background') %>%
+  dplyr::mutate(log_dist_tss = log10(1+abs(distanceToTSS))) %>%
+  ggplot(aes(log_dist_tss, fill = assay)) +
+  geom_density(alpha = 0.4)
 ```
 
+```{r peak-location}
+# distribution of feature annotations
+ peaks %>%
+  dplyr::filter(assay == 'cnr' &  osa.cnr & !yw.cnr | assay == '1kb background') %>%
+  dplyr::group_by(anno.new, assay) %>%
+  dplyr::count() %>%
+   ggplot(aes(x = assay, y = n, fill = anno.new)) +
+   geom_bar(stat = 'identity', position = 'fill') 
+
+```
+
+Trying to plot the osa signal relative to TSS to test the idea that osa binding is abundant far from TSS
+The scatterplots above suppport that, with a larger distribution of peaks farther from the TSS ~1kb-10kb from TSS
+But the heatmap below suggests the opposite, there is high average signal at the promoter. 
+Log transformation seems to be necessary to visualize any distribution of peaks away from the TSS, I think this appropriate.
+But don't know how to log transform distance with enrichedheatmap, maybe with deeptools?
+
+```{r heatmap_osa_rel_to_tss}
+osa.rep1 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+osa.rep2 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
 
 
+dm6.promoters <- promoters(dm6.TxDb, upstream = 0, downstream = 0)
+
+osa.rep1 %>% data.frame() %>% ggplot(aes(score)) + geom_histogram(bins = 100)
+
+
+osa.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep1,
+                                                   dm6.promoters,
+                                                   value_column = 'score',
+                                                   keep = c(0.1,0.9),
+                                                   extend = c(10000,500))
+
+osa.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep2,
+                                                   dm6.promoters,
+                                                   value_column = 'score', 
+                                                   keep = c(0.1,0.9),
+                                                   extend = c(10000, 500))
+
+
+common_min = min(c(osa.rep1.mat, osa.rep2.mat))
+common_max = max(c(osa.rep1.mat, osa.rep2.mat))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+
+hm <- EnrichedHeatmap::EnrichedHeatmap(osa.rep1.mat,
+                                       #axis_name = c(-1000, 0, 1000),
+                                       pos_line = F,
+                                       column_title = 'Osa Rep1',
+                                       col = col_fun,
+                                       name = 'Osa zScore',
+                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis_param = list(side = 'left', facing = 'outside')))) +
+  EnrichedHeatmap::EnrichedHeatmap(osa.rep2.mat,
+                                   #axis_name = c(-1000, 0, 1000),
+                                   pos_line = F,
+                                   column_title = 'Osa Rep2',
+                                   col = col_fun, 
+                                   show_heatmap_legend = FALSE,
+                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis = F))) 
+
+
+png('rOut/osaPeaks_osaSignal.png', width = 6, height = 8, units = 'in', res = 300)
+ComplexHeatmap::draw(hm, row_title = NULL, merge_legend = T)
+dev.off()
+
+```

@@ -1,21 +1,44 @@
 library(magrittr)
 library(ggplot2)
 library(GenomicRanges)
+library(org.Dm.eg.db)
+library(AnnotationDbi)
 source('~/NystLib/R/GRanges_methods.R')
-source('~/NystLib/R/peakUtils.R')
+source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
 source('utils.R')
 
 load('rData/sheets.rda')
 
+
+
+dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+
+
+
+#make 1kb bin whole genomic granges
+dm6.1kb <- purrr::map(seqnames(dm6), function(x) {
+  if(x %in% c('chr2L', 'chr2R', 'chr3L', 'chr3R', 'chrX')){
+    lng <- length(dm6[[x]])
+    seqnames <- rep_len(x, lng/1000)    
+    start <- seq(0, lng-1000, by = 1000)
+    end <- seq(999, lng, by = 1000)
+    df <- data.frame(seqnames, start, end)
+  }
+}) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '1kb background')
+
+
 ##### load peaks #####
 
 ### get CUT&RUN peaks
+#TODO - error here with getPeakData when running from command line?
 cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
 cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
-cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$Grp)
+cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
 
 #filter cnr peaks by q val >= 10 and called in each replicate
-cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps'))
+#TODO - decide on filter cutoff -- 75% was pretty strict, only ~1000 osa specific peaks vs previous approach with no filtering that resulting in ~2700 specific peaks
+cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps'))
 
 #make union cnr peak list
 cnr.union <- cnr.byID %>%
@@ -25,7 +48,7 @@ cnr.union <- cnr.byID %>%
 ### get FAIRE peaks
 faire.peaks <- getPeakData(faire.ss, by = 'id', narrowPeak_colname = 'peaks')
 faire.byID <- faire.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
-faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$Grp) #split by pooled replicates
+faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
 faire.byExp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment) #split by experiment
 
 #filter by replicate specific qValue and only peaks that intersect between replicates
@@ -120,9 +143,33 @@ names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 #TODO - currently gives ~500 closing, ~1100 opening, ~5400 static -- notably ~50% fewer closing regions than I or SLN previously annotated
 
 peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
-  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(assay == 'faire' & WT.3LW & faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
-                                                    assay == 'faire' & faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
-                                                    assay == 'faire' & WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
-                                                    T ~ 'NA'))
+  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(WT.3LW & faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
+                                                    faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
+                                                    WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
+                                                    T ~ 'NA')) %>% 
+  dplyr::bind_rows(., dm6.1kb) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
+                               # that way these regions will also get annotations
+
+#### 
+# annotate peaks with dm6.TxDb 
+####
+
+peaks.anno <- peaks %>%
+  GRanges() %>%
+  ChIPseeker::annotatePeak(., TxDb=dm6.TxDb, annoDb = "org.Dm.eg.db")
+
+peaks <- ChIPseeker::as.GRanges(peaks.anno) %>% 
+  data.frame() %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(anno.new = dplyr::case_when(grepl("3' UTR", annotation) ~ "3' UTR",
+                                            grepl("5' UTR", annotation) ~ "5' UTR",
+                                            grepl("Distal Intergenic", annotation) ~ "Distal Intergenic",
+                                            grepl("Downstream", annotation) ~ "Downstream", 
+                                            grepl("Exon", annotation) ~ "Exon",
+                                            grepl("Intron", annotation) ~ "Intron",
+                                            grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", 
+                                            grepl("Promoter", annotation) ~ "Promoter"))
+
+save(peaks, faire.byGrp, cnr.byGrp, file = 'rData/peaks.rda')
   
 # 
