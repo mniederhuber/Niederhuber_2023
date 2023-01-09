@@ -21,6 +21,9 @@ load('rData/sheets.rda')
 dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
 
+brD <- data.frame('seqnames' = 'chrX', 'start' = 1565708, 'end' = 1567401) %>%
+  GenomicRanges::GRanges()
+
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
 
@@ -115,7 +118,7 @@ peaks %>%
 ggsave('rPlots/osaPeak_annotation.png', width = 4, height = 4, units = 'in', dpi = 300)
 
 ###
-# Fig 3C
+# Fig 3C - browser shots
 ## 
 
 

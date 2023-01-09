@@ -49,24 +49,22 @@ makeSAF <- function(df) {
   return(df.saf)
 }
 
-gviz_chip_tracks <- function(sampleSheet, ylim, ...){
-  chip_tracks <- purrr::map(sampleSheet %>% 
-                              dplyr::mutate(sample = factor(sample, levels = unique(sample))) %>% 
-                              split(.$sample), ~{
-                                Gviz::DataTrack(range = .$BigwigZnorm, genome = "dm6", type = "histogram", 
-                                                name = .$id, 
-                                                group = .$grp,
-                                                fill.histogram = .$color,
-                                                col.histogram = .$color, 
-                                                #background.title = .$color,
-                                                background.title = "white",
-                                                fontcolor.title = "black",
-                                                col.axis = "black",
-                                                rotation.title = 0,
-                                                #title.width = 1000,
-                                                #cex.title = 0.2,
-                                                ylim = ylim)
-                              })
-  
-  return(chip_tracks)
+
+get_cnr_tracks <- function(sheet, ylim, ...) {
+  track <- purrr::map(split(sheet, sheet$id), ~{ #split will convert group variable to factor, so levels are default alphabetical which works out to be order I want
+    #TODO - explicitly denote factor levels? likely necessary for plotting with faire data
+    Gviz::DataTrack(range = .$zNorm_bigwig_allFrags_rpgcNorm,
+                    genome = 'dm6',
+                    type = 'hist',
+                    #windowSize = ,
+                    name = .$id,
+                    group = .$grp,
+                    fill.histogram = .$color,
+                    col.histogram = .$color, 
+                    background.title = 'white',
+                    fontcolor.title = 'black',
+                    col.axis = 'black',
+                    ylim = ylim)  
+  })
+  return(track)
 }

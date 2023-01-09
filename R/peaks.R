@@ -167,7 +167,7 @@ peaks <- ChIPseeker::as.GRanges(peaks.anno) %>%
                                             grepl("Downstream", annotation) ~ "Downstream", 
                                             grepl("Exon", annotation) ~ "Exon",
                                             grepl("Intron", annotation) ~ "Intron",
-                                            grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", 
+                                            grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
                                             grepl("Promoter", annotation) ~ "Promoter"))
 
 save(peaks, faire.byGrp, cnr.byGrp, file = 'rData/peaks.rda')

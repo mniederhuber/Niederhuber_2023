@@ -1,4 +1,4 @@
-```{r}
+```{r setup}
 library(magrittr)
 library(ggplot2)
 library(GenomicRanges)
@@ -6,29 +6,38 @@ library(GenomicRanges)
 library(org.Dm.eg.db)
 library(AnnotationDbi)
 
+library(EnrichedHeatmap)
+library(ComplexHeatmap)
+
+source('utils.R')
+
 dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
 
+load('rData/sheets.rda')
 load('rData/peaks.rda')
 
-
+brD <- data.frame('seqnames' = 'chrX',
+                  'start' = 1565708,
+                  'end' = 1567401) %>%
+  GenomicRanges::GRanges()
 
 
 
 
 ```
 
-#heatmap of osa binding sites vs control
+# Fig 3A. - heatmap of osa binding sites vs control
 
-```{r}
-library(EnrichedHeatmap)
-library(ComplexHeatmap)
+```{r 3A}
+
 #TODO -- what can be functionalized here? -- EnrichedHeatmap() calls? -- definitely normalizeToMatrix()
 
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
 
 bws <- purrr::map(cnr.ss$id, function(x) {
-  fp <- cnr.ss[cnr.ss['id'] == x,]$bigwig_allFrags_sacCer3_spikeNorm
+  #fp <- cnr.ss[cnr.ss['id'] == x,]$bigwig_allFrags_sacCer3_spikeNorm
+  fp <- cnr.ss[cnr.ss['id'] == x,]$zNorm_bigwig_allFrags_rpgcNorm
   rtracklayer::import.bw(fp)
 })
 
@@ -56,127 +65,96 @@ names(osa.count) <- 'Osa Peak'
 
 groups <- ifelse(osaPeaks$osa.cnr, 'Osa Peak', NA)
 
-#TODO - I don't think there's a good way to functionalize EnrichedHeatmap() because of the unique features of the first map and annotation...
-hm <- EnrichedHeatmap(mats$osaGFP.sup.rep1,
-                      axis_name = c(-2000, 0, 2000),
-                      pos_line = F,
-                      column_title = 'Osa Rep1',
-                      col = col_fun,
-                      name = 'spikeNorm Score',
-                      top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,5))),
-                      left_annotation = c(rowAnnotation(textbox = anno_textbox(align_to = groups,
-                                                                               as.list(osa.count),
-                                                                               side = 'left',
-                                                                               background_gp = gpar(fill = NA, col = NA),
-                                                                               gp = gpar(col = 'black'), 
-                                                                               padding = unit(0, 'mm'))))) +
-  EnrichedHeatmap(mats$osaGFP.sup.rep2,
-                  axis_name = c(-2000, 0, 2000),
-                  pos_line = F,
-                  column_title = 'Osa Rep2',
-                  col = col_fun, 
-                  show_heatmap_legend = FALSE,
-                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5)))) +
-  EnrichedHeatmap(mats$yw.sup.rep1,
-                  axis_name = c(-2000, 0, 2000),
-                  pos_line = F,
-                  column_title = 'Control Rep1',
-                  col = col_fun, 
-                  show_heatmap_legend = FALSE,
-                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5)))) +  
-  EnrichedHeatmap(mats$yw.sup.rep2,
-                  axis_name = c(-2000, 0, 2000),
-                  pos_line = F,
-                  column_title = 'Control Rep2',
-                  col = col_fun, 
-                  show_heatmap_legend = FALSE,
-                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,5))))
+hms <- purrr::map(names(mats), function(x) {
+  if(x == 'osaGFP.rep1'){
+    EnrichedHeatmap(mats[[x]],
+                    axis_name = c(-2000, 0, 2000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    name = 'zScore',
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,6))),
+                    left_annotation = c(rowAnnotation(textbox = anno_textbox(align_to = groups,
+                                                                             as.list(osa.count),
+                                                                             side = 'left',
+                                                                             background_gp = gpar(fill = NA, col = NA),
+                                                                             gp = gpar(col = 'black'), 
+                                                                             padding = unit(0, 'mm'))))) 
+  } else {
+    EnrichedHeatmap(mats[[x]],
+                    axis_name = c(-2000, 0, 2000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun, 
+                    show_heatmap_legend = FALSE,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis = F, ylim = c(0,6)))) 
+  }
+})
+names(hms) <- names(mats)
 
-png('rPlots/bwSignal_OsaPeaks.png', width = 6, height = 8, units = 'in', res = 300)
-draw(hm, row_title = NULL, merge_legend = T)
+hms.ordered <- hms$osaGFP.rep1 + hms$osaGFP.rep2 + hms$yw.rep1 + hms$yw.rep2
+
+png('rPlots/bwSignal_OsaPeaks.png', width = 6, height = 6, units = 'in', res = 300)
+hms.ordered
 dev.off()
 ```
 
+# Fig 3B. - br enhancer browswer shot
 
-##Where are osaGFP binding sites?
+```{r, fig.width=4, fig.height=3}
+
+#TODO - best way to generate replicate average signal tracks
+#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+track.colors <- c("#B8E186","#F1B6DA", "#4DAC26","#D01C8B")
+
+cnr.ss.browser <- cnr.ss %>%
+  dplyr::mutate(color = track.colors)
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,12))
+
+brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 1000)
+
+png('rPlots/brD_shot.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, cnr.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
+                 from = start(brD + 1000),
+                 to = end(brD + 1000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+```
+
+# Fig 3C. Where are osaGFP binding sites?
   - bed file
   - browser shots
   - proximity to TSS vs distal
   
-```{r peak-distancetoTSS}
-#I'm not sure this is informative to include background distribution...
-peaks %>% 
-  dplyr::bind_rows(., dm6.1kb) %>%
-  dplyr::filter(assay == 'cnr' & faireCat.3LW_24h != 'NA' | assay == '1kb background') %>%
-  dplyr::mutate(log_dist_tss = log10(1+abs(distanceToTSS))) %>%
-  ggplot(aes(log_dist_tss, fill = assay)) +
-  geom_density(alpha = 0.4)
-```
-
 ```{r peak-location}
 # distribution of feature annotations
  peaks %>%
   dplyr::filter(assay == 'cnr' &  osa.cnr & !yw.cnr | assay == '1kb background') %>%
   dplyr::group_by(anno.new, assay) %>%
   dplyr::count() %>%
-   ggplot(aes(x = assay, y = n, fill = anno.new)) +
-   geom_bar(stat = 'identity', position = 'fill') 
+  ggplot(aes(x = assay, y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),)
+ggsave('rPlots/osaPeak_annotation.png', width = 4, height = 4, units = 'in', dpi = 300)
 
 ```
 
-Trying to plot the osa signal relative to TSS to test the idea that osa binding is abundant far from TSS
-The scatterplots above suppport that, with a larger distribution of peaks farther from the TSS ~1kb-10kb from TSS
-But the heatmap below suggests the opposite, there is high average signal at the promoter. 
-Log transformation seems to be necessary to visualize any distribution of peaks away from the TSS, I think this appropriate.
-But don't know how to log transform distance with enrichedheatmap, maybe with deeptools?
-
-```{r heatmap_osa_rel_to_tss}
-osa.rep1 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-osa.rep2 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
 
 
-dm6.promoters <- promoters(dm6.TxDb, upstream = 0, downstream = 0)
-
-osa.rep1 %>% data.frame() %>% ggplot(aes(score)) + geom_histogram(bins = 100)
 
 
-osa.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep1,
-                                                   dm6.promoters,
-                                                   value_column = 'score',
-                                                   keep = c(0.1,0.9),
-                                                   extend = c(10000,500))
-
-osa.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep2,
-                                                   dm6.promoters,
-                                                   value_column = 'score', 
-                                                   keep = c(0.1,0.9),
-                                                   extend = c(10000, 500))
 
 
-common_min = min(c(osa.rep1.mat, osa.rep2.mat))
-common_max = max(c(osa.rep1.mat, osa.rep2.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-
-hm <- EnrichedHeatmap::EnrichedHeatmap(osa.rep1.mat,
-                                       #axis_name = c(-1000, 0, 1000),
-                                       pos_line = F,
-                                       column_title = 'Osa Rep1',
-                                       col = col_fun,
-                                       name = 'Osa zScore',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis_param = list(side = 'left', facing = 'outside')))) +
-  EnrichedHeatmap::EnrichedHeatmap(osa.rep2.mat,
-                                   #axis_name = c(-1000, 0, 1000),
-                                   pos_line = F,
-                                   column_title = 'Osa Rep2',
-                                   col = col_fun, 
-                                   show_heatmap_legend = FALSE,
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis = F))) 
-
-
-png('rOut/osaPeaks_osaSignal.png', width = 6, height = 8, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, row_title = NULL, merge_legend = T)
-dev.off()
 
 ```

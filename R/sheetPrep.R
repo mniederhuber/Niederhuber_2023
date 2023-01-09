@@ -8,7 +8,8 @@ library(magrittr)
 cnr.ss <- read.csv('sheets/osaGFP-CnR-sampleSheet.tsv', sep = '\t') %>%
   dplyr::mutate(genotype = stringr::str_split_fixed(sample, '-', n = 6)[,1],
                 fraction = stringr::str_split_fixed(sample, '-', n = 6)[,6], 
-                id = paste(genotype, fraction, rep, sep = '.'),
+                #id = paste(genotype, fraction, rep, sep = '.'),
+                id = paste(genotype, rep, sep = '.'), # dropping fraction from id since only using sup fractions going forward 
                 grp = paste(genotype, fraction, sep = '.'),
                 assay = 'CnR',
                 experiment = 'osa-GFP CnR', .before = 1)
