@@ -68,3 +68,20 @@ get_cnr_tracks <- function(sheet, ylim, ...) {
   })
   return(track)
 }
+
+
+#get bws for use in heatmaps
+get_bws <- function(sheet, by) {
+  bw_list <- purrr::map(sheet[[by]], ~{
+    fp <- sheet[sheet[by] == .,]$bigwig_rpgcNorm_zNorm
+    rtracklayer::import.bw(fp)
+    })  
+  names(bw_list) <- sheet[[by]]
+  return(bw_list)
+}
+
+
+
+
+
+

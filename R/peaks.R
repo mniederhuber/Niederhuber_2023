@@ -1,3 +1,4 @@
+
 library(magrittr)
 library(ggplot2)
 library(GenomicRanges)
@@ -143,9 +144,9 @@ names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 #TODO - currently gives ~500 closing, ~1100 opening, ~5400 static -- notably ~50% fewer closing regions than I or SLN previously annotated
 
 peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
-  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(WT.3LW & faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
+  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
                                                     faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
-                                                    WT.24h & faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
+                                                    faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
                                                     T ~ 'NA')) %>% 
   dplyr::bind_rows(., dm6.1kb) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
                                # that way these regions will also get annotations

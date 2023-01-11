@@ -12,7 +12,8 @@ cnr.ss <- read.csv('sheets/osaGFP-CnR-sampleSheet.tsv', sep = '\t') %>%
                 id = paste(genotype, rep, sep = '.'), # dropping fraction from id since only using sup fractions going forward 
                 grp = paste(genotype, fraction, sep = '.'),
                 assay = 'CnR',
-                experiment = 'osa-GFP CnR', .before = 1)
+                experiment = 'osa-GFP CnR', .before = 1) %>%
+  dplyr::mutate(bigwig_rpgcNorm_zNorm = zNorm_bigwig_allFrags_rpgcNorm) # duplicating to match znorm variable name in faire pool sample sheet - for merging and loading bws
 
 ### WT FAIRE
 faire.wt.ss <- read.csv('sheets/wt-FAIRE-sampleSheet.tsv', header = T, sep = '\t') %>%
@@ -27,6 +28,7 @@ faire.wt.ssPool <-read.csv('sheets/wt-FAIRE-sampleSheetPooled.tsv', header = T, 
   dplyr::mutate(grp = paste(stringr::str_split_fixed(sample, '_', n = 2)[,1],
                             stringr::str_split_fixed(sample, '_', n = 2)[,2],
                             sep = '.'),
+                id = sample, # for matching and merging with cnr ss and bw load
                 time = factor(stringr::str_split_fixed(sample, '_', n = 2)[,2], levels = c('3LW','6h','18h','24h','44h')),
                 assay = 'FAIRE',
                 experiment = 'WT FAIRE Wing Timecourse', .before = 1)
