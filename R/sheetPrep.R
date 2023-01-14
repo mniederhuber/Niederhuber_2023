@@ -46,11 +46,12 @@ faire.osaDeGrad.ssPool <-read.csv('sheets/osa-deGrad-sampleSheetPooled.tsv', hea
   dplyr::mutate(grp = paste(stringr::str_split_fixed(sample, '_', n = 2)[,1],
                             stringr::str_split_fixed(sample, '_', n = 2)[,2],
                             sep = '.'),
+                id = grp, # duplicate for get_tracks()
                 assay = 'FAIRE',
-                experiment = 'osaGFP deGrad FAIRE', before = 1)
+                experiment = 'osaGFP deGrad FAIRE', .before = 1)
 
 ### combine sheets
 faire.ss <- dplyr::bind_rows(faire.wt.ss, faire.osaDeGrad.ss)
 
 ### save rData
-save(cnr.ss, faire.ss, faire.wt.ssPool, faire.osaDeGrad.ssPool, file = 'rData/sheets.rda')
+save(cnr.ss, faire.ss, faire.osaDeGrad.ss, faire.wt.ssPool, faire.osaDeGrad.ssPool, file = 'rData/sheets.rda')

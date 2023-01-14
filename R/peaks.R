@@ -11,11 +11,8 @@ source('utils.R')
 load('rData/sheets.rda')
 
 
-
 dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
-
-
 
 #make 1kb bin whole genomic granges
 dm6.1kb <- purrr::map(seqnames(dm6), function(x) {
@@ -47,34 +44,46 @@ cnr.union <- cnr.byID %>%
   reduce()
 
 ### get FAIRE peaks
-faire.peaks <- getPeakData(faire.ss, by = 'id', narrowPeak_colname = 'peaks')
-faire.byID <- faire.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
-faire.byGrp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
-faire.byExp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment) #split by experiment
+faire.ss.WT <- faire.ss[faire.ss$experiment == 'WT FAIRE Wing Timecourse',]
+faire.ss.osaDeg <- faire.ss[faire.ss$experiment == 'osaGFP deGrad FAIRE',]
+
+faire.wt.peaks <- getPeakData(faire.ss.WT, by = 'id', narrowPeak_colname = 'peaks')
+faire.wt.byID <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
+faire.wt.byGrp <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
+#faire.byExp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment) #split by experiment
+
+faire.osaDeg.peaks <- getPeakData(faire.ss.osaDeg, by = 'id', narrowPeak_colname = 'peaks')
+faire.osaDeg.byID <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
+faire.osaDeg.byGrp <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
 
 #filter by replicate specific qValue and only peaks that intersect between replicates
-faire.byGrp <- lapply(faire.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
+faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
+faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
 
-#make union FAIRE peak list - includes any/all peak calls for all experiments/reps
-faire.union <- faire.byID %>%
+#make union FAIRE peak list - includes any/all peak calls for all wt reps
+faire.wt.union <- faire.wt.byID %>%
   unlist() %>%
   reduce()
 
+faire.osaDeg.union <- faire.osaDeg.byID %>%
+  unlist() %>%
+  reduce()
 
 ##### bind and annotate peak list #####
 
-faire.df <- faire.union %>% data.frame() %>% dplyr::mutate(assay = 'faire')
-cnr.df <- cnr.union %>% data.frame() %>% dplyr::mutate(assay = 'cnr')
+faire.wt.df <- faire.wt.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'WT FAIRE Wing Timecourse')
+faire.osaDeg.df <- faire.osaDeg.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'osaGFP deGrad Pupal Wing FAIRE')
+cnr.df <- cnr.union %>% data.frame() %>% dplyr::mutate(assay = 'cnr', experiment = 'osaGFP 3LW Wing CUT&RUN')
 
-peaks <- dplyr::bind_rows(faire.df, cnr.df) %>%
+peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
   dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
   dplyr::arrange(seqnames, start, end) %>%
-  dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.byGrp$wt.3LW, T, F),
-                WT.6h = ifelse(GRanges(.) %over% faire.byGrp$wt.6h, T, F),
-                WT.24h = ifelse(GRanges(.) %over% faire.byGrp$wt.24h, T, F),
-                WT.44h = ifelse(GRanges(.) %over% faire.byGrp$wt.44h, T, F),
-                osaGFP.control = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_control_faire, T, F),
-                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
+  dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.3LW, T, F),
+                WT.6h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.6h, T, F),
+                WT.24h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.24h, T, F),
+                WT.44h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.44h, T, F),
+                osaGFP.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
+                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
                 osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
                 yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F),
                 cnr.peakCat = dplyr::case_when(osa.cnr & yw.cnr ~ 'shared',
@@ -118,7 +127,6 @@ names(cnr.dds.df) <- paste0('cnr.',names(cnr.dds.df))
 
 
 # FAIRE 
-faire.ss.WT <- faire.ss[faire.ss$experiment == 'WT FAIRE Wing Timecourse',]
 
 faire.Counts <- Rsubread::featureCounts(faire.ss.WT$bam, #just use Bam from WT timecourse - single-end data
                                         annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
@@ -135,6 +143,23 @@ faire.dds.df <- DESeq2::results(faire.dds, contrast = c('grp','wt.3LW','wt.24h')
 
 names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
+# FAIRE - OsaGFP deGrad
+
+faire.deg.Counts <- Rsubread::featureCounts(faire.ss.osaDeg$bam, #just use Bam from WT timecourse - single-end data
+                                        annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
+                                        allowMultiOverlap = T,
+                                        nthreads = 4,
+                                        isPairedEnd = T)
+
+colnames(faire.deg.Counts$counts) <- faire.ss.osaDeg$id
+
+faire.deg.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.deg.Counts$counts,  colData = faire.ss.osaDeg,  design = ~grp) %>%
+  DESeq2::DESeq(.)
+
+faire.deg.dds.df <- DESeq2::results(faire.deg.dds, contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire')) %>% data.frame() 
+
+names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
+
 ##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF #####
 
 # closing --> must be from FAIRE data, must be called a reproducible peak at 3LW, must have a log2(3LW/24h) >= 1 
@@ -143,11 +168,15 @@ names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
 #TODO - currently gives ~500 closing, ~1100 opening, ~5400 static -- notably ~50% fewer closing regions than I or SLN previously annotated
 
-peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df) %>%
+peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df, faire.deg.dds.df) %>%
   dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
                                                     faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
                                                     faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
-                                                    T ~ 'NA')) %>% 
+                                                    T ~ 'NA'),
+                faireCat.osaDeGrad = dplyr::case_when(faire_osaDeGrad.log2FoldChange >= 0.4 ~ 'Osa Dependent',
+                                                      faire_osaDeGrad.log2FoldChange < 0.4 & faire_osaDeGrad.log2FoldChange > -0.4 ~ 'Osa Independent',
+                                                      faire_osaDeGrad.log2FoldChange <= -0.4 ~ 'Osa Ectopic',
+                                                      T ~ 'NA')) %>% 
   dplyr::bind_rows(., dm6.1kb) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
                                # that way these regions will also get annotations
 
@@ -171,6 +200,6 @@ peaks <- ChIPseeker::as.GRanges(peaks.anno) %>%
                                             grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
                                             grepl("Promoter", annotation) ~ "Promoter"))
 
-save(peaks, faire.byGrp, cnr.byGrp, file = 'rData/peaks.rda')
+save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, cnr.byGrp, file = 'rData/peaks.rda')
   
 # 

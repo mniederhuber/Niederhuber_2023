@@ -53,7 +53,7 @@ makeSAF <- function(df) {
 get_cnr_tracks <- function(sheet, ylim, ...) {
   track <- purrr::map(split(sheet, sheet$id), ~{ #split will convert group variable to factor, so levels are default alphabetical which works out to be order I want
     #TODO - explicitly denote factor levels? likely necessary for plotting with faire data
-    Gviz::DataTrack(range = .$zNorm_bigwig_allFrags_rpgcNorm,
+    Gviz::DataTrack(range = .$bigwig_rpgcNorm_zNorm,
                     genome = 'dm6',
                     type = 'hist',
                     #windowSize = ,
