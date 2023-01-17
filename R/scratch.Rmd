@@ -1,3 +1,5 @@
+## Setup
+
 ```{r setup}
 library(magrittr)
 library(ggplot2)
@@ -8,6 +10,8 @@ library(AnnotationDbi)
 
 library(EnrichedHeatmap)
 library(ComplexHeatmap)
+
+library(GO.db)
 
 source('utils.R')
 
@@ -56,6 +60,7 @@ fairePeaks.wt <- peaks %>%
   GRanges() %>%
   resize(width = 1, fix = "center")
 
+#TODO - remove the peakCat ? since now using log2fold change for these categories...
 fairePeaks.deg <- peaks %>%
   dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
   dplyr::mutate(deg.peakCat = dplyr::case_when(osaGFP.deGrad & !osaGFP.control ~ 'osa ectopic',
@@ -472,7 +477,7 @@ There is very little change between control and osa deGrad conditions.
 Figure 4 should demonstrate this and highligh if there are any subtle changes, where they occur, and how they relate to osa binding. 
 
 
-## Fig 4B. FAIRE control vs osaDeGrad - split by degrad categories
+## Fig 4D. FAIRE control vs osaDeGrad - split by degrad categories
 Using deseq differential scoring between control and osaGFP deGrad to define FAIRE peak categories.
 Using a very sensitive cutoff for log2fold change. 
 "ectopic" (gain of signal in degrad) <= log2(control/degrad) <= -0.4, 
@@ -567,9 +572,9 @@ fairePeaks.deg %>%
 fairePeaks.deg %>% 
   data.frame() %>%
   dplyr::filter(!yw.cnr) %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & osa.cnr)
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
 ```
-## Fig 4B VARIANT. osa degrad vs control heatmap
+## Fig 4C VARIANT. osa degrad vs control heatmap
 Changes are defined by reproducible peak calls...
 "ectopic" peaks are unique to osaDegrad condition, vs "dependent" peaks are unique to control condition.
 This approach is perhaps misleading and more difficult to articulate.
@@ -659,7 +664,9 @@ fairePeaks.deg %>%
   plot.frac()
 
 ```
-## Fig 4C. 
+## Fig 4B. Osa deGrad FAIRE signal in osa-bound l3-24h closing sites.
+This plot shows that within the osa CnR peaks that close from 3LW to 24h, there is little to no change in their ~24h-36h accessibility when osa is depleted.
+
 ```{r}
 osaClosing <- osaPeaks %>%
   data.frame() %>%
@@ -878,24 +885,30 @@ ComplexHeatmap::draw(hms, row_split = groups, merge_legend = T, heatmap_legend_s
 #dev.off()
 ```
 
-## Fig 4D. 
+## Fig 4C. Browser shot of osa deGrad FAIRE at brDisc.
+Shows that there is no increase in accessibility.
 ```{r, 4D}
+#TODO - add 36h FAIRE data? better comparison for osa deGrad?
 
 #track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("grey60","grey50", 'grey20')
+track.colors <- c("grey70","grey60","grey50", "grey40", 'grey30')
 
 deg.ss.browser <- faire.osaDeGrad.ssPool %>%
-  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW',]) %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
   dplyr::mutate(color = track.colors)
 
 deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
-deg.tracks <- c(deg.tracks$wt_3LW, deg.tracks$osaGFP.deGrad_control_faire, deg.tracks$osaGFP.deGrad_nubG4_faire)
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_44h, 
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
 
 brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
 
 axis <- Gviz::GenomeAxisTrack(scale = 1000)
 
-png('rPlots/4D.png', width = 4, height = 4, res = 300, units = 'in')
+png('rPlots/4D.png', width = 4, height = 6, res = 300, units = 'in')
 Gviz::plotTracks(c(axis, deg.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
                  from = start(brD + 1000),
                  to = end(brD + 1000),
@@ -907,8 +920,125 @@ dev.off()
 ```
 
 
+## Fig 4F. 
+Using any peak call from the degrad experiment.
+So 'independent' regions are accessible in both experiments. 
+
+```{r, 4F}
+
+fairePeaks.osaDependent = fairePeaks.deg %>% data.frame() %>% dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
+
+dependent.go <- select(org.Dm.eg.db, 
+       keys = fairePeaks.osaDependent$geneId, 
+       columns = c('SYMBOL','GO','ENTREZID'),
+       keytype = "FLYBASE")
+
+dependent.terms <- select(GO.db, 
+       keys = dependent.go$GO, 
+       columns = c('DEFINITION', 'GOID', 'TERM'))
+
+dependent <- dplyr::bind_cols(dependent.go, dependent.terms)
+
+#library(GOSemSim)
+
+#dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
+
+dependent.entrez <- dependent %>% .$ENTREZID
+
+ggo.dependent <- clusterProfiler::enrichGO(gene = dependent.entrez,
+                        OrgDb = org.Dm.eg.db,
+                         ont = 'all',
+                         readable = T)
+
+png('rPlots/4F.png', width = 10, height = 8, res = 300, units = 'in')
+enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(ONTOLOGY~., scale = 'free')
+dev.off()
 
 
 
+```
+
+## Fig 4E.
+
+```{r}
+
+fairePeaks.osaDep <- fairePeaks.deg %>% 
+  data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+  GRanges()
+
+deg.mats <- purrr::map(deg.bws, ~{
+  normalizeToMatrix(., fairePeaks.osaDep, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
+}) 
+
+names(deg.mats) <- faire.ss %>% 
+  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+                            '.',
+                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+  .$nm 
+
+common_min = min(unlist(deg.mats))
+common_max = max(unlist(deg.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+#deg.count <- fairePeaks.deg %>%
+#  data.frame() %>%
+#  dplyr::group_by(faireCat.osaDeGrad) %>%
+#  dplyr::tally() %>%
+#  .$n
+#
+#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+#
+
+groups <- fairePeaks.deg %>% 
+  data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+  dplyr::mutate(new.cat <- ifelse(osa.cnr & !yw.cnr, 'Osa Bound', 'Osa Unbound')) %>%
+  .$new.cat
+
+lgd = Legend(at = c("Osa Bound", "Osa Unbound"), legend_gp = gpar(fill = 2:3))
+
+deg.hms <- purrr::map(names(deg.mats), function(x) {
+  if(grepl('control.Rep1',x)){
+     EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1, 0, 1),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    name = 'zScore',
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,8))),
+                    left_annotation = rowAnnotation(groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
+                    use_raster = F)
+  }else{
+    EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1, 0, 1),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    show_heatmap_legend = F, 
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), ylim = c(0,8), axis = F)), 
+                    use_raster = F)
+  }
+})
+
+names(deg.hms) <- names(deg.mats)
+
+hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+
+png('rPlots/4E.png', width = 4, height = 5, units = 'in', res = 300)
+#ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
+ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
+dev.off()
+```
+
+
+## Fig EG.
+```{r}
+
+```
 
 
