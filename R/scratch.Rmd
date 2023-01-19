@@ -3,6 +3,7 @@
 ```{r setup}
 library(magrittr)
 library(ggplot2)
+library(ggrepel)
 library(GenomicRanges)
 
 library(org.Dm.eg.db)
@@ -48,10 +49,6 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 
 osaPeaks <- peaks %>% 
   dplyr::filter(osa.cnr & !yw.cnr & assay == 'cnr') %>% 
-  dplyr::mutate(deg.peakCat = dplyr::case_when(osaGFP.deGrad & !osaGFP.control ~ 'osa ectopic',
-                                               !osaGFP.deGrad & osaGFP.control ~ 'osa dependent',
-                                               osaGFP.deGrad & osaGFP.control ~ 'osa independent',
-                                               T ~ as.character(NA))) %>%  # NA here would be peaks that aren't reproducible or of good quality
   GRanges() %>% 
   resize(width = 1, fix = "center")
 
@@ -60,17 +57,32 @@ fairePeaks.wt <- peaks %>%
   GRanges() %>%
   resize(width = 1, fix = "center")
 
-#TODO - remove the peakCat ? since now using log2fold change for these categories...
+#DONE - remove the peakCat ? since now using log2fold change for these categories...
 fairePeaks.deg <- peaks %>%
   dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
-  dplyr::mutate(deg.peakCat = dplyr::case_when(osaGFP.deGrad & !osaGFP.control ~ 'osa ectopic',
-                                               !osaGFP.deGrad & osaGFP.control ~ 'osa dependent',
-                                               osaGFP.deGrad & osaGFP.control ~ 'osa independent',
-                                               T ~ as.character(NA))) %>%  # NA here would be peaks that aren't reproducible or of good quality
-  dplyr::filter(!is.na(deg.peakCat)) %>%
+#  dplyr::mutate(deg.peakCat = dplyr::case_when(osaGFP.deGrad & !osaGFP.control ~ 'osa ectopic',
+#                                               !osaGFP.deGrad & osaGFP.control ~ 'osa dependent',
+#                                               osaGFP.deGrad & osaGFP.control ~ 'osa independent',
+#                                               T ~ as.character(NA))) %>%  # NA here would be peaks that aren't reproducible or of good quality
+  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>% # want to only use peaks that are reproducible and of good quality 
   GRanges() %>%
   resize(width = 1, fix = "center")
 
+
+fairePeaks.osaDependent <- fairePeaks.deg %>% 
+  data.frame() %>% 
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+  GRanges()
+
+fairePeaks.osaIndependent <- fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+  GRanges()
+
+fairePeaks.osaEctopic <- fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+  GRanges()
 ###
 # load bws and matrices for heatmaps
 ### 
@@ -86,13 +98,43 @@ mats <- purrr::map(bws, ~{
 })
 names(mats) <- names(bws)
 
+#TODO -- move to utils?
+###
+# functions 
+### 
+plot.frac <- function(x) {
+ lapply(unique(x$change), function(i) {
+   x %>%
+     dplyr::filter(change == i) %>%
+     ggplot(aes(fraction, change, fill = osa.cnr)) +
+     geom_bar(stat = 'identity', width = 1) +
+     geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
+     #geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
+     scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
+     scale_y_discrete(position = 'right', ) +
+     xlab('Percent Bound by Osa') +
+     theme(legend.position = 'top',
+           legend.key.size = unit(1, 'cm'),
+           legend.text = element_text(size = 15),
+           legend.title = element_text(size = 20), 
+           panel.background = element_blank(),
+           axis.text = element_blank(),
+           axis.title = element_blank(),
+           axis.ticks = element_blank(),
+#           axis.text.y = element_text(size = 12),
+           panel.grid = element_blank()) + 
+     NULL
+   fn = paste0('rPlots/3E_',i,'.png')
+   ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
+   })
+}
 ```
 
 TODO - make reference table of different peak categories and parameters, eg. how osa specific peaks are defined, how closing peaks are defined
 TODO - currently defining dynamic faire simply by log2fold change - no peak call requirement
 # Fig 1
 
-## Fig 1A. - brDisc browser shot
+## Fig 1A - brDisc browser shot
 ```{r, 1A}
 
 #TODO - best way to generate replicate average signal tracks
@@ -366,32 +408,7 @@ hm <- EnrichedHeatmap(faire.3lw.mat,
                  use_raster = F) 
  
 
-plot.frac <- function(x) {
- lapply(unique(x$change), function(i) {
-   x %>%
-     dplyr::filter(change == i) %>%
-     ggplot(aes(fraction, change, fill = osa.cnr)) +
-     geom_bar(stat = 'identity', width = 1) +
-     geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
-     #geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
-     scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
-     scale_y_discrete(position = 'right', ) +
-     xlab('Percent Bound by Osa') +
-     theme(legend.position = 'top',
-           legend.key.size = unit(1, 'cm'),
-           legend.text = element_text(size = 15),
-           legend.title = element_text(size = 20), 
-           panel.background = element_blank(),
-           axis.text = element_blank(),
-           axis.title = element_blank(),
-           axis.ticks = element_blank(),
-#           axis.text.y = element_text(size = 12),
-           panel.grid = element_blank()) + 
-     NULL
-   fn = paste0('rPlots/3E_',i,'.png')
-   ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
-   })
-}
+
 
 png('rPlots/3E.png', width = 4, height = 5, units = 'in', res = 300)
 ComplexHeatmap::draw(hm, annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'left', )
@@ -471,7 +488,7 @@ ggsave('rPlots/drafts/3draft-2.png', width = 6, height = 3, dpi = 300)
 ```
 
 
-# Fig 4 - OsaGFP DeGrad FAIRE
+# Fig 4
 
 There is very little change between control and osa deGrad conditions. 
 Figure 4 should demonstrate this and highligh if there are any subtle changes, where they occur, and how they relate to osa binding. 
@@ -485,12 +502,12 @@ Using a very sensitive cutoff for log2fold change.
 "independet" (no significant change).
 
 
-```{r, 4B}
+```{r, 4D}
 
 #TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
 
 
-
+# union osa degrad peaks
 deg.mats <- purrr::map(deg.bws, ~{
   normalizeToMatrix(., fairePeaks.deg, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
 }) 
@@ -509,7 +526,7 @@ col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viri
 
 deg.count <- fairePeaks.deg %>%
   data.frame() %>%
-  dplyr::group_by(faireCat.osaDeGrad) %>%
+  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
   dplyr::tally() %>%
   .$n
 
@@ -560,110 +577,17 @@ dev.off()
 
 fairePeaks.deg %>% 
   data.frame() %>%
-  dplyr::filter(!yw.cnr) %>%
+  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
   dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
-  dplyr::tally() %>%
+  dplyr::tally() 
   dplyr::mutate(fraction = n / sum(n),
                 change = faireCat.osaDeGrad) %>%
   dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
   plot.frac()
 
 
-fairePeaks.deg %>% 
-  data.frame() %>%
-  dplyr::filter(!yw.cnr) %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
 ```
-## Fig 4C VARIANT. osa degrad vs control heatmap
-Changes are defined by reproducible peak calls...
-"ectopic" peaks are unique to osaDegrad condition, vs "dependent" peaks are unique to control condition.
-This approach is perhaps misleading and more difficult to articulate.
 
-```{r, 4B}
-
-#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
-
-
-
-deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., fairePeaks.deg, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
-}) 
-
-names(deg.mats) <- faire.ss %>% 
-  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
-  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
-                            '.',
-                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
-  .$nm 
-
-common_min = min(unlist(deg.mats))
-common_max = max(unlist(deg.mats))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-deg.count <- fairePeaks.deg %>%
-  data.frame() %>%
-  dplyr::group_by(deg.peakCat) %>%
-  dplyr::tally() %>%
-  .$n
-
-names(deg.count) <- c('osa dependent', 'osa ectopic', 'osa independent')
-
-groups <- fairePeaks.deg$deg.peakCat
-
-lgd = Legend(at = c("osa dependent", "osa ectopic", "osa independent"), legend_gp = gpar(fill = 2:4))
-
-deg.hms <- purrr::map(names(deg.mats), function(x) {
-  if(grepl('control.Rep1',x)){
-     EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-1000, 0, 1000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    name = 'zScore',
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,8))),
-                    left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
-                                                                             as.list(deg.count),
-                                                                             side = 'left',
-                                                                             background_gp = gpar(fill = NA, col = NA),
-                                                                             gp = gpar(col = 'black'), 
-                                                                             padding = unit(0, 'mm')),
-                                                    groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
-                    use_raster = F)
-  }else{
-    EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-1000, 0, 1000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    show_heatmap_legend = F, 
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), ylim = c(0,8), axis = F)), 
-                    use_raster = F)
-  }
-})
-
-names(deg.hms) <- names(deg.mats)
-
-hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
-
-png('rPlots/4B.png', width = 5, height = 5, units = 'in', res = 300)
-ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'bottom', )
-dev.off()
-
-
-fairePeaks.deg %>% 
-  data.frame() %>%
-  dplyr::filter(!yw.cnr) %>%
-  dplyr::group_by(deg.peakCat, osa.cnr) %>%
-  dplyr::tally() 
-  dplyr::mutate(fraction = n / sum(n),
-                change = deg.peakCat) %>%
-  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
-  plot.frac()
-
-```
 ## Fig 4B. Osa deGrad FAIRE signal in osa-bound l3-24h closing sites.
 This plot shows that within the osa CnR peaks that close from 3LW to 24h, there is little to no change in their ~24h-36h accessibility when osa is depleted.
 
@@ -674,7 +598,7 @@ osaClosing <- osaPeaks %>%
   GRanges()
 
 deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., osaClosing, value_column = 'score', keep = c(0.11,0.99), extend = 2000 )
+  normalizeToMatrix(., osaClosing, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
 }) 
 
 names(deg.mats) <- faire.ss %>% 
@@ -704,7 +628,7 @@ col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viri
 deg.hms <- purrr::map(names(deg.mats), function(x) {
   if(grepl('control.Rep1',x)){
      EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
+                    axis_name = c(-1, 0, 1),
                     pos_line = F,
                     column_title = x,
                     col = col_fun,
@@ -720,7 +644,7 @@ deg.hms <- purrr::map(names(deg.mats), function(x) {
 #                                                    groups = anno_block(gp = gpar(fill = 2:4), show_name = F)))
   }else{
     EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
+                    axis_name = c(-1, 0, 1),
                     pos_line = F,
                     column_title = x,
                     col = col_fun,
@@ -734,156 +658,11 @@ names(deg.hms) <- names(deg.mats)
 
 hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
 
-png('rPlots/4C.png', width = 8, height = 3, units = 'in', res = 300)
+png('rPlots/4C.png', width = 4, height = 3, units = 'in', res = 300)
 ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
-## draft
-```{r}
-osa.dependent <- osaPeaks %>%
-  data.frame() %>%
-  dplyr::filter(deg.peakCat == 'osa dependent') %>%
-  GRanges()
 
-deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., osa.dependent, value_column = 'score', keep = c(0.11,0.99), extend = 2000 )
-}) 
-
-names(deg.mats) <- faire.ss %>% 
-  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
-  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
-                            '.',
-                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
-  .$nm 
-
-common_min = min(unlist(deg.mats))
-common_max = max(unlist(deg.mats))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-#deg.count <- fairePeaks.deg %>%
-#  data.frame() %>%
-#  dplyr::group_by(deg.peakCat) %>%
-#  dplyr::tally() %>%
-#  .$n
-#
-#names(deg.count) <- c('osa dependent', 'osa ectopic', 'osa independent')
-
-#groups <- osaPeaks$deg.peakCat
-
-#lgd = Legend(at = c("osa dependent", "osa ectopic", "osa independent"), legend_gp = gpar(fill = 2:4))
-
-deg.hms <- purrr::map(names(deg.mats), function(x) {
-  if(grepl('control.Rep1',x)){
-     EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    name = 'zScore',
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,5))))
-#                    left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
-#                                                                             as.list(deg.count),
-#                                                                             side = 'left',
-#                                                                             background_gp = gpar(fill = NA, col = NA),
-#                                                                             gp = gpar(col = 'black'), 
-#                                                                             padding = unit(0, 'mm')),
-#                                                    groups = anno_block(gp = gpar(fill = 2:4), show_name = F)))
-  }else{
-    EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    show_heatmap_legend = F, 
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(ylim = c(0,5), axis = F)))
-  }
-})
-
-names(deg.hms) <- names(deg.mats)
-
-hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
-
-#png('rPlots/4C.png', width = 8, height = 3, units = 'in', res = 300)
-ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
-#dev.off()
-```
-
-
-## draft 
-```{r}
-osa.ectopic <- osaPeaks %>%
-  data.frame() %>%
-  dplyr::filter(deg.peakCat == 'osa ectopic') %>%
-  GRanges()
-
-deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., osa.ectopic, value_column = 'score', keep = c(0.11,0.99), extend = 2000 )
-}) 
-
-names(deg.mats) <- faire.ss %>% 
-  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
-  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
-                            '.',
-                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
-  .$nm 
-
-common_min = min(unlist(deg.mats))
-common_max = max(unlist(deg.mats))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-deg.count <- osa.ectopic %>%
-  data.frame() %>%
-  dplyr::group_by(faireCat.3LW_24h) %>%
-  dplyr::tally() %>%
-  .$n
-
-names(deg.count) <- c('closing', 'opening', 'static')
-
-groups <- osa.ectopic$faireCat.3LW_24h
-
-lgd = Legend(at = c("closing", "opening", "static"), legend_gp = gpar(fill = 2:4))
-
-deg.hms <- purrr::map(names(deg.mats), function(x) {
-  if(grepl('control.Rep1',x)){
-     EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    name = 'zScore',
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,10))),
-                    left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
-                                                                             as.list(deg.count),
-                                                                             side = 'left',
-                                                                             background_gp = gpar(fill = NA, col = NA),
-                                                                             gp = gpar(col = 'black'), 
-                                                                             padding = unit(0, 'mm')),
-                                                    groups = anno_block(gp = gpar(fill = 2:4), show_name = F)))
-  }else{
-    EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-2000, 0, 2000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    show_heatmap_legend = F, 
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), ylim = c(0,10), axis = F)))
-  }
-})
-
-names(deg.hms) <- names(deg.mats)
-
-hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
-
-#png('rPlots/4C.png', width = 8, height = 3, units = 'in', res = 300)
-ComplexHeatmap::draw(hms, row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
-#dev.off()
-```
 
 ## Fig 4C. Browser shot of osa deGrad FAIRE at brDisc.
 Shows that there is no increase in accessibility.
@@ -920,13 +699,14 @@ dev.off()
 ```
 
 
-## Fig 4F. 
+## Fig 4-Supp. 
 Using any peak call from the degrad experiment.
 So 'independent' regions are accessible in both experiments. 
 
-```{r, 4F}
+```{r}
 
-fairePeaks.osaDependent = fairePeaks.deg %>% data.frame() %>% dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
+
+#fairePeaks.osaDependent <- fairePeaks.deg %>% data.frame() %>% dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
 
 dependent.go <- select(org.Dm.eg.db, 
        keys = fairePeaks.osaDependent$geneId, 
@@ -950,7 +730,7 @@ ggo.dependent <- clusterProfiler::enrichGO(gene = dependent.entrez,
                          ont = 'all',
                          readable = T)
 
-png('rPlots/4F.png', width = 10, height = 8, res = 300, units = 'in')
+png('rPlots/4sup.png', width = 10, height = 8, res = 300, units = 'in')
 enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(ONTOLOGY~., scale = 'free')
 dev.off()
 
@@ -962,24 +742,19 @@ dev.off()
 
 ```{r}
 
-fairePeaks.osaDep <- fairePeaks.deg %>% 
-  data.frame() %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
-  GRanges()
-
-deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., fairePeaks.osaDep, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
+osaDependent.mats <- purrr::map(deg.bws, ~{
+  normalizeToMatrix(., fairePeaks.osaDependent, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
 }) 
 
-names(deg.mats) <- faire.ss %>% 
+names(osaDependent.mats) <- faire.ss %>% 
   dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
   dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
                             '.',
                             stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
   .$nm 
 
-common_min = min(unlist(deg.mats))
-common_max = max(unlist(deg.mats))
+common_min = min(unlist(osaDependent.mats))
+common_max = max(unlist(osaDependent.mats))
 
 col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
 
@@ -992,9 +767,70 @@ col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viri
 #names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
 #
 
-groups <- fairePeaks.deg %>% 
+#TODO - maybe cleaner to have this peak cat assigned globally in setup
+groups <- fairePeaks.osaDependent %>% 
   data.frame() %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+  dplyr::mutate(new.cat <- ifelse(osa.cnr & !yw.cnr, 'Osa Bound', 'Osa Unbound')) %>%
+  .$new.cat
+
+lgd = Legend(at = c("Osa Bound", "Osa Unbound"), legend_gp = gpar(fill = 2:3))
+
+deg.hms <- purrr::map(names(osaDependent.mats), function(x) {
+  if(grepl('control.Rep1',x)){
+     EnrichedHeatmap(osaDependent.mats[[x]],
+                    axis_name = c(-1, 0, 1),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    name = 'zScore',
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,8))),
+                    left_annotation = rowAnnotation(groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
+                    use_raster = F)
+  }else{
+    EnrichedHeatmap(osaDependent.mats[[x]],
+                    axis_name = c(-1, 0, 1),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    show_heatmap_legend = F, 
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), ylim = c(0,8), axis = F)), 
+                    use_raster = F)
+  }
+})
+
+names(deg.hms) <- names(osaDependent.mats)
+
+hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+
+png('rPlots/4E.png', width = 4, height = 3, units = 'in', res = 300)
+#ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
+ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
+dev.off()
+```
+## Fig 4F.
+
+```{r}
+
+osaEctopic.mats <- purrr::map(deg.bws, ~{
+  normalizeToMatrix(., fairePeaks.osaEctopic, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
+}) 
+
+names(osaEctopic.mats) <- faire.ss %>% 
+  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+                            '.',
+                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+  .$nm 
+
+common_min = min(unlist(osaEctopic.mats))
+common_max = max(unlist(osaEctopic.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+groups <- fairePeaks.osaEctopic %>% 
+  data.frame() %>%
   dplyr::mutate(new.cat <- ifelse(osa.cnr & !yw.cnr, 'Osa Bound', 'Osa Unbound')) %>%
   .$new.cat
 
@@ -1002,7 +838,7 @@ lgd = Legend(at = c("Osa Bound", "Osa Unbound"), legend_gp = gpar(fill = 2:3))
 
 deg.hms <- purrr::map(names(deg.mats), function(x) {
   if(grepl('control.Rep1',x)){
-     EnrichedHeatmap(deg.mats[[x]],
+     EnrichedHeatmap(osaEctopic.mats[[x]],
                     axis_name = c(-1, 0, 1),
                     pos_line = F,
                     column_title = x,
@@ -1029,16 +865,517 @@ names(deg.hms) <- names(deg.mats)
 
 hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
 
-png('rPlots/4E.png', width = 4, height = 5, units = 'in', res = 300)
+png('rPlots/4F.png', width = 4, height = 3, units = 'in', res = 300)
 #ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
 
-
-## Fig EG.
+## Fig 4 - DRAFT - peak annotations
 ```{r}
+fairePeaks.deg %>%
+    data.frame() %>%
+#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' ) %>%
+  dplyr::group_by(faireCat.osaDeGrad, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x = faireCat.osaDeGrad, y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =4,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank())
+ggsave('rPlots/4G.png', width = 6, height = 5, units = 'in', dpi = 300)
+```
+
+## Fig 4H.
+
+```{r}
+#TODO - simplifiy - purrr::map
+faire.3lw.mat <- normalizeToMatrix(bws$wt_3LW, fairePeaks.osaDependent, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+faire.6h.mat <- normalizeToMatrix(bws$wt_6h, fairePeaks.osaDependent, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+faire.24h.mat <- normalizeToMatrix(bws$wt_24h, fairePeaks.osaDependent, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+
+common_min = min(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+common_max = max(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+faire.count <- fairePeaks.osaDependent %>%
+  data.frame() %>%
+  dplyr::group_by(faireCat.3LW_24h) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(n = as.character(n)) %>%
+  .$n
+
+names(faire.count) <- c('closing','opening','static')
+#
+groups <- fairePeaks.osaDependent$faireCat.3LW_24h
+
+#
+lgd = Legend(at = c("closing", "opening", "static"), legend_gp = gpar(fill = 2:4))
+                             
+hm <- EnrichedHeatmap(faire.3lw.mat, 
+                      pos_line = F, 
+                      axis_name = c(-2, 0, 2),
+                      col = col_fun,
+                      column_title = '3LW',
+                      top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4),
+                                                                               ylim = c(0,6),
+                                                                               axis_param = list(side = 'left'))),  
+                      name = 'FAIRE zScore',
+                     left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
+                                                                             as.list(faire.count),
+                                                                             side = 'left',
+                                                                             background_gp = gpar(fill = NA, col = NA),
+                                                                             gp = gpar(col = 'black'), 
+                                                                             padding = unit(0, 'mm')),
+                                                      groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
+                      row_title  = NULL,
+                      use_raster = F) +
+ EnrichedHeatmap(faire.6h.mat, 
+                 pos_line = F, 
+                 axis_name = c(-2, 0, 2),
+                 col = col_fun,
+                 column_title = '6h',
+                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+                 row_title  = NULL,
+                 show_heatmap_legend = F,
+                 use_raster = F) + 
+ EnrichedHeatmap(faire.24h.mat, 
+                 pos_line = F, 
+                 axis_name = c(-2, 0, 2),
+                 col = col_fun,
+                 column_title = '24h',
+                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+                 row_title  = NULL,
+                 show_heatmap_legend = F,
+                 use_raster = F) 
+ 
+
+png('rPlots/4H.png', width = 4, height = 8, units = 'in', res = 300)
+ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), row_split = groups, heatmap_legend_side = 'bottom', )
+dev.off() 
+```
+
+## Fig 4I.
+```{r}
+
+faire.3lw.mat <- normalizeToMatrix(bws$wt_3LW, fairePeaks.osaEctopic, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+faire.6h.mat <- normalizeToMatrix(bws$wt_6h, fairePeaks.osaEctopic, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+faire.24h.mat <- normalizeToMatrix(bws$wt_24h, fairePeaks.osaEctopic, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+
+common_min = min(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+common_max = max(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+faire.count <- fairePeaks.osaEctopic %>%
+  data.frame() %>%
+  dplyr::group_by(faireCat.3LW_24h) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(n = as.character(n)) %>%
+  .$n
+
+names(faire.count) <- c('closing','opening','static')
+#
+groups <- fairePeaks.osaEctopic$faireCat.3LW_24h
+
+#
+lgd = Legend(at = c("closing", "opening", "static"), legend_gp = gpar(fill = 2:4))
+                             
+hm <- EnrichedHeatmap(faire.3lw.mat, 
+                      pos_line = F, 
+                      axis_name = c(-2, 0, 2),
+                      col = col_fun,
+                      column_title = '3LW',
+                      top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4),
+                                                                               ylim = c(0,6),
+                                                                               axis_param = list(side = 'left'))),  
+                      name = 'FAIRE zScore',
+                     left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
+                                                                             as.list(faire.count),
+                                                                             side = 'left',
+                                                                             background_gp = gpar(fill = NA, col = NA),
+                                                                             gp = gpar(col = 'black'), 
+                                                                             padding = unit(0, 'mm')),
+                                                      groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
+                      row_title  = NULL,
+                      use_raster = F) +
+ EnrichedHeatmap(faire.6h.mat, 
+                 pos_line = F, 
+                 axis_name = c(-2, 0, 2),
+                 col = col_fun,
+                 column_title = '6h',
+                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+                 row_title  = NULL,
+                 show_heatmap_legend = F,
+                 use_raster = F) + 
+ EnrichedHeatmap(faire.24h.mat, 
+                 pos_line = F, 
+                 axis_name = c(-2, 0, 2),
+                 col = col_fun,
+                 column_title = '24h',
+                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+                 row_title  = NULL,
+                 show_heatmap_legend = F,
+                 use_raster = F) 
+ 
+
+png('rPlots/4I.png', width = 4, height = 8, units = 'in', res = 300)
+ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), row_split = groups, heatmap_legend_side = 'bottom', )
+dev.off() 
+```
+
+## Fig 4 - drafts
+```{r}
+#fairePeaks.osaDep <- fairePeaks.deg %>% 
+#  data.frame() %>%
+#  dplyr::filter(faireCat.3LW_24h == 'opening') %>%
+#  GRanges()
+#
+#faire.3lw.mat <- normalizeToMatrix(bws$wt_3LW, fairePeaks.osaDep, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+#faire.6h.mat <- normalizeToMatrix(bws$wt_6h, fairePeaks.osaDep, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+#faire.24h.mat <- normalizeToMatrix(bws$wt_24h, fairePeaks.osaDep, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
+#
+#common_min = min(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+#common_max = max(c(faire.3lw.mat,faire.6h.mat,faire.24h.mat))
+#
+#col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+#
+##faire.count <- fairePeaks.osaDep %>%
+##  data.frame() %>%
+##  dplyr::group_by(faireCat.3LW_24h) %>%
+##  dplyr::count() %>%
+##  dplyr::mutate(n = as.character(n)) %>%
+##  .$n
+##
+##names(faire.count) <- c('closing','opening','static')
+##
+#groups <- fairePeaks.osaDep$faireCat.osaDeGrad
+#
+##
+#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = 2:4))
+#                             
+#hm <- EnrichedHeatmap(faire.3lw.mat, 
+#                      pos_line = F, 
+#                      axis_name = c(-2, 0, 2),
+#                      col = col_fun,
+#                      column_title = '3LW',
+#                      top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4),
+#                                                                               ylim = c(0,6),
+#                                                                               axis_param = list(side = 'left'))),  
+#                      name = 'FAIRE zScore',
+#                     left_annotation = rowAnnotation(#textbox = anno_textbox(align_to = groups,
+#                                                     #                        as.list(faire.count),
+#                                                     #                        side = 'left',
+#                                                     #                        background_gp = gpar(fill = NA, col = NA),
+#                                                     #                        gp = gpar(col = 'black'), 
+#                                                     #                        padding = unit(0, 'mm')),
+#                                                      groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
+#                      row_title  = NULL,
+#                      use_raster = F) +
+# EnrichedHeatmap(faire.6h.mat, 
+#                 pos_line = F, 
+#                 axis_name = c(-2, 0, 2),
+#                 col = col_fun,
+#                 column_title = '6h',
+#                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+#                 row_title  = NULL,
+#                 show_heatmap_legend = F,
+#                 use_raster = F) + 
+# EnrichedHeatmap(faire.24h.mat, 
+#                 pos_line = F, 
+#                 axis_name = c(-2, 0, 2),
+#                 col = col_fun,
+#                 column_title = '24h',
+#                 top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = 2:4), ylim = c(0,6))), 
+#                 row_title  = NULL,
+#                 show_heatmap_legend = F,
+#                 use_raster = F) 
+# 
+#
+##png('rPlots/4I.png', width = 4, height = 8, units = 'in', res = 300)
+#ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), row_split = groups, heatmap_legend_side = 'bottom', )
+##dev.off() 
+```
+## Fig 4 - browser
+
+```{r, 4D}
+fairePeaks.osaDependent %>%
+  dplyr::arrange(desc(faire_osaDeGrad.log2FoldChange))
+  
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+track.colors <- c("grey70","grey60","grey50", "grey40", 'grey30')
+
+deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::mutate(color = track.colors)
+
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_44h, 
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
+
+brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 1000)
+
+png('rPlots/4D.png', width = 4, height = 6, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
+                 from = start(brD + 1000),
+                 to = end(brD + 1000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+```
+```{r}
+fairePeaks.deg %>%
+    data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & !anno.new == "3' UTR") %>%
+  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x= n, y = '', fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =3,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),) +
+        #strip.text = element_blank())+
+  facet_wrap(~faireCat.3LW_24h, ncol = 1)
+ggsave('rPlots/4-draft-1.png', width = 4, height = 5, units = 'in', dpi = 300)
+```
+```{r}
+fairePeaks.deg %>%
+    data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x = n, y = '', fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =3,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),) +
+        #strip.text = element_blank())+
+  facet_wrap(~faireCat.3LW_24h, ncol = 1)
+ggsave('rPlots/4-draft-2.png', width = 4, height = 5, units = 'in', dpi = 300)
+```
+```{r}
+
+
+fairePeaks.osaDependent <- fairePeaks.deg %>% 
+  data.frame() %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent' & faireCat.3LW_24h == 'rPlots/3E_opening.png')
+
+dependent.go <- select(org.Dm.eg.db, 
+       keys = fairePeaks.osaDependent$geneId, 
+       columns = c('SYMBOL','GO','ENTREZID'),
+       keytype = "FLYBASE")
+
+dependent.terms <- select(GO.db, 
+       keys = dependent.go$GO, 
+       columns = c('DEFINITION', 'GOID', 'TERM'))
+
+dependent <- dplyr::bind_cols(dependent.go, dependent.terms)
+
+#library(GOSemSim)
+
+#dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
+
+dependent.entrez <- dependent %>% .$ENTREZID
+
+ggo.dependent <- clusterProfiler::enrichGO(gene = dependent.entrez,
+                        OrgDb = org.Dm.eg.db,
+                         ont = 'all',
+                         readable = T)
+
+png('rPlots/4-draft-4.png', width = 10, height = 8, res = 300, units = 'in')
+enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(ONTOLOGY~., scale = 'free')
+dev.off()
 
 ```
 
+```{r tomtom_data_functions}
+library(patchwork)
+
+#TODO move RNAseq data into BAP project
+load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
+
+## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
+fbgn.validated <- read.table('~/McKay/Motif_databases/FLY/fbgn_validated.txt', header = F, sep = '\t')
+colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+
+### DONE incorporate expression information eval tomtom match plots
+### maybe rotate the heatmaps to vertical and have line plots of each match for expression at L3, 6h, 18, 24h
+
+## unnest the tomtom results from the streme results df
+## subset the df to just consensus, match name, evalue
+tomUnnest <- function(x) {
+  unnest <- x %>%
+    tidyr::unnest(tomtom) %>%
+    dplyr::filter(!is.na(match_name)) %>%
+    .[c(6,50,51,56)] %>%
+    unique() %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(neg_log_eval = -log10(1 + match_eval),
+                  FF_FBgn= unlist(stringr::str_split_fixed(match_name, pattern = '_', n = 2)[1])) %>%
+    dplyr::filter(!FF_FBgn == 'FBgn0051782') %>% #what's this again?
+    dplyr::mutate(Geneid = purrr::map_chr(FF_FBgn, function(x) {
+                    fbgn.validated[fbgn.validated$FlyFactor == x,]$Validated
+                  })) 
+  
+  return(unnest)
+}
+
+## generate a new dataframe for each consensus sequence and its associated tomtom results
+tomResults <- function(x) {
+  
+  unnest <- tomUnnest(x) 
+ 
+  ## make a list of dfs, one for each consensus in the input results 
+  tom <- lapply(unique(unnest$consensus), function(x) {
+    tom.seq <- unnest %>% 
+      dplyr::filter(consensus == x) %>%
+      dplyr::left_join(., wing.rnaseq, id = 'Geneid') %>%
+      dplyr::ungroup() %>%
+      dplyr::top_n(10, neg_log_eval) 
+    
+    tom.seq$match_altname = forcats::fct_reorder(tom.seq$match_altname, tom.seq$neg_log_eval, .desc = F)
+   
+    return(tom.seq)
+  })
+  
+  return(tom)
+}
+
+
+format_rna <- function(x) {
+  x %>%
+    .[c(1,3,8:19)] %>%
+    reshape2::melt() %>% 
+    dplyr::rowwise() %>%
+    dplyr::mutate(variable = stringr::str_replace(variable, 'X', ''),
+                rna_grp = stringr::str_split_fixed(variable, pattern = '_', n = 2)[1],
+                rna_grp = factor(rna_grp, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
+    dplyr::group_by(consensus, match_altname, rna_grp) %>%
+    dplyr::summarise(mean = mean(value)) %>%
+    dplyr::mutate(log_mean = log10(1 + mean)) 
+}
+```
+
+
+
+```{r}
+
+osaDep.seq = fairePeaks.deg %>% 
+  data.frame() %>% 
+  dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Dependent') %>%
+  GRanges() %>%
+  resize(1000, "center") %>%
+  memes::get_sequence(dm6)
+  
+osaIndep.seq = fairePeaks.deg %>% 
+  data.frame() %>% 
+  dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Independent') %>%
+  GRanges() %>%
+  resize(1000, "center") %>%
+  memes::get_sequence(dm6)
+ 
+osaDep.streme <- memes::runStreme(osaDep.seq, control = osaIndep.seq)
+
+osaDep.tomtom <- memes::runTomTom(osaDep.streme, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
+  data.frame() 
+
+#####
+tom.results <- tomResults(osaDep.tomtom)
+
+purrr::map(tom.results, function(x) {
+  ## subset the tomtom results to the <= 10 most significant matches
+  tom.df <- x %>%
+    dplyr::group_by(neg_log_eval) %>%
+    dplyr::arrange(neg_log_eval, .by_group = T) 
+  
+  ## plot the hm of tomtom results for current consensus 
+  tom.hm <- tom.df %>%
+    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
+    geom_tile() +
+    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
+    scale_y_discrete(expand = c(0,0)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(), 
+          panel.border = element_blank(),
+          axis.title = element_blank(), 
+          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+          legend.key.size = unit(0.4, 'in'),
+          plot.margin = margin(0,0,0,0, "cm"), 
+          legend.position = 'bottom') 
+ 
+  ## format the tom.results for the rna heatmap
+  rna.df <- format_rna(tom.df)
+  
+  ## plot the rna heatmap for current consensus 
+  rna.hm <- rna.df %>%
+    ggplot(aes(rna_grp,1, fill = log_mean)) +
+    geom_tile() + 
+    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
+    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
+    theme(legend.position = "bottom",
+          axis.text.y = element_blank(),
+          plot.background = element_blank(),
+          panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          strip.background = element_blank(),
+          strip.text.y = element_blank(), 
+          legend.key.size = unit(0.4, 'in'),
+          plot.margin = margin(0,0,0,0, "cm")) 
+  
+  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
+  
+  fp <- paste0('rPlots/',unique(x$consensus),'_tomtom.png')
+  ggsave(fp,plot = plot, width = 5, height = 5, dpi = 300, unit = 'in')
+  })
+```
 
