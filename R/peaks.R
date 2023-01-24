@@ -200,6 +200,6 @@ peaks <- ChIPseeker::as.GRanges(peaks.anno) %>%
                                             grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
                                             grepl("Promoter", annotation) ~ "Promoter"))
 
-save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, cnr.byGrp, file = 'rData/peaks.rda')
+save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
   
 # 

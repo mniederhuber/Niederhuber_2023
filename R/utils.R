@@ -80,8 +80,61 @@ get_bws <- function(sheet, by) {
   return(bw_list)
 }
 
+#TODO - uses fbgn.validated which is set as a global variable in notebook, fix that
+#TODO - cleanup filtering of problematic fbgns 
+#TODO - comment functions
+tomUnnest <- function(x) {
+  unnest <- x %>%
+    tidyr::unnest(tomtom) %>%
+    dplyr::filter(!is.na(match_name)) %>%
+    .[c(6,50,51,56)] %>% #TODO change to dplyr::select specific column names
+    unique() %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(neg_log_eval = -log10(1 + match_eval),
+                  FF_FBgn= unlist(stringr::str_split_fixed(match_name, pattern = '_', n = 2)[1])) %>%
+    dplyr::filter(FF_FBgn != 'FBgn0051782' & FF_FBgn != 'FBgn0265182') %>% #filter out these fbgn -- have problematic validated matches
+    dplyr::mutate(Geneid = purrr::map_chr(FF_FBgn, function(x) {
+      fbgn.validated[fbgn.validated$FlyFactor == x,]$Validated
+    })) 
+  
+  return(unnest)
+}
+
+## generate a new dataframe for each consensus sequence and its associated tomtom results
+tomResults <- function(x) {
+  
+  unnest <- tomUnnest(x) 
+  
+  ## make a list of dfs, one for each consensus in the input results 
+  tom <- lapply(unique(unnest$consensus), function(x) {
+    tom.seq <- unnest %>% 
+      dplyr::filter(consensus == x) %>%
+      dplyr::left_join(., wing.rnaseq, id = 'Geneid') %>%
+      dplyr::ungroup() %>%
+#      dplyr::slice_min(evalue, n = 3, with_ties = F)
+      dplyr::top_n(8, neg_log_eval) 
+    
+    tom.seq$match_altname = forcats::fct_reorder(tom.seq$match_altname, tom.seq$neg_log_eval, .desc = F)
+    
+    return(tom.seq)
+  })
+  
+  return(tom)
+}
 
 
+format_rna <- function(x) {
+  x %>%
+    .[c(1,3,8:19)] %>%
+    reshape2::melt() %>% 
+    dplyr::rowwise() %>%
+    dplyr::mutate(variable = stringr::str_replace(variable, 'X', ''),
+                  rna_grp = stringr::str_split_fixed(variable, pattern = '_', n = 2)[1],
+                  rna_grp = factor(rna_grp, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
+    dplyr::group_by(consensus, match_altname, rna_grp) %>%
+    dplyr::summarise(mean = mean(value)) %>%
+    dplyr::mutate(log_mean = log10(1 + mean)) 
+}
 
 
 

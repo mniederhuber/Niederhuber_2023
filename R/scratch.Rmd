@@ -1,4 +1,9 @@
-## Setup
+# Ideas
+- scale data by fraction of effected cells within heterologous tissue?
+  If 10% of cells show effect by protein degradation
+  - what fold change if any is there at brD? 
+
+# Setup
 
 ```{r setup}
 library(magrittr)
@@ -14,6 +19,8 @@ library(ComplexHeatmap)
 
 library(GO.db)
 
+library(patchwork)
+
 source('utils.R')
 
 ###
@@ -22,6 +29,22 @@ source('utils.R')
 
 load('rData/sheets.rda')
 load('rData/peaks.rda')
+
+#TODO move RNAseq data into BAP project
+load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
+
+#TODO move flyfactor database to BAP - code to download to repo?
+## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
+
+## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+# FBgn0050420 -- is only Atf-2 in flyfactor db
+fbgn.validated <- read.table('~/McKay/Motif_databases/FLY/fbgn_validated.txt', header = F, sep = '\t')
+colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+fbgn.validated %<>% 
+  dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+  dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+                
 
 ###
 # assign global variables
@@ -128,6 +151,11 @@ plot.frac <- function(x) {
    ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
    })
 }
+
+
+
+### for gviz
+genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white')
 ```
 
 TODO - make reference table of different peak categories and parameters, eg. how osa specific peaks are defined, how closing peaks are defined
@@ -153,7 +181,6 @@ brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc',
 
 axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
-genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white')
 
 png('rPlots/1A.png', width = 10, height = 2, res = 300, units = 'in')
 Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(), 
@@ -164,13 +191,14 @@ Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seq
                  title.width = 1,
                  innerMargin = 10)
 dev.off()
+
 ```
 
 
 # Fig 3
 
 
-## Fig 3A. heatmap of osa binding sites vs control
+## 3A. heatmap of osa binding sites vs control
 
 ```{r, 3A}
 
@@ -228,7 +256,7 @@ hms.ordered
 dev.off()
 ```
 
-## Fig 3B. Osa CnR brDisc browswer shot
+## 3B. Osa CnR brDisc browswer shot
 
 ```{r, fig.width=4, fig.height=3}
 
@@ -258,7 +286,7 @@ Gviz::plotTracks(c(axis, cnr.tracks, brdisc.at), chromosome = seqnames(brD) %>% 
 dev.off()
 ```
 
-## Fig 3C. Where are osaGFP binding sites?
+## 3C. Where are osaGFP binding sites?
   
 ```{r, 3C-peak-location}
  peaks %>%
@@ -285,7 +313,7 @@ ggsave('rPlots/3C.png', width = 4, height = 4, units = 'in', dpi = 300)
 
 ```
 
-## Fig 3D. How does osa binding correlate with wt faire data?
+## 3D. How does osa binding correlate with wt faire data?
 
 ```{r 3LW-FAIRE-in-OsaPeaks}
 
@@ -354,7 +382,7 @@ dev.off()
 ```
 
 
-## Fig 3E. Fraction of Osa binding sites withing WT 3LW-24h FAIRE categories
+## 3E. Fraction of Osa binding sites withing WT 3LW-24h FAIRE categories
 ```{r, 3E}
 #TODO - combine fraction barplots and heatmaps into single figure - cowplots? grid?
 
@@ -429,8 +457,9 @@ peaks %>%
 
 ```
 
-##Fig3 - Plot Drafts
+## Drafts
 
+### osa cnr peak annotation
 ```{r, 3draft-1.png}
  peaks %>%
   dplyr::filter(assay == 'cnr' &  osa.cnr & !yw.cnr & faireCat.3LW_24h != 'NA') %>%
@@ -458,7 +487,7 @@ ggsave('rPlots/drafts/3draft-1.png', width = 4, height = 4, dpi = 300)
   
 ```
 
-
+### peak annotation split by osa binding and dynamics
 ```{r, 3draft-2.png}
 
 peaks %>%
@@ -491,10 +520,81 @@ ggsave('rPlots/drafts/3draft-2.png', width = 6, height = 3, dpi = 300)
 # Fig 4
 
 There is very little change between control and osa deGrad conditions. 
-Figure 4 should demonstrate this and highligh if there are any subtle changes, where they occur, and how they relate to osa binding. 
+Figure 4 should demonstrate this and highlight if there are any subtle changes, where they occur, and how they relate to osa binding. 
+
+## 4C - venn
+
+```{r}
+osaDeg <- fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::filter(osaGFP.deGrad) %>%
+  GRanges()
+
+control <- fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::filter(osaGFP.control) %>%
+  GRanges()
+
+#ChIPpeakAnno::makeVennDiagram(list(osaDeg,control))
+ChIPpeakAnno::makeVennDiagram(faire.osaDeg.byGrp)
+
+####
 
 
-## Fig 4D. FAIRE control vs osaDeGrad - split by degrad categories
+```
+
+## 4D 
+```{r}
+### draft log2fold by degrad cat
+#Might be useful to articulate that while there are some very subtle differences in osa degrad - there are very few twofold ectopic changes 
+#ie. there is not an appreciable gain of accessibility genome-wide when osa is depleted
+
+fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::mutate(twofold = ifelse(faire_osaDeGrad.log2FoldChange <= -1 | faire_osaDeGrad.log2FoldChange >= 1, T, F),
+                cat = dplyr::case_when(osaGFP.control & !osaGFP.deGrad ~ 'control',
+                                       !osaGFP.control & osaGFP.deGrad ~ 'osa degrad',
+                                       T ~ 'other')) %>% 
+  ggplot(aes(x = '',  faire_osaDeGrad.log2FoldChange, fill = faireCat.osaDeGrad)) + 
+  geom_violin(position = 'identity', scale = 'count') +
+    geom_point(aes(alpha = twofold), position = position_jitter(width = 0.1), color = 'red') +
+  scale_alpha_manual(values = c(0,0.2)) +
+  ylim(c(-2.25,2.25)) +
+  scale_fill_manual(values = c('#C05066','#8AD04E','#608AE3')) +
+  ylab("log2FoldChange(Control / OsaDeGrad)") +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text = element_text(size = 12)) 
+
+ggsave('rPlots/4-draft-5.png', width = 2, height = 4, dpi = 300)
+
+```
+
+## 4D 
+```{r}
+
+fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::mutate(twofold = ifelse(faire_osaDeGrad.log2FoldChange <= -1 | faire_osaDeGrad.log2FoldChange >= 1, T, F),
+                cat = dplyr::case_when(osaGFP.control & !osaGFP.deGrad ~ 'control',
+                                       !osaGFP.control & osaGFP.deGrad ~ 'osa degrad',
+                                       T ~ 'other')) %>% 
+  ggplot(aes(x = '',  faire_osaDeGrad.log2FoldChange, fill = cat)) + 
+  geom_violin(position = 'identity', alpha = 0.3, scale = 'count') +
+  scale_alpha_manual(values = c(0,0.2)) +
+  ylim(c(-2.25,2.25)) +
+  scale_fill_manual(values = c('#C05066','#8AD04E','#608AE3')) +
+  ylab("log2FoldChange(Control / OsaDeGrad)") +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text = element_text(size = 12)) 
+
+ggsave('rPlots/4-draft-6.png', width = 2, height = 4, dpi = 300)
+
+```
+
+
+## 4E. FAIRE control vs osaDeGrad - split by degrad categories
 Using deseq differential scoring between control and osaGFP deGrad to define FAIRE peak categories.
 Using a very sensitive cutoff for log2fold change. 
 "ectopic" (gain of signal in degrad) <= log2(control/degrad) <= -0.4, 
@@ -588,7 +688,174 @@ fairePeaks.deg %>%
 
 ```
 
-## Fig 4B. Osa deGrad FAIRE signal in osa-bound l3-24h closing sites.
+
+
+## 4F. osa dependent browser shot example
+```{r, 4D}
+#TODO - add highlights for dependent regions - currently manually annotating in illustrator 
+
+#peaks %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE' & faireCat.osaDeGrad == 'Osa Dependent') %>%
+#  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>%
+#  dplyr::arrange(desc(faire_osaDeGrad.log2FoldChange)) %>%
+#  ggplot(aes(faire_osaDeGrad.pvalue, faire_osaDeGrad.log2FoldChange)) +
+#  geom_point()
+#  dplyr::select(seqnames, start, end) %>%
+#  write.table(., file = '~/Desktop/osaDep.bed', col.names = F, row.names = F, quote = F)
+  
+# chr2R:11,465,947-11,499,493 
+inv <- data.frame(seqnames = 'chr2R',
+                   start = 11465947,
+                   end = 11499493) %>%
+  GRanges()
+  
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+track.colors <- c("#50c42d","#c42d85","grey70","grey60","grey50")
+
+deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::mutate(color = track.colors)
+
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,10))
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_44h,
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
+
+#brdisc.at <- Gviz::AnnotationTrack(range = inv, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
+
+png('rPlots/4E-browser.png', width = 4, height = 3, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, genetrack), chromosome = seqnames(inv) %>% as.character(), 
+                 from = start(inv),
+                 to = end(inv),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+```
+
+## 4H. motif enrichment in osa dependent regions 
+
+```{r}
+
+###
+
+#memes::
+###
+
+
+osaDep.seq = fairePeaks.deg %>% 
+  data.frame() %>% 
+  #dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Dependent' & faire_osaDeGrad.log2FoldChange >= 1) %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & faire_osaDeGrad.log2FoldChange >= 1) %>%
+  #dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & faire_osaDeGrad.log2FoldChange >= 1) %>%
+  #dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & faire_osaDeGrad.log2FoldChange >= 1) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+  
+osaIndep.seq = fairePeaks.deg %>% 
+  data.frame() %>% 
+  #dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Independent') %>%
+  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+ 
+osaDep.streme <- memes::runStreme(osaDep.seq, control = osaIndep.seq) 
+#  dplyr::slice_min(pval, n = 8, with_ties = F)
+
+#saDep.streme %<>%
+#  dplyr::slice_min(evalue, n = 5, with_ties = F)
+osaDep.streme %>%
+  data.frame() %>%
+  dplyr::mutate(consensus = forcats::fct_reorder(consensus, log_evalue)) %>%
+  ggplot(aes(log_evalue, consensus)) + 
+  geom_point()
+
+
+  
+###
+osaDep.streme %>%
+  dplyr::mutate(neg_log_evalue = -as.double(log_evalue),
+                consensus = forcats::fct_reorder(consensus, neg_log_evalue, .desc = F)) %>%
+  ggplot(aes(x=0,consensus, fill = neg_log_evalue)) +
+  geom_tile(color = 'black') +
+  scale_fill_viridis_c(guide = guide_legend(direction = 'horizontal', 
+                                            nrow = 1, 
+                                            label.position = 'bottom', 
+                                            title.position = 'top')) +
+  theme(axis.text.x = element_blank(), 
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        legend.position = 'bottom',
+        legend.key.size = unit(0.2,'cm'))
+ggsave('rPlots/motif-analysis/4H-consensus.png', width = 1.2, height = 2, dpi = 300, scale = 3)
+###
+
+#plot of enriched consensus significance
+osaDep.tomtom <- memes::runTomTom(osaDep.streme, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
+  data.frame() 
+
+
+#####
+tom.results <- tomResults(osaDep.tomtom)
+
+purrr::map(tom.results, function(x) {
+  tom.df <- x %>%
+    dplyr::group_by(neg_log_eval) %>%
+    dplyr::arrange(neg_log_eval, .by_group = T) 
+  
+  ## plot the hm of tomtom results for current consensus 
+  tom.hm <- tom.df %>%
+    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
+    geom_tile() +
+    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
+    scale_y_discrete(expand = c(0,0)) +
+    theme(panel.background = element_blank(),
+          panel.grid = element_blank(), 
+          panel.border = element_blank(),
+          axis.title = element_blank(), 
+          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+          legend.key.size = unit(0.4, 'in'),
+          plot.margin = margin(0,0,0,0, "cm"), 
+          legend.position = 'bottom') 
+ 
+  ## format the tom.results for the rna heatmap
+  rna.df <- format_rna(tom.df)
+  
+  ## plot the rna heatmap for current consensus 
+  rna.hm <- rna.df %>%
+    ggplot(aes(rna_grp,1, fill = log_mean)) +
+    geom_tile() + 
+    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
+    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
+    theme(legend.position = "bottom",
+          axis.text.y = element_blank(),
+          plot.background = element_blank(),
+          panel.background = element_blank(),
+          panel.grid = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          strip.background = element_blank(),
+          strip.text.y = element_blank(), 
+          legend.key.size = unit(0.4, 'in'),
+          plot.margin = margin(0,0,0,0, "cm")) 
+  
+  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
+  
+  fp <- paste0('rPlots/motif-analysis/',unique(x$consensus),'_osaDependent.png')
+  ggsave(fp,plot = plot, width = 5, height = 5, dpi = 300, unit = 'in')
+  })
+```
+
+
+## 4I. Osa deGrad FAIRE signal in osa-bound l3-24h closing sites.
 This plot shows that within the osa CnR peaks that close from 3LW to 24h, there is little to no change in their ~24h-36h accessibility when osa is depleted.
 
 ```{r}
@@ -658,13 +925,13 @@ names(deg.hms) <- names(deg.mats)
 
 hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
 
-png('rPlots/4C.png', width = 4, height = 3, units = 'in', res = 300)
+png('rPlots/4C.png', width = 3, height = 3, units = 'in', res = 300)
 ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
 
 
-## Fig 4C. Browser shot of osa deGrad FAIRE at brDisc.
+## 4J. Browser shot of osa deGrad FAIRE at brDisc.
 Shows that there is no increase in accessibility.
 ```{r, 4D}
 #TODO - add 36h FAIRE data? better comparison for osa deGrad?
@@ -699,17 +966,23 @@ dev.off()
 ```
 
 
-## Fig 4-Supp. 
+## Supp. 
 Using any peak call from the degrad experiment.
 So 'independent' regions are accessible in both experiments. 
 
 ```{r}
 
-
+temp <- fairePeaks.osaDependent %>%
+  data.frame() %>%
+  dplyr::filter(faire_osaDeGrad.log2FoldChange >= 0.9) %>%
+  #dplyr::filter(faire_osaDeGrad.log2FoldChange >= 0.4 & faire_osaDeGrad.log2FoldChange < 0.9) %>%
+  GRanges()
 #fairePeaks.osaDependent <- fairePeaks.deg %>% data.frame() %>% dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent')
 
+       #keys = fairePeaks.osaDependent$geneId, 
 dependent.go <- select(org.Dm.eg.db, 
-       keys = fairePeaks.osaDependent$geneId, 
+      # keys = fairePeaks.osaDependent$geneId, 
+       keys = temp$geneId, 
        columns = c('SYMBOL','GO','ENTREZID'),
        keytype = "FLYBASE")
 
@@ -717,8 +990,9 @@ dependent.terms <- select(GO.db,
        keys = dependent.go$GO, 
        columns = c('DEFINITION', 'GOID', 'TERM'))
 
-dependent <- dplyr::bind_cols(dependent.go, dependent.terms)
 
+dependent <- dplyr::bind_cols(dependent.go, dependent.terms)
+unique(dependent$SYMBOL)
 #library(GOSemSim)
 
 #dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
@@ -730,15 +1004,15 @@ ggo.dependent <- clusterProfiler::enrichGO(gene = dependent.entrez,
                          ont = 'all',
                          readable = T)
 
-png('rPlots/4sup.png', width = 10, height = 8, res = 300, units = 'in')
+#png('rPlots/temp.png', width = 10, height = 8, res = 300, units = 'in')
 enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(ONTOLOGY~., scale = 'free')
-dev.off()
+#dev.off()
 
 
 
 ```
 
-## Fig 4E.
+##  4E.
 
 ```{r}
 
@@ -809,7 +1083,7 @@ png('rPlots/4E.png', width = 4, height = 3, units = 'in', res = 300)
 ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
-## Fig 4F.
+## 4F.
 
 ```{r}
 
@@ -871,34 +1145,9 @@ ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, me
 dev.off()
 ```
 
-## Fig 4 - DRAFT - peak annotations
-```{r}
-fairePeaks.deg %>%
-    data.frame() %>%
-#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' ) %>%
-  dplyr::group_by(faireCat.osaDeGrad, anno.new) %>%
-  dplyr::tally() %>%
-  dplyr::mutate(pct = n/sum(n)) %>%
- # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
-  ggplot(aes(x = faireCat.osaDeGrad, y = n, fill = anno.new)) +
-  geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =4,
-                  min.segment.length = 0,
-                  force = 0.01,
-                  force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
-  ylab('Fraction') +
-  theme(axis.title.x = element_blank(),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.5, 'cm'),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.y = element_blank())
-ggsave('rPlots/4G.png', width = 6, height = 5, units = 'in', dpi = 300)
-```
 
-## Fig 4H.
+
+## 4H.
 
 ```{r}
 #TODO - simplifiy - purrr::map
@@ -968,7 +1217,7 @@ ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), r
 dev.off() 
 ```
 
-## Fig 4I.
+## 4I.
 ```{r}
 
 faire.3lw.mat <- normalizeToMatrix(bws$wt_3LW, fairePeaks.osaEctopic, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
@@ -1037,7 +1286,93 @@ ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), r
 dev.off() 
 ```
 
-## Fig 4 - drafts
+```{r}
+fairePeaks.osaDependent %>%
+  data.frame() %>%
+  dplyr::filter(!anno.new == "3' UTR") %>% #filtering this out because there are no peaks anno as 3'UTR in ectopic regins, messes up colors
+  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x= n, y = '', fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =3,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),) +
+        #strip.text = element_blank())+
+  facet_wrap(~faireCat.3LW_24h, ncol = 1)
+ggsave('rPlots/4-draft-1.png', width = 4, height = 5, units = 'in', dpi = 300)
+```
+```{r}
+fairePeaks.osaEctopic %>%
+  data.frame() %>%
+  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x = n, y = '', fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =3,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.background = element_blank(),) +
+        #strip.text = element_blank())+
+  facet_wrap(~faireCat.3LW_24h, ncol = 1)
+ggsave('rPlots/4-draft-2.png', width = 4, height = 5, units = 'in', dpi = 300)
+```
+
+
+## drafts
+
+### peak annotations
+```{r}
+fairePeaks.deg %>%
+    data.frame() %>%
+#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' ) %>%
+  dplyr::group_by(faireCat.osaDeGrad, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+ # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
+  ggplot(aes(x = faireCat.osaDeGrad, y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill') +
+  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =4,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_manual(values = cbPalette) +
+  ylab('Fraction') +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank())
+ggsave('rPlots/4G.png', width = 6, height = 5, units = 'in', dpi = 300)
+```
 ```{r}
 #fairePeaks.osaDep <- fairePeaks.deg %>% 
 #  data.frame() %>%
@@ -1109,107 +1444,24 @@ dev.off()
 #ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), row_split = groups, heatmap_legend_side = 'bottom', )
 ##dev.off() 
 ```
-## Fig 4 - browser
+### browser draft
 
-```{r, 4D}
-fairePeaks.osaDependent %>%
-  dplyr::arrange(desc(faire_osaDeGrad.log2FoldChange))
-  
-#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("grey70","grey60","grey50", "grey40", 'grey30')
 
-deg.ss.browser <- faire.osaDeGrad.ssPool %>%
-  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
-  dplyr::mutate(color = track.colors)
 
-deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
-deg.tracks <- c(deg.tracks$wt_3LW, 
-                deg.tracks$wt_24h, 
-                deg.tracks$wt_44h, 
-                deg.tracks$osaGFP.deGrad_control_faire, 
-                deg.tracks$osaGFP.deGrad_nubG4_faire)
 
-brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
-
-axis <- Gviz::GenomeAxisTrack(scale = 1000)
-
-png('rPlots/4D.png', width = 4, height = 6, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, deg.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
-                 from = start(brD + 1000),
-                 to = end(brD + 1000),
-                 cex.axis = 0.3,
-                 cex.title = 0.5,
-                 title.width = 1,
-                 innerMargin = 10)
-dev.off()
-```
+### go analysis draft
 ```{r}
-fairePeaks.deg %>%
-    data.frame() %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent' & !anno.new == "3' UTR") %>%
-  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
-  dplyr::tally() %>%
-  dplyr::mutate(pct = n/sum(n)) %>%
- # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
-  ggplot(aes(x= n, y = '', fill = anno.new)) +
-  geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =3,
-                  min.segment.length = 0,
-                  force = 0.01,
-                  force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
-  ylab('Fraction') +
-  theme(axis.title.x = element_blank(),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.5, 'cm'),
-        axis.text.x = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.y = element_blank(),
-        panel.background = element_blank(),
-        strip.background = element_blank(),) +
-        #strip.text = element_blank())+
-  facet_wrap(~faireCat.3LW_24h, ncol = 1)
-ggsave('rPlots/4-draft-1.png', width = 4, height = 5, units = 'in', dpi = 300)
-```
-```{r}
-fairePeaks.deg %>%
-    data.frame() %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
-  dplyr::group_by(faireCat.3LW_24h, anno.new) %>%
-  dplyr::tally() %>%
-  dplyr::mutate(pct = n/sum(n)) %>%
- # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
-  ggplot(aes(x = n, y = '', fill = anno.new)) +
-  geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =3,
-                  min.segment.length = 0,
-                  force = 0.01,
-                  force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
-  ylab('Fraction') +
-  theme(axis.title.x = element_blank(),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.5, 'cm'),
-        axis.text.x = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.y = element_blank(),
-        panel.background = element_blank(),
-        strip.background = element_blank(),) +
-        #strip.text = element_blank())+
-  facet_wrap(~faireCat.3LW_24h, ncol = 1)
-ggsave('rPlots/4-draft-2.png', width = 4, height = 5, units = 'in', dpi = 300)
-```
-```{r}
-
-
-fairePeaks.osaDependent <- fairePeaks.deg %>% 
+test <- fairePeaks.wt %>%
   data.frame() %>%
-  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent' & faireCat.3LW_24h == 'rPlots/3E_opening.png')
+#  dplyr::filter(faire_osaDeGrad.log2FoldChange <= -1) %>%
+  dplyr::arrange(faire_osaDeGrad.log2FoldChange) 
+  
 
+
+ 
+fairePeaks.osaEctopic %>% data.frame
 dependent.go <- select(org.Dm.eg.db, 
-       keys = fairePeaks.osaDependent$geneId, 
+       keys = test$geneId, 
        columns = c('SYMBOL','GO','ENTREZID'),
        keytype = "FLYBASE")
 
@@ -1218,7 +1470,6 @@ dependent.terms <- select(GO.db,
        columns = c('DEFINITION', 'GOID', 'TERM'))
 
 dependent <- dplyr::bind_cols(dependent.go, dependent.terms)
-
 #library(GOSemSim)
 
 #dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
@@ -1229,153 +1480,22 @@ ggo.dependent <- clusterProfiler::enrichGO(gene = dependent.entrez,
                         OrgDb = org.Dm.eg.db,
                          ont = 'all',
                          readable = T)
-
-png('rPlots/4-draft-4.png', width = 10, height = 8, res = 300, units = 'in')
-enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(ONTOLOGY~., scale = 'free')
+ggo.dependent %>%
+  data.frame() %>%
+#  dplyr::filter(grepl('sensory',Description)) %>%
+  dplyr::mutate(symbol = stringr::str_split(geneID,'/')) %>%
+  tidyr::unnest(symbol)
+  dplyr::select(Description, qvalue, symbol) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+  
+png('rPlots/4-ectopic.png', width = 10, height = 8, res = 300, units = 'in')
+enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_format = 80) + facet_grid(SYMBOL~., scale = 'free')
 dev.off()
 
 ```
 
-```{r tomtom_data_functions}
-library(patchwork)
-
-#TODO move RNAseq data into BAP project
-load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
-
-## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
-fbgn.validated <- read.table('~/McKay/Motif_databases/FLY/fbgn_validated.txt', header = F, sep = '\t')
-colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
-
-### DONE incorporate expression information eval tomtom match plots
-### maybe rotate the heatmaps to vertical and have line plots of each match for expression at L3, 6h, 18, 24h
-
-## unnest the tomtom results from the streme results df
-## subset the df to just consensus, match name, evalue
-tomUnnest <- function(x) {
-  unnest <- x %>%
-    tidyr::unnest(tomtom) %>%
-    dplyr::filter(!is.na(match_name)) %>%
-    .[c(6,50,51,56)] %>%
-    unique() %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(neg_log_eval = -log10(1 + match_eval),
-                  FF_FBgn= unlist(stringr::str_split_fixed(match_name, pattern = '_', n = 2)[1])) %>%
-    dplyr::filter(!FF_FBgn == 'FBgn0051782') %>% #what's this again?
-    dplyr::mutate(Geneid = purrr::map_chr(FF_FBgn, function(x) {
-                    fbgn.validated[fbgn.validated$FlyFactor == x,]$Validated
-                  })) 
-  
-  return(unnest)
-}
-
-## generate a new dataframe for each consensus sequence and its associated tomtom results
-tomResults <- function(x) {
-  
-  unnest <- tomUnnest(x) 
- 
-  ## make a list of dfs, one for each consensus in the input results 
-  tom <- lapply(unique(unnest$consensus), function(x) {
-    tom.seq <- unnest %>% 
-      dplyr::filter(consensus == x) %>%
-      dplyr::left_join(., wing.rnaseq, id = 'Geneid') %>%
-      dplyr::ungroup() %>%
-      dplyr::top_n(10, neg_log_eval) 
-    
-    tom.seq$match_altname = forcats::fct_reorder(tom.seq$match_altname, tom.seq$neg_log_eval, .desc = F)
-   
-    return(tom.seq)
-  })
-  
-  return(tom)
-}
 
 
-format_rna <- function(x) {
-  x %>%
-    .[c(1,3,8:19)] %>%
-    reshape2::melt() %>% 
-    dplyr::rowwise() %>%
-    dplyr::mutate(variable = stringr::str_replace(variable, 'X', ''),
-                rna_grp = stringr::str_split_fixed(variable, pattern = '_', n = 2)[1],
-                rna_grp = factor(rna_grp, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
-    dplyr::group_by(consensus, match_altname, rna_grp) %>%
-    dplyr::summarise(mean = mean(value)) %>%
-    dplyr::mutate(log_mean = log10(1 + mean)) 
-}
-```
-
-
-
-```{r}
-
-osaDep.seq = fairePeaks.deg %>% 
-  data.frame() %>% 
-  dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Dependent') %>%
-  GRanges() %>%
-  resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-  
-osaIndep.seq = fairePeaks.deg %>% 
-  data.frame() %>% 
-  dplyr::filter(faireCat.3LW_24h == 'opening' & faireCat.osaDeGrad == 'Osa Independent') %>%
-  GRanges() %>%
-  resize(1000, "center") %>%
-  memes::get_sequence(dm6)
- 
-osaDep.streme <- memes::runStreme(osaDep.seq, control = osaIndep.seq)
-
-osaDep.tomtom <- memes::runTomTom(osaDep.streme, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame() 
-
-#####
-tom.results <- tomResults(osaDep.tomtom)
-
-purrr::map(tom.results, function(x) {
-  ## subset the tomtom results to the <= 10 most significant matches
-  tom.df <- x %>%
-    dplyr::group_by(neg_log_eval) %>%
-    dplyr::arrange(neg_log_eval, .by_group = T) 
-  
-  ## plot the hm of tomtom results for current consensus 
-  tom.hm <- tom.df %>%
-    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
-    geom_tile() +
-    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
-    scale_y_discrete(expand = c(0,0)) +
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(), 
-          panel.border = element_blank(),
-          axis.title = element_blank(), 
-          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-          legend.key.size = unit(0.4, 'in'),
-          plot.margin = margin(0,0,0,0, "cm"), 
-          legend.position = 'bottom') 
- 
-  ## format the tom.results for the rna heatmap
-  rna.df <- format_rna(tom.df)
-  
-  ## plot the rna heatmap for current consensus 
-  rna.hm <- rna.df %>%
-    ggplot(aes(rna_grp,1, fill = log_mean)) +
-    geom_tile() + 
-    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
-    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
-    theme(legend.position = "bottom",
-          axis.text.y = element_blank(),
-          plot.background = element_blank(),
-          panel.background = element_blank(),
-          panel.grid = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank(),
-          strip.background = element_blank(),
-          strip.text.y = element_blank(), 
-          legend.key.size = unit(0.4, 'in'),
-          plot.margin = margin(0,0,0,0, "cm")) 
-  
-  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
-  
-  fp <- paste0('rPlots/',unique(x$consensus),'_tomtom.png')
-  ggsave(fp,plot = plot, width = 5, height = 5, dpi = 300, unit = 'in')
-  })
-```
 
