@@ -87,7 +87,8 @@ tomUnnest <- function(x) {
   unnest <- x %>%
     tidyr::unnest(tomtom) %>%
     dplyr::filter(!is.na(match_name)) %>%
-    .[c(6,50,51,56)] %>% #TODO change to dplyr::select specific column names
+    dplyr::select(consensus, match_name, match_altname, match_eval) %>%
+#    .[c(6,50,51,56)] %>% #DONE change to dplyr::select specific column names
     unique() %>%
     dplyr::rowwise() %>%
     dplyr::mutate(neg_log_eval = -log10(1 + match_eval),
