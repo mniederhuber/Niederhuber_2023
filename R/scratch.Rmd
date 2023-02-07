@@ -239,6 +239,32 @@ dev.off()
 
 ```
 
+## 1C. Gene expression changes of mur2b and br
+```{r}
+wing.rnaseq %>%
+  dplyr::select(-log_mean,-mean) %>%
+  tidyr::pivot_longer(!Geneid) %>%
+  dplyr::filter(Geneid %in% c('FBgn0025390','FBgn0283451')) %>%
+  dplyr::group_by(name) %>%
+  dplyr::mutate(name = stringr::str_remove(name,'X'),
+                grp = stringr::str_split_fixed(name,'_',n=2)[[1]],
+                grp = factor(grp, levels = c('L3', '6h','18h','24h','36h','44h')),
+                Gene = dplyr::case_when(Geneid == 'FBgn0025390' ~ 'mur2b',
+                                        Geneid == 'FBgn0283451' ~ 'br')) %>%
+  dplyr::group_by(Gene, grp) %>%
+  dplyr::summarise(mean = mean(value)) %>%
+  dplyr::mutate(fracmax = mean/max(mean)) %>%
+  ggplot(aes(grp, fracmax, color = Gene, group = Gene)) +
+  geom_line(size = 2) +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 20),
+        panel.grid.major = element_line(color = 'grey80'),
+        legend.key.size = unit(1, 'cm'),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20))
+
+ggsave('rPlots/1C.png', dpi = 300, width = 7, height = 5)
+```
 
 # Fig 3
 
