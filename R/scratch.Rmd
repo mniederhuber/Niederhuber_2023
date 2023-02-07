@@ -22,7 +22,7 @@ library(GO.db)
 library(patchwork)
 
 source('utils.R')
-
+source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
 ###
 # load rData
 ###
@@ -32,6 +32,17 @@ load('rData/peaks.rda')
 
 #TODO move RNAseq data into BAP project
 load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
+#loads 'wing.rnaseq'
+ON.genes <- wing.rnaseq %>%
+  dplyr::filter(mean >= 2) %>%
+  dplyr::select(Geneid) 
+
+ON.genes %>% write.table('on-rnaseq.txt', sep = '\n', row.names = F, col.names = F, quote = F)
+#TODO clean this up - had to write out the on list and use the flybase id validator tool... 
+ON.genes.validated <- read.table('~/McKay/Wing-RNAseq/on-genes-IDvalidation.txt', header = T) %>%
+  dplyr::rename(Geneid = submitted_item, 
+                Validated = validated_id,
+                Symbol = current_symbol)
 
 #TODO move flyfactor database to BAP - code to download to repo?
 ## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
@@ -59,6 +70,26 @@ brD <- data.frame('seqnames' = 'chrX',
                   'end' = 1567401) %>%
   GenomicRanges::GRanges()
 
+
+### 
+# meme db 
+###
+#TODO - so clunky...
+# loading in the fly factor database, drop out a couple of problematic fbgn
+# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+# then filter on the on gene list -- which has to go through a similar process of id validation
+# gross
+meme_db <- universalmotif::read_meme('~/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
+  universalmotif::to_df() %>%
+  dplyr::group_by(name) %>%
+  dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+  dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+                fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated) 
+
+meme_db_on <- meme_db %>%
+  dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
+
+options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
 ###
 # colors
 ### 
@@ -211,8 +242,38 @@ dev.off()
 
 # Fig 3
 
+## 3B. Venn of osa peaks vs control
 
-## 3A. heatmap of osa binding sites vs control
+Manually draw venn in illustrator
+```{r}
+
+ChIPpeakAnno::makeVennDiagram(list(peaks %>% dplyr::filter(assay == 'cnr' & yw.cnr) %>% GRanges(),
+                                   peaks %>% dplyr::filter(assay == 'cnr' & osa.cnr) %>% GRanges()))
+
+###
+
+peaks %>%
+  dplyr::filter(assay == 'cnr' & yw.cnr | assay == 'cnr' & osa.cnr) %>%
+  dplyr::mutate(twofold = ifelse(cnr.log2FoldChange <= -1 | cnr.log2FoldChange >= 1, T, F),
+                cat = dplyr::case_when(osa.cnr & !yw.cnr ~ 'Osa',
+                                       !osa.cnr & yw.cnr ~ 'Control',
+                                       T ~ 'Shared')) %>% 
+  ggplot(aes(x = '',  cnr.log2FoldChange, fill = cat)) + 
+#  ggplot(aes(x = '',  cnr.log2FoldChange)) + 
+  geom_violin(position = 'identity', alpha = 0.3, scale = 'count') +
+  scale_alpha_manual(values = c(0,0.2)) +
+#  ylim(c(-2.25,2.25)) +
+  scale_fill_manual(values = c('#C05066','#8AD04E','#608AE3')) +
+  ylab("log2FoldChange(osaGFP / control)") +
+  theme(#legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text = element_text(size = 12)) 
+
+ggsave('rPlots/3B-draft.png', width = 5, height = 5, dpi = 300)
+
+```
+
+## 3B. heatmap of osa binding sites vs control
 
 ```{r, 3A}
 
@@ -325,6 +386,82 @@ dev.off()
         axis.title.y = element_blank())
 ggsave('rPlots/3C.png', width = 4, height = 4, units = 'in', dpi = 300)
 
+```
+## 3D - AT content within osa peaks
+Quantification of the precentage of A and T bases in 3kb windows around osa peaks. 
+ie. a the fraction of peaks at each position of a 3kb window that have A or T bases.
+Suggests there is lower A/T content within osa binding sites. 
+
+Sanity check that summit coordinates don't change this result, and they don't. 
+Summit coords are likely off center from the narrowpeak coordinate center, so maybe there's a difference in AT content
+around summits.
+But that doesn't appear to be true, still saw a drop in AT content. 
+```{r}
+bw_list <- c('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
+             'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+  
+bws <- rtracklayer::BigWigFileList(bw_list)
+
+names(bws) <- c('rep1','rep2')
+
+zmatrix <- purrr::map(names(bws), function(x) {
+  signal::get_average_signal(bws[[x]], osaPeaks %>% resize(3000,'center')) %>% dplyr::mutate(id = x)
+  }) %>%
+  dplyr::bind_rows(.) %>%
+  dplyr::group_by(position) %>%
+  dplyr::summarise(meanZ = mean(value.mean)) %>%
+  dplyr::mutate(name = position - 1500,
+                fracZ = meanZ/max(meanZ))
+
+##
+
+osaBound.seq = osaPeaks %>% 
+  resize(3000, "center") %>%
+  memes::get_sequence(dm6)
+
+osaBound.seq.df <- osaBound.seq %>%
+  data.frame() 
+
+colnames(osaBound.seq.df) <- 'seqs'
+
+osaBound.seq.split <- stringr::str_split(osaBound.seq.df$seqs, pattern = '', simplify = T) %>%
+  data.frame()
+
+colnames(osaBound.seq.split) <- as.character(c(1:3000))
+
+osaBound.df <- dplyr::bind_cols(osaBound.seq.split, data.frame(osaPeaks))
+
+osaBound.df %>%
+  tidyr::pivot_longer(c(1:3000)) %>%
+  dplyr::mutate(name = as.integer(name),
+                name = name - 1500) %>%
+  #dplyr::mutate(GC = ifelse(value == 'G' | value == 'C', T, F),
+  #              AT = ifelse(value == 'T' | value == 'A', T, F),
+  #              name = as.integer(name)) 
+  dplyr::select(peak, name, value) %>%
+  dplyr::group_by(name, value) %>%
+  dplyr::tally() %>%
+  dplyr::filter(value != 'N') %>%
+  dplyr::mutate(freq = n/sum(n)) %>%
+  dplyr::left_join(zmatrix,by = 'name') %>%
+  dplyr::filter(value %in% c('A','T')) %>%
+  ggplot(aes(name, freq, color = value)) +
+  geom_point(alpha = 0.1) +
+  scale_color_manual(values = c('#D81B60','#1E88E5'), name = '') +
+  geom_smooth(method = 'loess', span = 0.1) +
+  geom_line(aes(y = fracZ/2, x = name), color = 'black') +
+  #geom_line(aes(y = (meanZ/20)+0.1, x = name)) +
+#  ylim(c(0.15,0.35)) +
+  scale_y_continuous(name = 'AT Frequency',, 
+                     sec.axis = sec_axis(~.*2, name = 'Fraction of Max Osa zScore')) + 
+  ylab('Fraction of Osa Peaks') +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        legend.position = 'left')
+ggsave('rPlots/3-draft-ATcontent.png', dpi = 300, width = 4, height = 3)
+  #geom_bar(stat = 'identity', position = 'fill')
+
+#####
 ```
 
 ## 3D. How does osa binding correlate with wt faire data?
@@ -572,30 +709,114 @@ enrichplot::dotplot(ggo.closing, split = 'ONTOLOGY', font.size = 12, label_forma
   
 
 ```
+
 ### motifs in osa peaks
 ```{r}
-osaBound.seq = osaPeaks %>% 
-  resize(250, "center") %>%
+#testing with peak summits by rep
+# using summit coordinates doesn't seem to majorly impact results
+#summit_files <- purrr::map_df(c('rep1','rep2'), function(x) {
+#  fp <- paste0('Peaks/osaGFP-3LW-wing-aGFP-CnR-sup-',x,'_dm6_trim_q5_dupsRemoved_allFrags_summits.bed')  
+#  read.table(fp) %>%
+#    setNames(c('seqnames', 'start', 'end', 'path', 'score')) %>%
+#    dplyr::mutate(grp = x) %>%
+#    dplyr::filter(GRanges(.) %over% GRanges(peaks %>% dplyr::filter(assay == 'cnr' & osa.cnr & !yw.cnr)))
+#}) %>% GRanges()
+
+#streme
+#summit.seq.byRep <- summit_files %>% 
+#  split(mcols(.)$grp) %>%
+#  resize(200, 'center') %>%
+#  memes::get_sequence(dm6)
+
+#using a slightly larger range becuase average peak size is closer to ~300bp - is this the right call?
+osa.seq <- osaPeaks %>%
+  resize(50, "center") %>%
   memes::get_sequence(dm6)
 
-osaBound.streme <- memes::runStreme(osaBound.seq, control = 'shuffle', outdir = 'rPlots/')
+osaBound.ame <- osa.seq %>%
+  memes::runAme() %>%
+  dplyr::group_by(motif_alt_id) %>%
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
 
-purrr::map(osaBound.dreme$motif, function(x) {
-  print(x) 
+osaBound.ame %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:15) %>%
+  dplyr::mutate(neglogE = -log10(evalue)) %>%
+  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
+  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogE)) %>%
+  ggplot(aes('Osa Bound', symbol, fill = neglogE)) +
+  geom_raster() +
+  scale_fill_continuous(type = 'viridis', name = '-log(evalue)') +
+  theme(axis.text.y = element_text(size = 12),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) 
+  ggsave('rPlots/3E_osaBound.png', width = 4, height = 4, dpi = 300)
+ 
+
+
+
+#streme.bySummit <- summit.seq.byRep %>%
+#  memes::runStreme(control = 'shuffle')
+
+#memes::runTomTom(streme.bySummit)
+
+#streme.bySummit
+
+#ame
+#ame.bySummit <- osaBound.seq %>%
+#  memes::runAme()
+#ame.bySummit %>%
+#  dplyr::filter(rank %in% 1:10) %>%
+#  memes::plot_ame_heatmap(id = motif_alt_id)
+#kame.bySummit$rep1
+#ame_by_binding$ectopic %>% 
+#  dplyr::filter(rank %in% 1:10) %>% 
+#  plot_ame_heatmap(group_name = "Ectopic Sites")  +
+#    ggtitle("Top 10 AME Hits in Ectopic Sites")
+#osaBound.streme <- memes::runStreme(osaBound.seq, control = 'shuffle', outdir = 'rPlots/') %>%
+#  setNames(osaBound.streme$name)
+#names(osaBound.streme$motif) <- osaBound.streme$name
+
+purrr::map(names(osaBound.streme$motif), function(x) {
+  fp = paste0('rPlots/motif-analysis/osaBound_sreme-',x,'.png')
+  #return(osaBound.streme$motif[[.]])
+  universalmotif::view_motifs(osaBound.streme$motif[[x]] ) %>%
+    ggsave(fp, plot = ., device = 'png', width = 4, heigh = 3, dpi = 300)
   })
 
-universalmotif::view_motifs)
 
-#universalmotif::view_motifs(osaBound.streme$motif$m7_ATATGTATATATA)
-
-osaBound.streme$motif
-
+#motif_plots <- purrr::map(names(osaBound.streme$motif), ~ {
+#  universalmotif::view_motifs(osaBound.streme$motif[[.]])
+#  }) %>%
+#  setNames(names(osaBound.streme$motif))
+#
+#names(motif_plots) <- names(osaBound.streme$motif)
+#
+#
+#
+#plotnames = purrr::imap(motif_plots, ~paste0('rPlots/motif-analysis/',.y,"_",names(.x),".png")) %>%
+#  purrr::flatten()
+#
+#  fp = paste0('rPlots/motif-analysis/osaBound_streme-',.,'.png')
+#
+#
+#
+#osaBound.streme %>%
+#  purrr::map(.$motif, ~ return(.)) 
+#  setNames(paste0(.$name,'.png')) %>%
+#  purrr::map(png::writePNG())
+  
 osaBound.streme %>%
-  dplyr::mutate(consensus = forcats::fct_reorder(consensus, log_evalue)) %>%
+  dplyr::mutate(consensus = forcats::fct_reorder(name, log_evalue),
+                log_evalue = as.double(log_evalue)) %>%
   dplyr::slice_min(order_by = log_evalue, n = 5) %>%
-  ggplot(aes('', y = consensus, fill = nsites)) + 
+  ggplot(aes('', y = name, fill = nsites)) + 
   geom_raster()
   geom_point(size = 5)
+  
+  
+memes::runTomTom(osaBound.streme,database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme' )
 ```
 ```{r}
 osaBound.dreme %>%
@@ -658,49 +879,7 @@ purrr::map(tom.results, function(x) {
   })
 ```
 
-### AT content within osa peaks
-Worked on this for a while... not sure exactly what it means, and it seems to contradict other lit. 
-But, this gets the sequences around osa peaks out to total of 4kb and then calculates the AT or GC frequency at each base across all peaks.
-ie. 50% AT => 50% of peaks of an A or T at that position. 
-This plot suggests that at the peak centers ~52-55% of peaks ha
 
-```{r}
-osaBound.seq = osaPeaks %>% 
-  resize(3000, "center") %>%
-  memes::get_sequence(dm6)
-
-osaBound.seq.df <- osaBound.seq %>%
-  data.frame() 
-
-colnames(osaBound.seq.df) <- 'seqs'
-
-osaBound.seq.split <- stringr::str_split(osaBound.seq.df$seqs, pattern = '', simplify = T) %>%
-  data.frame()
-
-colnames(osaBound.seq.split) <- as.character(c(1:3000))
-
-osaBound.df <- dplyr::bind_cols(osaBound.seq.split, data.frame(osaPeaks))
-
-osaBound.df %>%
-  tidyr::pivot_longer(c(1:3000)) %>%
-  dplyr::mutate(name = as.integer(name)) %>%
-  #dplyr::mutate(GC = ifelse(value == 'G' | value == 'C', T, F),
-  #              AT = ifelse(value == 'T' | value == 'A', T, F),
-  #              name = as.integer(name)) 
-  dplyr::group_by(name, value) %>%
-  dplyr::tally() %>%
-  dplyr::filter(value != 'N') %>%
-  dplyr::mutate(freq = n/sum(n)) %>%
-  ggplot(aes(name, freq, color = value)) +
-  ylim(c(0.15,0.35)) +
-  geom_point(alpha = 0.2) +
-  scale_color_manual(values = c('#D81B60','#004D40','#FFC107','#1E88E5'))
-#  geom_smooth(method = 'loess', span = 0.1) 
-ggsave('rPlots/3-draft-ATcontent.png', dpi = 300, width = 5, height = 3)
-  #geom_bar(stat = 'identity', position = 'fill')
-
-#####
-```
 
 
 #### promoters control
