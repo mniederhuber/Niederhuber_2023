@@ -96,7 +96,7 @@ options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
 
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
+cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
 
 ###
 # peak subsets
@@ -119,6 +119,11 @@ background <- peaks %>%
   dplyr::filter(assay == '1kb background') %>%
   GRanges() %>%
   resize(width = 1, fix = 'center')
+
+closing.osaBound <- peaks %>%
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
+  GRanges() %>%
+  resize(width = 1, fix = "center")
 
 fairePeaks.wt <- peaks %>%
   dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
@@ -174,7 +179,7 @@ plot.frac <- function(x) {
  lapply(unique(x$change), function(i) {
    x %>%
      dplyr::filter(change == i) %>%
-     ggplot(aes(fraction, change, fill = osa.cnr)) +
+     ggplot(aes(fraction, change, fill = Osa.Bound)) +
      geom_bar(stat = 'identity', width = 1) +
      geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
      #geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
@@ -620,12 +625,15 @@ ComplexHeatmap::draw(hm, annotation_legend_list = c(lgd), row_split = groups, me
 dev.off() 
  
 peaks %>% 
-  dplyr::filter(assay == 'faire' & !yw.cnr & experiment == 'WT FAIRE Wing Timecourse') %>%
-  dplyr::group_by(faireCat.3LW_24h, osa.cnr) %>%
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  dplyr::group_by(faireCat.3LW_24h, osa.cnr, yw.cnr) %>%
   dplyr::count() %>%
   na.omit() %>%
-  reshape2::melt(id = c("osa.cnr","n"), variable.name = 'stage', value.name = 'change') %>%
-  dplyr::group_by(stage, change, osa.cnr) %>%
+  dplyr::mutate(Osa.Bound = ifelse(osa.cnr & !yw.cnr, T, F)) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(faireCat.3LW_24h, Osa.Bound, n) %>%
+  reshape2::melt(id = c("Osa.Bound","n"), variable.name = 'stage', value.name = 'change') %>%
+  dplyr::group_by(stage, change, Osa.Bound) %>%
   dplyr::summarise(peaks = sum(n)) %>%
   dplyr::mutate(fraction = peaks / sum(peaks),
                 change = factor(change, levels = c('static','opening','closing'))) %>%
@@ -635,12 +643,357 @@ peaks %>%
 ```
 
 ## Drafts
+
+### nearest gene - other methods
+
+changing to use fairepeaks instead of osa
+
+--- old ----
+1. Identify index for nearest osa peak for all dm6 genes 
+2. join the dm6 gene ranges object with peak coordinates using osa peak index
+3. calculate distance between gene start and osa peak center
+4. select the top 3 closest genes for each osa peak
+5. join with wing rna seq data and calculate log2fold change of expression between L3 and 24h
+6. obtain list of gene id for all genes near osa peaks that overlap with faire peaks that close from l3 to 24h and have reduced expression in the same period
+
+Logic -- sites with reduced accessibility may be more likely to have a regulatory connection to nearby genes with reduced expression
+
+result -- there are 89 downreg genes near osa bound closing sites
+  these genes are enriched for BP GO terms associated with:
+    "cell fate specification",
+    "Dendrite development," 
+    "wing morphogenesis," and
+    "transcriptional regulation - positive and negative"
+   
+   
+** trying with control for all down regulated genes 
+still get dendrite, but it drops some on the list
+##### GO
+```{r}
+dm6.genes <- GenomicFeatures::genes(dm6.TxDb) 
+
+faire.closing.osaBound <- peaks %>% 
+  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
+  GRanges()
+
+
+nearest <- GenomicRanges::nearest(x = dm6.genes, subject = faire.closing.osaBound)
+#nearest <- GenomicRanges::nearest(x = faire.closing.osaBound, subject = dm6.genes)
+
+dm6.genes.df <- dm6.genes %>%
+  data.frame() %>%
+  dplyr::mutate(row = 1:nrow(.),
+                osaPeak.index = nearest) %>%
+  dplyr::filter(!is.na(osaPeak.index)) %>%
+  dplyr::rename(Geneid = gene_id) %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+  dplyr::ungroup() %>%
+#  dplyr::group_by(Geneid) %>%
+  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+                l3v24 = log2(L3_mean / h24_mean),
+                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+                                       l3v24 <= -1 ~ 'up',
+                                       T ~ 'static')) 
+
+dm6.genes.osaPeaks.rna <- faire.closing.osaBound %>%
+  data.frame() %>%
+  dplyr::mutate(osaPeak.index = 1:nrow(.), .before = 1) %>%
+  dplyr::left_join(dm6.genes.df, ., by = 'osaPeak.index') %>%
+  dplyr::mutate(distance = abs(start.x - start.y)) %>%
+  dplyr::group_by(osaPeak.index) %>%
+  dplyr::slice_min(distance, n = 2) 
+
+
+ChIPseeker::seq2gene(faire.closing.osaBound, tssRegion = c(-1000,1000), flankDistance = 3000, dm6.TxDb)
+
+
+#dm6.genes.osaPeaks.rna %>%
+#  ggplot(aes(distance)) +
+#  geom_histogram() +
+#  xlim(c(0,100000))
+#
+#faire.closing.osaBound %>%
+#  data.frame() %>%
+#  ggplot(aes(abs(distanceToTSS))) + 
+#  geom_histogram() + 
+#  xlim(c(0,100000))
+
+
+#redundant filter for closing here...
+closing.down.osaBound <- dm6.genes.osaPeaks.rna %>%
+  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'closing' & cat == 'down') %>%
+  dplyr::select(Geneid) 
+
+#write.csv(closing.down.osaBound$Geneid, file = 'closing-downReg-osaBound-GeneID.csv', sep = ',')
+
+down.dm6 <- dm6.genes.df %>%
+  dplyr::filter(L3_mean >= 2 & cat == 'down') %>%
+  dplyr::select(Geneid) 
+
+control <- select(org.Dm.eg.db, 
+       keys = down.dm6$Geneid, 
+       columns = c('SYMBOL','GO','ENTREZID'),
+       keytype = "FLYBASE") 
+
+closing.down.osa.go <- select(org.Dm.eg.db, 
+       keys = closing.down.osaBound$Geneid, 
+       columns = c('SYMBOL','GO','ENTREZID'),
+       keytype = "FLYBASE")
+
+
+#terms <- select(GO.db, 
+#       keys = closing.down.osa.go$GO, 
+#       columns = c('DEFINITION', 'GOID', 'TERM'))
+#
+#dplyr::bind_cols(closing.down.osa.go, terms)
+#library(GOSemSim)
+
+#dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
+#dependent.entrez
+entrez <- closing.down.osa.go %>% .$ENTREZID
+control.entrez <- control %>% .$ENTREZID
+
+ggo <- clusterProfiler::enrichGO(gene = entrez,
+                                 universe = control.entrez,
+                                 OrgDb = org.Dm.eg.db,
+                                 ont = 'ALL',
+                                 readable = T)
+ggo %>% data.frame()
+```
+
+##### GO enrichment summary - osaBound closing nearest downreg genes
+- changing to use perspective of faire peaks 
+
+```{r}
+
+ggo %>%
+  data.frame() %>%
+  dplyr::filter(ONTOLOGY == 'BP') %>%
+  dplyr::mutate(SYMBOL = stringr::str_split(geneID,'/')) %>%
+  tidyr::unnest(SYMBOL) %>%
+  dplyr::mutate(simple.description = dplyr::case_when(grepl('dendrite|neur|nerv|sensory',Description) ~ 'Nervous System',
+                                                      grepl('wing|disc', Description) ~ 'Imaginal Disc Development',
+                                                      grepl('metamor|morpho',Description) ~ 'Metamorphosis/Morphogenesis',
+                                                      grepl('devel|multicell|fate', Description) ~ 'Development',
+                                                      T ~ Description)) %>%
+  dplyr::group_by(simple.description) %>%
+  dplyr::mutate(avg.p = mean(p.adjust),
+                newcount = dplyr::n_distinct(SYMBOL)) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(simple.description = factor(simple.description),
+                simple.description = forcats::fct_reorder(simple.description, avg.p, .desc = T),
+                Description = factor(Description),
+                Description = forcats::fct_reorder(Description, p.adjust, .desc = T),
+                logp = log10(p.adjust)) %>%
+  dplyr::filter(p.adjust <= 0.015) %>%
+  #ggplot(aes(logp, Description, color = simple.description )) +
+  ggplot(aes(logp, Description, )) +
+  geom_point(size = 6) +
+  #scale_color_manual(values = cbPalette.4) +
+  theme(axis.text = element_text(size = 12),
+        axis.title.y = element_blank())
+ggsave('rPlots/osabound-closing-nearDownGene-GO-summary.png', width = 8, height = 6, dpi = 300)
+```
+
+##### nearest genes to osa bound closing by expression changes
+```{r}
+dm6.genes.osaPeaks.rna %>%
+  dplyr::select(Geneid, faireCat.3LW_24h, cat, peak, L3_mean, h24_mean) %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+  tidyr::pivot_longer(c(L3_mean, h24_mean)) %>%
+  dplyr::group_by(name) %>%
+  dplyr::mutate(stage = stringr::str_remove(name, 'h'),
+                stage = stringr::str_split_fixed(stage, '_', n = 2)[[1]],
+                stage = factor(stage, levels = c('L3', '24')),
+                Geneid = factor(Geneid),
+                Geneid = forcats::fct_reorder(Geneid, cat)) %>%
+  dplyr::group_by(Geneid) %>%
+  dplyr::mutate(fmax = value/max(value)) %>%
+  dplyr::group_by(faireCat.3LW_24h, cat) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n)) %>%
+  dplyr::filter(faireCat.3LW_24h != 'NA') %>%
+#  dplyr::filter(faireCat.3LW_24h == 'closing' & cat == 'down') %>%
+  ggplot(aes(faireCat.3LW_24h, frac, fill = cat, label = n)) +
+  geom_bar(stat = 'identity') +
+  geom_text(position = position_stack(vjust = 0.5), size = 8) +
+  scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'Expression\n3LW-24h') +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 12))
+ggsave('rPlots/3-draft-osabound-closing-nearestGeneexpression.png', width = 4, height = 3, dpi = 300)
+```
+
+
+#### are there hubs of differentially regulated genes around osa bound sites?
+ie. do osa bound closing sites tend to be found around clusters of downregulated genes?
+
+answer - no doesn't seem to be the case
+```{r}
+dm6.genes.osaPeaks.rna %>%
+  dplyr::filter(faireCat.3LW_24h != 'NA') %>% 
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+  dplyr::group_by(osaPeak.index, faireCat.3LW_24h, cat) %>%
+  dplyr::tally() %>%
+  ggplot(aes(faireCat.3LW_24h, n, color = cat)) +
+  geom_violin()
+```
+
+
+```{r}
+dm6.genes.osaPeaks.rna %>%
+  dplyr::filter(faireCat.3LW_24h != 'NA') %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+ # dplyr::filter(faireCat.3LW_24h %in% c('closing','static')) %>%
+  dplyr::mutate(distance = abs(start.y - start.x)) %>%
+  ggplot(aes('', l3v24, fill = cat)) +
+#  geom_violin(alpha = 0.2, position = 'identity')
+  geom_violin(alpha = 0.5, position = 'identity')
+  geom_point() +
+  xlim(c(0,50000))
+  facet_wrap(~faireCat.3LW_24h)
+  
+  
+```
+
+```{r}
+wing.rnaseq %>%
+  dplyr::filter(Geneid == 'FBgn0263930') %>%
+  dplyr::select(!mean, !log_mean) %>%
+  tidyr::pivot_longer(!Geneid) %>%
+  dplyr::group_by(name) %>%
+  dplyr::mutate(name = stringr::str_remove(name, 'X'), 
+                stage = stringr::str_split_fixed(name, '_',n = 2)[[1]],
+                stage = factor(stage, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
+  ggplot(aes(stage, value)) +
+  geom_point()
+  
+```
+
+### e93 sensitive sites
+doesn't look like there is a correlation between osa binding and sites that are sensitive to e93 in discs
+using liftover to convert dm3 coordinates from geo data, so may be worth verifying with my own data...
+would have to align and process e93 gof chip and faire data
+```{r}
+e93_faire <- read.csv('~/McKay/FAIRE_E93/GEO_data/GSE141738_union_chip_peaks_annotated.csv')
+
+e93_faire_sensitive <- e93_faire %>%
+  dplyr::filter(e93_sensitive == 'sensitive') %>%
+  #dplyr::filter(e93_sensitive_behavior == 'Decreasing') %>%
+  dplyr::select(chr, start, end)
+
+write.table(e93_faire_sensitive, 'e93-faire-sensitive_dm3.bed', col.names = F, row.names = F, quote = F, sep = '\t')
+
+e93_faire_sensitive_closing.dm6 <- read.csv('~/McKay/BAP_Project/R/e93-faire-sensitive-closing_dm6.bed', sep = '\t', header = F) %>%
+  setNames(c('seqnames','start','end','other'))
+
+e93_faire_sensitive.dm6 <- read.csv('~/McKay/BAP_Project/R/e93-faire-sensitive_dm6.bed', sep = '\t', header = F) %>%
+  setNames(c('seqnames','start','end'))
+
+
+peaks %>% 
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
+  #dplyr::group_by(peak) %>%
+  dplyr::mutate(e93_sensitive_decreasing = ifelse(GRanges(.) %over% GRanges(e93_faire_sensitive_closing.dm6), T, F))
+
+ifelse(GRanges(e93_faire_sensitive_closing.dm6) %over% GRanges(peaks %>% 
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr)), T, F) %>% 
+  data.frame() %>% 
+  setNames('test') %>%
+  dplyr::group_by(test) %>%
+  dplyr::tally()
+
+ifelse(GRanges(e93_faire_sensitive.dm6) %over% osaPeaks, T, F) %>% 
+  data.frame() %>% 
+  setNames('test') %>%
+  dplyr::group_by(test) %>%
+  dplyr::tally()
+
+peaks
+ifelse(GRanges(peaks) %over% GRanges(e93_faire_sensitive_closing),T,F)
+```
+
+### fraction of osa binding sites by faire
+while most sites that close between 3LW and 24h are bound by Osa at 3LW
+most Osa binding sites are static from 3LW to 24h, only ~30% of osa sites close. 
+```{r}
+osaPeaks %>%
+  data.frame() %>%
+  dplyr::group_by(faireCat.3LW_24h) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+```
+
 ### osa bound closing nearest gene expression dynamics
-are genes near osa bound closing sites downregulated?
-if any, which?
+
+Are the osa bound sites that close late near genes that are temporally dynamic and in what direction?
+
+Most of the genes near osa binding sites that close are static between 3LW and 24h, 
+however these closing sites are more frequently near genes that go down in expression than sites that open or are static.
 ```{r}
 #TODO - use deseq to better identify differential genes -- method below may not be accurate
-osaPeaks.closing.downGene <- osaPeaks %>%
+##### 
+#wing.rnaseq %>%
+#  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+#                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+#                l3v24 = log2(L3_mean / h24_mean),
+#                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+#                                       l3v24 <= -1 ~ 'up',
+#                                       T ~ 'static')) %>%
+#  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+#  dplyr::group_by(cat) %>%
+#  dplyr::tally()
+
+closing.osaBound.rna <- osaPeaks %>%
+  data.frame() %>%
+#  dplyr::filter(faireCat.3LW_24h == 'closing' & grepl('Promoter',anno.new)) %>%
+  data.table::setnames('geneId','Geneid') %>%
+  dplyr::select(Geneid, SYMBOL, faireCat.3LW_24h, anno.new) %>%
+#  dplyr::distinct() %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+                l3v24 = log2(L3_mean / h24_mean),
+                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+                                       l3v24 <= -1 ~ 'up',
+                                       T ~ 'static')) 
+
+closing.osaBound.rna %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2,
+                grepl('Promoter|Intron|Exon|Distal',anno.new),
+                faireCat.3LW_24h != 'NA') %>%
+  #dplyr::filter(l3v24 >= 1) %>%
+  #dplyr::group_by(SYMBOL) %>%
+  #dplyr::tally() %>%
+  #dplyr::arrange(desc(n))
+  dplyr::group_by(faireCat.3LW_24h, cat) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n)) %>%
+  ggplot(aes(faireCat.3LW_24h, frac, fill = cat, label = n)) +
+  geom_bar(stat = 'identity') +
+  geom_text(position = position_stack(vjust = 0.5), size = 10) +
+  scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'DEG 3LW-24h') +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 20))
+  
+#wing.rnaseq %>%
+#  dplyr::filter(Geneid == 'FBgn0260642') %>%
+#  tidyr::pivot_longer(!Geneid) %>%
+#  dplyr::group_by(name) %>%
+#  dplyr::mutate(stage = stringr::str_remove(name, 'X'),
+#                stage = stringr::str_split_fixed(stage, '_', n = 2)[[1]],
+#                stage = factor(stage, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
+#  ggplot(aes(stage, value)) +
+#  geom_point()
+  
+                
+```
+
+
+```{r}
+#####
+
+osaPeaks.closing.rna <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(faireCat.3LW_24h == 'closing') %>%
   data.table::setnames('geneId','Geneid') %>%
@@ -653,6 +1006,50 @@ osaPeaks.closing.downGene <- osaPeaks %>%
                 cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
                                        l3v24 <= -1 ~ 'up',
                                        T ~ 'static')) 
+osaPeaks.closing.rna %>%
+  dplyr::group_by(cat) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+
+#####
+
+closing.osaBound.rna <- closing.osaBound %>%
+  data.frame() %>%
+  dplyr::rename('Geneid' = 'geneId') %>%
+  dplyr::select(Geneid, SYMBOL) %>%
+#  dplyr::distinct() %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+                l3v24 = log2(L3_mean / h24_mean),
+                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+                                       l3v24 <= -1 ~ 'up',
+                                       T ~ 'static')) %>%
+  dplyr::filter(mean  >= 2)
+
+closing.osaBound.rna %>%
+  dplyr::group_by(cat) %>%
+  dplyr::tally()
+  
+osaBound.rna <- osaPeaks %>%
+  data.frame() %>%
+  dplyr::rename('Geneid' = 'geneId') %>%
+  dplyr::select(Geneid, SYMBOL) %>%
+#  dplyr::distinct() %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+                l3v24 = log2(L3_mean / h24_mean),
+                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+                                       l3v24 <= -1 ~ 'up',
+                                       T ~ 'static')) %>%
+  dplyr::filter(mean  >= 2)
+
+osaBound.rna %>%
+  dplyr::group_by(cat) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+  
 
 osaPeaks.closing.downGene %>%
   dplyr::group_by(SYMBOL) %>%
@@ -735,8 +1132,12 @@ enrichplot::dotplot(ggo.closing, split = 'ONTOLOGY', font.size = 12, label_forma
   
 
 ```
+### aef1 motif scan idea
+```{r}
 
-### motifs in osa peaks
+```
+
+### br fimo
 ```{r}
 #testing with peak summits by rep
 # using summit coordinates doesn't seem to majorly impact results
@@ -754,6 +1155,22 @@ enrichplot::dotplot(ggo.closing, split = 'ONTOLOGY', font.size = 12, label_forma
 #  resize(200, 'center') %>%
 #  memes::get_sequence(dm6)
 
+brD.seq <- brD %>% memes::get_sequence(dm6)
+
+brFimo <- memes::runFimo(brD.seq, universalmotif::to_list(meme_db_on))
+brFimo %>% 
+  data.frame() %>% 
+  dplyr::group_by(motif_alt_id) %>%
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_', n =2)[[1]]) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+```
+### motifs in osa peaks
+
+
+
+```{r}
 #using a slightly larger range becuase average peak size is closer to ~300bp - is this the right call?
 osa.seq <- osaPeaks %>%
   resize(50, "center") %>%
@@ -1410,6 +1827,10 @@ peaks %>%
   facet_wrap(~faireCat.3LW_24h)
 
 ggsave('rPlots/drafts/3draft-2.png', width = 6, height = 3, dpi = 300)
+```
+### blah
+```{r}
+
 ```
 
 
