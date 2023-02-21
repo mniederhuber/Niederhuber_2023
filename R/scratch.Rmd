@@ -1,7 +1,14 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
 # Ideas
-- scale data by fraction of effected cells within heterologous tissue?
-  If 10% of cells show effect by protein degradation
-  - what fold change if any is there at brD? 
+
+-   scale data by fraction of effected cells within heterologous tissue?
+    If 10% of cells show effect by protein degradation
+    -   what fold change if any is there at brD?
 
 # Setup
 
@@ -65,6 +72,9 @@ dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
 dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
 
+dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100) 
+dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+
 brD <- data.frame('seqnames' = 'chrX',
                   'start' = 1565708,
                   'end' = 1567401) %>%
@@ -97,7 +107,7 @@ options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
-
+cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
 ###
 # peak subsets
 ###
@@ -208,11 +218,13 @@ plot.frac <- function(x) {
 genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white')
 ```
 
-TODO - make reference table of different peak categories and parameters, eg. how osa specific peaks are defined, how closing peaks are defined
-TODO - currently defining dynamic faire simply by log2fold change - no peak call requirement
-# Fig 1
+TODO - make reference table of different peak categories and parameters,
+eg. how osa specific peaks are defined, how closing peaks are defined
+TODO - currently defining dynamic faire simply by log2fold change - no
+peak call requirement \# Fig 1
 
 ## Fig 1A - brDisc browser shot
+
 ```{r, 1A}
 
 #TODO - best way to generate replicate average signal tracks
@@ -245,6 +257,7 @@ dev.off()
 ```
 
 ## 1C. Gene expression changes of mur2b and br
+
 ```{r}
 wing.rnaseq %>%
   dplyr::select(-log_mean,-mean) %>%
@@ -276,6 +289,7 @@ ggsave('rPlots/1C.png', dpi = 300, width = 7, height = 5)
 ## 3B. Venn of osa peaks vs control
 
 Manually draw venn in illustrator
+
 ```{r}
 
 ChIPpeakAnno::makeVennDiagram(list(peaks %>% dplyr::filter(assay == 'cnr' & yw.cnr) %>% GRanges(),
@@ -393,40 +407,54 @@ dev.off()
 ```
 
 ## 3C. Where are osaGFP binding sites?
-  
+
 ```{r, 3C-peak-location}
  peaks %>%
   dplyr::filter(assay == 'cnr' &  osa.cnr & !yw.cnr | assay == '1kb background') %>%
   dplyr::group_by(assay, anno.new) %>%
   dplyr::tally() %>%
-  dplyr::mutate(pct = n/sum(n)) %>%
-  ggplot(aes(x = assay, y = n, fill = anno.new)) +
-  geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =3,
+  dplyr::mutate(pct = n/sum(n),
+                assay = ifelse(assay == 'cnr', 'Osa-GFP CnR', '1kb Bkg')) %>%
+  ggplot(aes(x = '', y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill', color = 'black') +
+  geom_text_repel(aes(label= ifelse(pct > 0.05, paste0(sprintf("%1.1f", pct*100),"%"),'')),
+                  position=position_fill(vjust=0.5),
+                  colour="black", size =5,
                   min.segment.length = 0,
                   force = 0.01,
                   force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
+  scale_fill_brewer(palette = 'Spectral') +
+#  scale_fill_manual(values = cbPalette.ibm) +
   ylab('Fraction') +
+  guides(fill = guide_legend(byrow = TRUE)) +
   theme(axis.title.x = element_blank(),
         legend.title = element_blank(),
-        legend.key.size = unit(0.3, 'cm'),
-        axis.text.y = element_blank(),
+        legend.key.size = unit(0.6, 'cm'),
+        legend.spacing.y = unit(0.1, 'cm'),
+        axis.text = element_blank(),
         axis.ticks = element_blank(),
-        axis.title.y = element_blank())
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.text = element_text(size = 12)) +
+  facet_grid(~assay)
 ggsave('rPlots/3C.png', width = 4, height = 4, units = 'in', dpi = 300)
 
-```
-## 3D - AT content within osa peaks
-Quantification of the precentage of A and T bases in 3kb windows around osa peaks. 
-ie. a the fraction of peaks at each position of a 3kb window that have A or T bases.
-Suggests there is lower A/T content within osa binding sites. 
 
-Sanity check that summit coordinates don't change this result, and they don't. 
-Summit coords are likely off center from the narrowpeak coordinate center, so maybe there's a difference in AT content
-around summits.
-But that doesn't appear to be true, still saw a drop in AT content. 
+```
+
+## 3D - AT content within osa peaks
+
+Quantification of the precentage of A and T bases in 3kb windows around
+osa peaks. ie. a the fraction of peaks at each position of a 3kb window
+that have A or T bases. Suggests there is lower A/T content within osa
+binding sites.
+
+Sanity check that summit coordinates don't change this result, and they
+don't. Summit coords are likely off center from the narrowpeak
+coordinate center, so maybe there's a difference in AT content around
+summits. But that doesn't appear to be true, still saw a drop in AT
+content.
+
 ```{r}
 bw_list <- c('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
              'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
@@ -563,8 +591,8 @@ dev.off()
 
 ```
 
-
 ## 3E. Fraction of Osa binding sites withing WT 3LW-24h FAIRE categories
+
 ```{r, 3E}
 #TODO - combine fraction barplots and heatmaps into single figure - cowplots? grid?
 
@@ -643,127 +671,315 @@ peaks %>%
 ```
 
 ## Drafts
+### signal around tss
+```{r}
+
+```
+
+### location of osa closing sites
+```{r}
+peaks %>%
+  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse') %>%
+  #dplyr::filter(assay == '' &  osa.cnr & !yw.cnr | assay == '1kb background') %>%
+  dplyr::filter(osa.cnr & !yw.cnr & faireCat.3LW_24h != 'opening') %>%
+  dplyr::mutate(cnr.peakCat = ifelse(osa.cnr & !yw.cnr, 'Osa Bound', 'Osa Unbound')) %>%
+  dplyr::group_by(faireCat.3LW_24h, cnr.peakCat, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n)) %>%
+#                assay = ifelse(assay == 'cnr', 'Osa-GFP CnR', '1kb Bkg')) %>%
+  ggplot(aes(x = '', y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill', color = 'black') +
+  geom_text_repel(aes(label= ifelse(pct > 0.05, paste0(sprintf("%1.1f", pct*100),"%"),'')),
+                  position=position_fill(vjust=0.5),
+                  colour="black", size =5,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_brewer(palette = 'Spectral') +
+#  scale_fill_manual(values = cbPalette.ibm) +
+  ylab('Fraction') +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.6, 'cm'),
+        legend.spacing.y = unit(0.1, 'cm'),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.text = element_text(size = 12)) +
+  facet_grid(cnr.peakCat ~ faireCat.3LW_24h)
+ggsave('rPlots/3-draft-peakCat-faireCat.png', width = 4, height = 4, dpi = 300)
+```
 
 ### nearest gene - other methods
 
+osaBound / unBound -- 
+
+closing.osaBound / osaBound -- morphogenesis, epithelial tube, wing dev
+static.osaBound / osaBound -- very similar
+closing.osaBound / static.osaBound -- no enrichment
+
 changing to use fairepeaks instead of osa
 
---- old ----
-1. Identify index for nearest osa peak for all dm6 genes 
-2. join the dm6 gene ranges object with peak coordinates using osa peak index
-3. calculate distance between gene start and osa peak center
-4. select the top 3 closest genes for each osa peak
-5. join with wing rna seq data and calculate log2fold change of expression between L3 and 24h
-6. obtain list of gene id for all genes near osa peaks that overlap with faire peaks that close from l3 to 24h and have reduced expression in the same period
+summarizing / grouping terms using `rrvgo` 
+*TODO* 
+ - test analysis with other categories 
+ - finalize rnaseq differential cat 
+   - switch to deseq?
+ 
+down reg genes that are near closing osa bound sites 
+and near static osa bound sites are enriched for terms associated with neurogenesis.
 
-Logic -- sites with reduced accessibility may be more likely to have a regulatory connection to nearby genes with reduced expression
+There's no enrichment of terms between these two groups. 
 
-result -- there are 89 downreg genes near osa bound closing sites
-  these genes are enriched for BP GO terms associated with:
-    "cell fate specification",
-    "Dendrite development," 
-    "wing morphogenesis," and
-    "transcriptional regulation - positive and negative"
-   
-   
-** trying with control for all down regulated genes 
-still get dendrite, but it drops some on the list
-##### GO
+suggests that osa bound sites might be near neuro genes in general?
+
+--- old ---- 1. Identify index for nearest osa peak for all dm6 genes 2.
+join the dm6 gene ranges object with peak coordinates using osa peak
+index 3. calculate distance between gene start and osa peak center 4.
+select the top 3 closest genes for each osa peak 5. join with wing rna
+seq data and calculate log2fold change of expression between L3 and 24h
+6. obtain list of gene id for all genes near osa peaks that overlap with
+faire peaks that close from l3 to 24h and have reduced expression in the
+same period
+
+Logic -- sites with reduced accessibility may be more likely to have a
+regulatory connection to nearby genes with reduced expression
+
+result -- there are 89 downreg genes near osa bound closing sites these
+genes are enriched for BP GO terms associated with: "cell fate
+specification", "Dendrite development," "wing morphogenesis," and
+"transcriptional regulation - positive and negative"
+
+\*\* trying with control for all down regulated genes still get
+dendrite, but it drops some on the list \##### GO
+
 ```{r}
-dm6.genes <- GenomicFeatures::genes(dm6.TxDb) 
-
-faire.closing.osaBound <- peaks %>% 
-  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
-  GRanges()
+goData <- GOSemSim::godata(org.Dm.eg.db, ont='BP', keytype = 'FLYBASE')
 
 
-nearest <- GenomicRanges::nearest(x = dm6.genes, subject = faire.closing.osaBound)
-#nearest <- GenomicRanges::nearest(x = faire.closing.osaBound, subject = dm6.genes)
+goEnrich <- function(geneList, universe, name) {  
+#  go <- select(org.Dm.eg.db, keys = geneList$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
+#  go.universe <- select(org.Dm.eg.db, keys = universe$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
+  
+  ggo <- clusterProfiler::enrichGO(#gene = go$ENTREZID,
+                                   gene = geneList$Geneid,
+                                   universe = universe$Geneid,
+                                   OrgDb = org.Dm.eg.db,
+                                   keyType = 'FLYBASE',
+                                   ont = 'BP',
+                                   readable = T)
+  
+  ggo.df <- data.frame(ggo)
 
-dm6.genes.df <- dm6.genes %>%
-  data.frame() %>%
-  dplyr::mutate(row = 1:nrow(.),
-                osaPeak.index = nearest) %>%
-  dplyr::filter(!is.na(osaPeak.index)) %>%
-  dplyr::rename(Geneid = gene_id) %>%
-  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
-  dplyr::ungroup() %>%
-#  dplyr::group_by(Geneid) %>%
+  simMatrix <- rrvgo::calculateSimMatrix(ggo.df$ID,
+                          orgdb='org.Dm.eg.db',
+                          ont='BP',
+                          method='Rel', keytype = 'ENTREZID', semdata = goData)
+  scores <- setNames(-log10(ggo.df$qvalue), ggo.df$ID)
+  reducedTerms <- rrvgo::reduceSimMatrix(simMatrix, scores, threshold = 0.5, orgdb = org.Dm.eg.db)
+  
+  reducedTerms %>%
+    dplyr::group_by(cluster, parentTerm) %>%
+    dplyr::mutate(neg_log10_qval = mean(score)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(parentTerm, neg_log10_qval) %>%
+    dplyr::group_by(parentTerm, neg_log10_qval) %>%
+    dplyr::summarise() %>%
+    dplyr::ungroup() %>%
+    dplyr::slice_max(neg_log10_qval, n = 10) %>%
+    dplyr::mutate(parentTerm = factor(parentTerm),
+                  parentTerm = forcats::fct_reorder(parentTerm, neg_log10_qval)) %>%
+    ggplot(aes('', parentTerm, fill = neg_log10_qval)) +
+    geom_tile() +
+    scale_fill_viridis_b(name = 'avg\n-log10(qval)') + 
+    ggtitle(name) +
+    theme(axis.text = element_text(size = 12),
+          axis.title = element_blank(),
+          axis.ticks.x = element_blank(),
+          legend.text = element_text(size = 12),
+          legend.title = element_text(size = 12))
+  
+}
+```
+
+```{r}
+fairePeaks <- peaks %>% 
+  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse') 
+#  .[!GRanges(.) %over% dm6.promoters,] #filter out overlap with promoters
+
+
+fairePeaks.dm6 <- fairePeaks %>%
+   purrr::pmap_dfr(function(...) {
+     current <- tibble::tibble(...)
+     distances <- GenomicRanges::distance(GRanges(current), dm6.genes) 
+     df <- data.frame(Geneid = dm6.genes$gene_id, distances = distances)
+     nearbyGenes <- dplyr::slice_min(df, distances, n = 4)
+     out <- current %>% 
+       dplyr::mutate(nearbyGenes = list(nearbyGenes)) 
+     
+     return(out)
+   }) %>%
+  tidyr::unnest(nearbyGenes) %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>% # join the rna seq data by Geneid
+  # average transcription at 3LW and 24h APF then categorize gene by 'up', 'down', or 'static'
   dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
                 h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
                 l3v24 = log2(L3_mean / h24_mean),
                 cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
                                        l3v24 <= -1 ~ 'up',
-                                       T ~ 'static')) 
-
-dm6.genes.osaPeaks.rna <- faire.closing.osaBound %>%
-  data.frame() %>%
-  dplyr::mutate(osaPeak.index = 1:nrow(.), .before = 1) %>%
-  dplyr::left_join(dm6.genes.df, ., by = 'osaPeak.index') %>%
-  dplyr::mutate(distance = abs(start.x - start.y)) %>%
-  dplyr::group_by(osaPeak.index) %>%
-  dplyr::slice_min(distance, n = 2) 
+                                       T ~ 'static'))  
 
 
-ChIPseeker::seq2gene(faire.closing.osaBound, tssRegion = c(-1000,1000), flankDistance = 3000, dm6.TxDb)
-
-
-#dm6.genes.osaPeaks.rna %>%
-#  ggplot(aes(distance)) +
-#  geom_histogram() +
-#  xlim(c(0,100000))
-#
-#faire.closing.osaBound %>%
-#  data.frame() %>%
-#  ggplot(aes(abs(distanceToTSS))) + 
-#  geom_histogram() + 
-#  xlim(c(0,100000))
-
-
-#redundant filter for closing here...
-closing.down.osaBound <- dm6.genes.osaPeaks.rna %>%
-  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'closing' & cat == 'down') %>%
-  dplyr::select(Geneid) 
-
-#write.csv(closing.down.osaBound$Geneid, file = 'closing-downReg-osaBound-GeneID.csv', sep = ',')
-
-down.dm6 <- dm6.genes.df %>%
-  dplyr::filter(L3_mean >= 2 & cat == 'down') %>%
-  dplyr::select(Geneid) 
-
-control <- select(org.Dm.eg.db, 
-       keys = down.dm6$Geneid, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE") 
-
-closing.down.osa.go <- select(org.Dm.eg.db, 
-       keys = closing.down.osaBound$Geneid, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE")
-
-
-#terms <- select(GO.db, 
-#       keys = closing.down.osa.go$GO, 
-#       columns = c('DEFINITION', 'GOID', 'TERM'))
-#
-#dplyr::bind_cols(closing.down.osa.go, terms)
-#library(GOSemSim)
-
-#dmGO <- GOSemSim::godata('org.Dm.eg.db', ont = 'MF')
-#dependent.entrez
-entrez <- closing.down.osa.go %>% .$ENTREZID
-control.entrez <- control %>% .$ENTREZID
-
-ggo <- clusterProfiler::enrichGO(gene = entrez,
-                                 universe = control.entrez,
-                                 OrgDb = org.Dm.eg.db,
-                                 ont = 'ALL',
-                                 readable = T)
-ggo %>% data.frame()
 ```
 
+
+```{r}
+closing.down.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'down' & osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+closing.static.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'static' & osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+
+static.osaUnBound <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'static') %>%
+  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>% # not bound by osa specifically 
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'static.osaUnBound')
+
+down.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(L3_mean >= 2 & cat == 'down' & osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'down.osaBound')
+
+
+down <- fairePeaks.dm6 %>%
+  dplyr::filter(L3_mean >= 2 & cat == 'down') %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+###
+closing.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>% # closing category, bound specifically by osa
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+closing <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'closing') %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'closing')
+
+static.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'static' & osa.cnr & !yw.cnr) %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'static.osaBound')
+
+static <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'static') %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'static')
+####
+
+
+
+static.osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'static' & osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'static.osaBound')
+
+static.down <- fairePeaks.dm6 %>%
+  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'static' & cat == 'down') %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'static.down.osaBound')
+
+osaBound <- fairePeaks.dm6 %>%
+  dplyr::filter(osa.cnr & !yw.cnr) %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+osaBound
+
+allFAIRE <- fairePeaks.dm6 %>%
+#  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
+  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(grp = 'osaUnBound')
+
+closing.down <- fairePeaks.dm6 %>%
+  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'down') %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct()
+```
+
+```{r}
+closing.osaBound.PLOT <- goEnrich(closing.osaBound, osaBound, 'closing.osaBound')
+static.osaBound.PLOT <- goEnrich(static.osaBound, osaBound, 'static.osaBound')
+
+ggsave(plot = closing.osaBound.PLOT, file = 'rPlots/go-enrich-closing_osaBound.png', width = 10, height = 10, dpi = 300)
+ggsave(plot = static.osaBound.PLOT, file = 'rPlots/go-enrich-static_osaBound.png', width = 10, height = 10, dpi = 300)
+```
+
+
+```{r}
+osaBound.PLOT <- goEnrich(osaBound, allFAIRE, 'osaBound')
+osaBound.PLOT
+ggsave(plot = osaBound.PLOT, file = 'rPlots/go-enrich-osaBound.png', width = 10, height = 8, dpi = 300)
+```
+```{r}
+
+#osaBound.entrez <- select(org.Dm.eg.db, keys = osaBound$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE') %>% dplyr::distinct(ENTREZID)
+
+closing.osaBound.semsim <- GOSemSim::mgeneSim(closing.osaBound$Geneid, semData = goData, verbose = F)
+
+test <- closing.osaBound.semsim %>% data.frame() %>% tibble::rownames_to_column() %>% tidyr::pivot_longer(!rowname, names_to = 'colname')
+test.symbol <- select(org.Dm.eg.db, keys = test$rowname, columns = 'SYMBOL', keytype = 'FLYBASE') %>% dplyr::distinct()
+
+out <- test %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(rowSymbol = test.symbol[rowname == test.symbol$FLYBASE,]$SYMBOL,
+                colSymbol = test.symbol[colname == test.symbol$FLYBASE,]$SYMBOL)
+
+out %>%
+#  dplyr::group_by(cat) %>%
+ # dplyr::filter(cat == 'down') %>%
+  tidyHeatmap::heatmap(rowSymbol, colSymbol, value, 
+                       palette_value = c('white','blue','red'),
+                       row_km = 6,
+                       column_km = 6) %>% tidyHeatmap::save_pdf('test-down.pdf')
+ 
+  
+
+ closing.osaBound.entrez <- clusterProfiler::bitr(closing.osaBound$Geneid, fromType = 'FLYBASE', toType = 'ENTREZID', OrgDb = org.Dm.eg.db)
+clusterProfiler::setReadable(clusterProfiler::enrichWP(closing.osaBound.entrez$ENTREZID, organism = 'Drosophila melanogaster'),
+                             org.Dm.eg.db, keyType = 'ENTREZID')
+
+
+```
+
+
 ##### GO enrichment summary - osaBound closing nearest downreg genes
-- changing to use perspective of faire peaks 
+
+-   changing to use perspective of faire peaks
 
 ```{r}
 
@@ -797,38 +1013,33 @@ ggsave('rPlots/osabound-closing-nearDownGene-GO-summary.png', width = 8, height 
 ```
 
 ##### nearest genes to osa bound closing by expression changes
+
 ```{r}
-dm6.genes.osaPeaks.rna %>%
-  dplyr::select(Geneid, faireCat.3LW_24h, cat, peak, L3_mean, h24_mean) %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
-  tidyr::pivot_longer(c(L3_mean, h24_mean)) %>%
-  dplyr::group_by(name) %>%
-  dplyr::mutate(stage = stringr::str_remove(name, 'h'),
-                stage = stringr::str_split_fixed(stage, '_', n = 2)[[1]],
-                stage = factor(stage, levels = c('L3', '24')),
-                Geneid = factor(Geneid),
-                Geneid = forcats::fct_reorder(Geneid, cat)) %>%
-  dplyr::group_by(Geneid) %>%
-  dplyr::mutate(fmax = value/max(value)) %>%
+
+fairePeaks.dm6 %>%
+  dplyr::filter(osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid, faireCat.3LW_24h, cat) %>%
+  dplyr::distinct()%>%
   dplyr::group_by(faireCat.3LW_24h, cat) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n)) %>%
-  dplyr::filter(faireCat.3LW_24h != 'NA') %>%
-#  dplyr::filter(faireCat.3LW_24h == 'closing' & cat == 'down') %>%
   ggplot(aes(faireCat.3LW_24h, frac, fill = cat, label = n)) +
   geom_bar(stat = 'identity') +
   geom_text(position = position_stack(vjust = 0.5), size = 8) +
   scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'Expression\n3LW-24h') +
   theme(axis.title = element_blank(),
-        axis.text = element_text(size = 12))
+        axis.text = element_text(size = 12)) 
+
 ggsave('rPlots/3-draft-osabound-closing-nearestGeneexpression.png', width = 4, height = 3, dpi = 300)
 ```
 
-
 #### are there hubs of differentially regulated genes around osa bound sites?
-ie. do osa bound closing sites tend to be found around clusters of downregulated genes?
+
+ie. do osa bound closing sites tend to be found around clusters of
+downregulated genes?
 
 answer - no doesn't seem to be the case
+
 ```{r}
 dm6.genes.osaPeaks.rna %>%
   dplyr::filter(faireCat.3LW_24h != 'NA') %>% 
@@ -838,7 +1049,6 @@ dm6.genes.osaPeaks.rna %>%
   ggplot(aes(faireCat.3LW_24h, n, color = cat)) +
   geom_violin()
 ```
-
 
 ```{r}
 dm6.genes.osaPeaks.rna %>%
@@ -871,9 +1081,12 @@ wing.rnaseq %>%
 ```
 
 ### e93 sensitive sites
-doesn't look like there is a correlation between osa binding and sites that are sensitive to e93 in discs
-using liftover to convert dm3 coordinates from geo data, so may be worth verifying with my own data...
+
+doesn't look like there is a correlation between osa binding and sites
+that are sensitive to e93 in discs using liftover to convert dm3
+coordinates from geo data, so may be worth verifying with my own data...
 would have to align and process e93 gof chip and faire data
+
 ```{r}
 e93_faire <- read.csv('~/McKay/FAIRE_E93/GEO_data/GSE141738_union_chip_peaks_annotated.csv')
 
@@ -914,8 +1127,11 @@ ifelse(GRanges(peaks) %over% GRanges(e93_faire_sensitive_closing),T,F)
 ```
 
 ### fraction of osa binding sites by faire
+
 while most sites that close between 3LW and 24h are bound by Osa at 3LW
-most Osa binding sites are static from 3LW to 24h, only ~30% of osa sites close. 
+most Osa binding sites are static from 3LW to 24h, only \~30% of osa
+sites close.
+
 ```{r}
 osaPeaks %>%
   data.frame() %>%
@@ -926,10 +1142,13 @@ osaPeaks %>%
 
 ### osa bound closing nearest gene expression dynamics
 
-Are the osa bound sites that close late near genes that are temporally dynamic and in what direction?
+Are the osa bound sites that close late near genes that are temporally
+dynamic and in what direction?
 
-Most of the genes near osa binding sites that close are static between 3LW and 24h, 
-however these closing sites are more frequently near genes that go down in expression than sites that open or are static.
+Most of the genes near osa binding sites that close are static between
+3LW and 24h, however these closing sites are more frequently near genes
+that go down in expression than sites that open or are static.
+
 ```{r}
 #TODO - use deseq to better identify differential genes -- method below may not be accurate
 ##### 
@@ -988,7 +1207,6 @@ closing.osaBound.rna %>%
   
                 
 ```
-
 
 ```{r}
 #####
@@ -1132,12 +1350,15 @@ enrichplot::dotplot(ggo.closing, split = 'ONTOLOGY', font.size = 12, label_forma
   
 
 ```
+
 ### aef1 motif scan idea
+
 ```{r}
 
 ```
 
 ### br fimo
+
 ```{r}
 #testing with peak summits by rep
 # using summit coordinates doesn't seem to majorly impact results
@@ -1166,9 +1387,8 @@ brFimo %>%
   dplyr::tally() %>%
   dplyr::arrange(desc(n))
 ```
+
 ### motifs in osa peaks
-
-
 
 ```{r}
 #using a slightly larger range becuase average peak size is closer to ~300bp - is this the right call?
@@ -1261,6 +1481,7 @@ osaBound.streme %>%
   
 memes::runTomTom(osaBound.streme,database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme' )
 ```
+
 ```{r}
 osaBound.dreme %>%
   dplyr::mutate(consensus = forcats::fct_reorder(consensus, eval)) %>%
@@ -1322,10 +1543,8 @@ purrr::map(tom.results, function(x) {
   })
 ```
 
-
-
-
 #### promoters control
+
 ```{r}
 dm6.promoters <- promoters(dm6.TxDb) %>%
   data.frame() %>%
@@ -1367,6 +1586,7 @@ dm6.promoters.df %>%
 ```
 
 #### at string search
+
 ```{r}
 #####
 
@@ -1414,6 +1634,7 @@ test %>%
 ```
 
 #### other
+
 ```{r}
 
 
@@ -1449,11 +1670,13 @@ test.mat %>%
 #pheatmap::pheatmap(test.mat)
 ```
 
-
 #### bedtools nuc control test
-writes bed files for regions at center and flanking osa peaks -- need to then run bedtools nuc on those bed files with dm6 fasta
-then plots the average AT content within those windows.
-Just a sanity check that I can get a similar result to what I have above. 
+
+writes bed files for regions at center and flanking osa peaks -- need to
+then run bedtools nuc on those bed files with dm6 fasta then plots the
+average AT content within those windows. Just a sanity check that I can
+get a similar result to what I have above.
+
 ```{r}
 #source('~/NystLib/R/peakUtils.R')
 #
@@ -1498,7 +1721,9 @@ dplyr::bind_rows(up, center, down) %>%
   ggplot(aes('',X4_pct_at, fill = cat)) +
   geom_violin()
 ```
-#### test control 
+
+#### test control
+
 ```{r}
 #k27me3 <- readNarrowPeak('~/McKay/CtBP_CnR/Peaks/yw_3LW_wing_aK27me3_sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_peaks.narrowPeak') %>%
 k27me3 <- readNarrowPeak('~/McKay/ecrGFSTF-3LW-Wing-CnR/Peaks/GSE202807_EcRGFSTF_3LW_WING_CnR_antiFlag_Merge_Sup_dm6_trim_q5_dupsRemoved_20to120_peaks.narrowPeak') %>%
@@ -1539,7 +1764,6 @@ k27me3.split %>%
   geom_point(alpha = 0.4)
 #ggsave('rPlots/AT-K27me3_sup.png')
 ```
-
 
 ```{r}
 #
@@ -1627,9 +1851,11 @@ purrr::map(tom.results, function(x) {
   })
 ```
 
+### motif enrichment in osa dependent regions
 
-### motif enrichment in osa dependent regions 
-I'm not convinced there is ver meaningful information in motif analysis for osa cnr....
+I'm not convinced there is ver meaningful information in motif analysis
+for osa cnr....
+
 ```{r}
 
 ###
@@ -1728,7 +1954,9 @@ purrr::map(tom.results, function(x) {
   ggsave(fp,plot = plot, width = 5, height = 5, dpi = 300, unit = 'in')
   })
 ```
+
 ### go analysis draft
+
 ```{r}
 test <- osaPeaks %>%
   data.frame() %>%
@@ -1772,7 +2000,9 @@ enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_for
 dev.off()
 
 ```
+
 ### osa cnr peak annotation
+
 ```{r, 3draft-1.png}
  peaks %>%
   dplyr::filter(assay == 'cnr' &  osa.cnr & !yw.cnr & faireCat.3LW_24h != 'NA') %>%
@@ -1801,6 +2031,7 @@ ggsave('rPlots/drafts/3draft-1.png', width = 4, height = 4, dpi = 300)
 ```
 
 ### peak annotation split by osa binding and dynamics
+
 ```{r, 3draft-2.png}
 
 peaks %>%
@@ -1828,16 +2059,18 @@ peaks %>%
 
 ggsave('rPlots/drafts/3draft-2.png', width = 6, height = 3, dpi = 300)
 ```
+
 ### blah
+
 ```{r}
 
 ```
 
-
 # Fig 4
 
-There is very little change between control and osa deGrad conditions. 
-Figure 4 should demonstrate this and highlight if there are any subtle changes, where they occur, and how they relate to osa binding. 
+There is very little change between control and osa deGrad conditions.
+Figure 4 should demonstrate this and highlight if there are any subtle
+changes, where they occur, and how they relate to osa binding.
 
 ## 4C - venn
 
@@ -1860,7 +2093,8 @@ ChIPpeakAnno::makeVennDiagram(faire.osaDeg.byGrp)
 
 ```
 
-## 4D 
+## 4D
+
 ```{r}
 ### draft log2fold by degrad cat
 #Might be useful to articulate that while there are some very subtle differences in osa degrad - there are very few twofold ectopic changes 
@@ -1887,7 +2121,8 @@ ggsave('rPlots/4-draft-5.png', width = 2, height = 4, dpi = 300)
 
 ```
 
-## 4D 
+## 4D
+
 ```{r}
 
 fairePeaks.deg %>%
@@ -1910,14 +2145,13 @@ ggsave('rPlots/4-draft-6.png', width = 2, height = 4, dpi = 300)
 
 ```
 
-
 ## 4E. FAIRE control vs osaDeGrad - split by degrad categories
-Using deseq differential scoring between control and osaGFP deGrad to define FAIRE peak categories.
-Using a very sensitive cutoff for log2fold change. 
-"ectopic" (gain of signal in degrad) <= log2(control/degrad) <= -0.4, 
-"dependent" (loss of signal in degrad) >= log2(control/degrad) >= 0.4,
-"independet" (no significant change).
 
+Using deseq differential scoring between control and osaGFP deGrad to
+define FAIRE peak categories. Using a very sensitive cutoff for log2fold
+change. "ectopic" (gain of signal in degrad) \<= log2(control/degrad)
+\<= -0.4, "dependent" (loss of signal in degrad) \>=
+log2(control/degrad) \>= 0.4, "independet" (no significant change).
 
 ```{r, 4D}
 
@@ -2005,9 +2239,8 @@ fairePeaks.deg %>%
 
 ```
 
-
-
 ## 4F. osa dependent browser shot example
+
 ```{r, 4D}
 #TODO - add highlights for dependent regions - currently manually annotating in illustrator 
 
@@ -2055,7 +2288,7 @@ Gviz::plotTracks(c(axis, deg.tracks, genetrack), chromosome = seqnames(inv) %>% 
 dev.off()
 ```
 
-## 4H. motif enrichment in osa dependent regions 
+## 4H. motif enrichment in osa dependent regions
 
 ```{r}
 
@@ -2171,9 +2404,11 @@ purrr::map(tom.results, function(x) {
   })
 ```
 
-
 ## 4I. Osa deGrad FAIRE signal in osa-bound l3-24h closing sites.
-This plot shows that within the osa CnR peaks that close from 3LW to 24h, there is little to no change in their ~24h-36h accessibility when osa is depleted.
+
+This plot shows that within the osa CnR peaks that close from 3LW to
+24h, there is little to no change in their \~24h-36h accessibility when
+osa is depleted.
 
 ```{r}
 osaClosing <- osaPeaks %>%
@@ -2247,9 +2482,10 @@ ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
 
-
 ## 4J. Browser shot of osa deGrad FAIRE at brDisc.
+
 Shows that there is no increase in accessibility.
+
 ```{r, 4D}
 #TODO - add 36h FAIRE data? better comparison for osa deGrad?
 
@@ -2282,10 +2518,10 @@ Gviz::plotTracks(c(axis, deg.tracks, brdisc.at), chromosome = seqnames(brD) %>% 
 dev.off()
 ```
 
+## Supp.
 
-## Supp. 
-Using any peak call from the degrad experiment.
-So 'independent' regions are accessible in both experiments. 
+Using any peak call from the degrad experiment. So 'independent' regions
+are accessible in both experiments.
 
 ```{r}
 
@@ -2329,7 +2565,7 @@ enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_for
 
 ```
 
-##  4E.
+## 4E.
 
 ```{r}
 
@@ -2400,6 +2636,7 @@ png('rPlots/4E.png', width = 4, height = 3, units = 'in', res = 300)
 ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
+
 ## 4F.
 
 ```{r}
@@ -2461,8 +2698,6 @@ png('rPlots/4F.png', width = 4, height = 3, units = 'in', res = 300)
 ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 ```
-
-
 
 ## 4H.
 
@@ -2535,6 +2770,7 @@ dev.off()
 ```
 
 ## 4I.
+
 ```{r}
 
 faire.3lw.mat <- normalizeToMatrix(bws$wt_3LW, fairePeaks.osaEctopic, value_column = 'score', keep = c(0.01,0.99), extend = 2000)
@@ -2632,6 +2868,7 @@ fairePeaks.osaDependent %>%
   facet_wrap(~faireCat.3LW_24h, ncol = 1)
 ggsave('rPlots/4-draft-1.png', width = 4, height = 5, units = 'in', dpi = 300)
 ```
+
 ```{r}
 fairePeaks.osaEctopic %>%
   data.frame() %>%
@@ -2661,10 +2898,10 @@ fairePeaks.osaEctopic %>%
 ggsave('rPlots/4-draft-2.png', width = 4, height = 5, units = 'in', dpi = 300)
 ```
 
-
 ## drafts
 
 ### peak annotations
+
 ```{r}
 fairePeaks.deg %>%
     data.frame() %>%
@@ -2690,6 +2927,7 @@ fairePeaks.deg %>%
         axis.title.y = element_blank())
 ggsave('rPlots/4G.png', width = 6, height = 5, units = 'in', dpi = 300)
 ```
+
 ```{r}
 #fairePeaks.osaDep <- fairePeaks.deg %>% 
 #  data.frame() %>%
@@ -2761,12 +2999,11 @@ ggsave('rPlots/4G.png', width = 6, height = 5, units = 'in', dpi = 300)
 #ComplexHeatmap::draw(hm, merge_legend = T, annotation_legend_list = list(lgd), row_split = groups, heatmap_legend_side = 'bottom', )
 ##dev.off() 
 ```
+
 ### browser draft
 
-
-
-
 ### go analysis draft
+
 ```{r}
 test <- fairePeaks.wt %>%
   data.frame() %>%
@@ -2812,7 +3049,3 @@ enrichplot::dotplot(ggo.dependent, split = 'ONTOLOGY', font.size = 12, label_for
 dev.off()
 
 ```
-
-
-
-

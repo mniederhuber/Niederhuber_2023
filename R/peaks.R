@@ -191,7 +191,7 @@ peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df, faire.deg.dds.df) %>%
 
 peaks.anno <- peaks %>%
   GRanges() %>%
-  ChIPseeker::annotatePeak(., TxDb=dm6.TxDb, annoDb = "org.Dm.eg.db")
+  ChIPseeker::annotatePeak(., tssRegion = c(-100,500), TxDb=dm6.TxDb, annoDb = "org.Dm.eg.db")
 
 peaks <- ChIPseeker::as.GRanges(peaks.anno) %>% 
   data.frame() %>%
