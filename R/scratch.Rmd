@@ -665,15 +665,47 @@ peaks %>%
   dplyr::summarise(peaks = sum(n)) %>%
   dplyr::mutate(fraction = peaks / sum(peaks),
                 change = factor(change, levels = c('static','opening','closing'))) %>%
-  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) 
   plot.frac()
 
 ```
 
 ## Drafts
-### signal around tss
+### enhancer binding
+what about defining "enhancers" as 3LW faire peak calls?
+or signal?
 ```{r}
-
+osaPeaks %>%
+  data.frame() %>%
+  dplyr::filter(WT.3LW) %>%
+  dplyr::group_by(WT.3LW, anno.new) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(pct = n/sum(n),
+                WT.3LW = ifelse(WT.3LW,'Osa Bound - 3LW FAIRE Peak','Closed')) %>%
+#                assay = ifelse(assay == 'cnr', 'Osa-GFP CnR', '1kb Bkg')) %>%
+   ggplot(aes(x = '', y = n, fill = anno.new)) +
+  geom_bar(stat = 'identity', position = 'fill', color = 'black') +
+  geom_text_repel(aes(label= ifelse(pct > 0.05, paste0(sprintf("%1.1f", pct*100),"%"),'')),
+                  position=position_fill(vjust=0.5),
+                  colour="black", size =5,
+                  min.segment.length = 0,
+                  force = 0.01,
+                  force_pull = 1) +
+  scale_fill_brewer(palette = 'Spectral') +
+#  scale_fill_manual(values = cbPalette.ibm) +
+  ylab('Fraction') +
+  guides(fill = guide_legend(byrow = TRUE)) +
+  theme(axis.title.x = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.6, 'cm'),
+        legend.spacing.y = unit(0.1, 'cm'),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y = element_blank(),
+        panel.background = element_blank(),
+        strip.text = element_text(size = 12)) +
+  facet_grid(~WT.3LW)
+ggsave('rPlots/3-draft-osa_annotation_3LW_fairePeaks.png', width = 3, height = 5, dpi = 300)
 ```
 
 ### location of osa closing sites
@@ -755,6 +787,7 @@ specification", "Dendrite development," "wing morphogenesis," and
 \*\* trying with control for all down regulated genes still get
 dendrite, but it drops some on the list \##### GO
 
+
 ```{r}
 goData <- GOSemSim::godata(org.Dm.eg.db, ont='BP', keytype = 'FLYBASE')
 
@@ -805,31 +838,64 @@ goEnrich <- function(geneList, universe, name) {
 ```
 
 ```{r}
+symbol.lookup <- clusterProfiler::bitr(, fromType = 'FLYBASE', toType = 'SYMBOL', OrgDb = org.Dm.eg.db)
+
+data.frame(dm6.txdb)
+
 fairePeaks <- peaks %>% 
-  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse') 
-#  .[!GRanges(.) %over% dm6.promoters,] #filter out overlap with promoters
+  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
 
 
-fairePeaks.dm6 <- fairePeaks %>%
-   purrr::pmap_dfr(function(...) {
-     current <- tibble::tibble(...)
-     distances <- GenomicRanges::distance(GRanges(current), dm6.genes) 
-     df <- data.frame(Geneid = dm6.genes$gene_id, distances = distances)
-     nearbyGenes <- dplyr::slice_min(df, distances, n = 4)
-     out <- current %>% 
-       dplyr::mutate(nearbyGenes = list(nearbyGenes)) 
-     
-     return(out)
-   }) %>%
-  tidyr::unnest(nearbyGenes) %>%
-  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>% # join the rna seq data by Geneid
-  # average transcription at 3LW and 24h APF then categorize gene by 'up', 'down', or 'static'
-  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
-                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
-                l3v24 = log2(L3_mean / h24_mean),
-                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
-                                       l3v24 <= -1 ~ 'up',
-                                       T ~ 'static'))  
+anno.test <- ChIPseeker::annotatePeak(GRanges(fairePeaks),tssRegion = c(-100,500), TxDb = dm6.TxDb, addFlankGeneInfo = T, level = 'gene')
+
+
+anno.test.df <- ChIPseeker::as.GRanges(anno.test) %>% data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & osa.cnr & !yw.cnr) 
+
+
+
+anno.test.df.unnest <- anno.test.df %>%
+  dplyr::mutate(flank_genes = stringr::str_split(flank_geneIds, pattern = ';'),
+                flank_distance = stringr::str_split(flank_gene_distances, pattern = ';')) %>%
+  tidyr::unnest(c(flank_genes, flank_distance)) %>%
+  dplyr::distinct() %>% 
+  dplyr::filter(!is.na(flank_genes)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(SYMBOL = clusterProfiler::bitr(flank_genes, 'FLYBASE','SYMBOL',org.Dm.eg.db))
+
+  dplyr::filter(!grepl('lncRNA',SYMBOL))
+  
+  dplyr::mutate(flank_distance = abs(as.integer(flank_distance))) %>%
+  dplyr::group_by(peak) %>%
+  dplyr::slice_min(flank_distance, n = 3)
+
+sum(!is.na(anno.test.df.unnest$flank_genes))
+anno.test.df.unnest[500,]
+lookup
+data.frame(lookup) %>% tidyr::pivot_longer()
+
+lookup <- AnnotationDbi::intraIDMapper(anno.test.df.unnest$flank_genes, 'DROME', srcIDType = 'FLYBASE', destIDType = 'SYMBOL') 
+ #closing.osaBound.entrez <- clusterProfiler::bitr(closing.osaBound$Geneid, fromType = 'FLYBASE', toType = 'ENTREZID', OrgDb = org.Dm.eg.db)
+#fairePeaks.dm6 <- fairePeaks %>%
+#   purrr::pmap_dfr(function(...) {
+#     current <- tibble::tibble(...)
+#     distances <- GenomicRanges::distance(GRanges(current), dm6.genes) 
+#     df <- data.frame(Geneid = dm6.genes$gene_id, distances = distances)
+#     nearbyGenes <- dplyr::slice_min(df, distances, n = 4)
+#     out <- current %>% 
+#       dplyr::mutate(nearbyGenes = list(nearbyGenes)) 
+#     
+#     return(out)
+#   }) %>%
+#  tidyr::unnest(nearbyGenes) %>%
+#  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>% # join the rna seq data by Geneid
+#  # average transcription at 3LW and 24h APF then categorize gene by 'up', 'down', or 'static'
+#  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
+#                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
+#                l3v24 = log2(L3_mean / h24_mean),
+#                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
+#                                       l3v24 <= -1 ~ 'up',
+#                                       T ~ 'static'))  
 
 
 ```
@@ -932,7 +998,7 @@ closing.down <- fairePeaks.dm6 %>%
 ```
 
 ```{r}
-closing.osaBound.PLOT <- goEnrich(closing.osaBound, osaBound, 'closing.osaBound')
+closing.osaBound.PLOT <- goEnrich(closing.osaBound, closing, 'closing.osaBound')
 static.osaBound.PLOT <- goEnrich(static.osaBound, osaBound, 'static.osaBound')
 
 ggsave(plot = closing.osaBound.PLOT, file = 'rPlots/go-enrich-closing_osaBound.png', width = 10, height = 10, dpi = 300)
@@ -1013,20 +1079,23 @@ ggsave('rPlots/osabound-closing-nearDownGene-GO-summary.png', width = 8, height 
 ```
 
 ##### nearest genes to osa bound closing by expression changes
-
+doesn't look like there is a greater occurence of down regulated genes around/near closing osa bound category of faire peaks
 ```{r}
 
 fairePeaks.dm6 %>%
-  dplyr::filter(osa.cnr & !yw.cnr) %>%
-  dplyr::select(Geneid, faireCat.3LW_24h, cat) %>%
-  dplyr::distinct()%>%
-  dplyr::group_by(faireCat.3LW_24h, cat) %>%
+  dplyr::filter(osa.cnr & !yw.cnr & faireCat.3LW_24h != 'opening') %>%
+  dplyr::select(peak, faireCat.3LW_24h, cat) %>%
+  #dplyr::distinct()%>%
+  dplyr::group_by(peak, faireCat.3LW_24h, cat) %>%
   dplyr::tally() %>%
-  dplyr::mutate(frac = n/sum(n)) %>%
-  ggplot(aes(faireCat.3LW_24h, frac, fill = cat, label = n)) +
-  geom_bar(stat = 'identity') +
-  geom_text(position = position_stack(vjust = 0.5), size = 8) +
-  scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'Expression\n3LW-24h') +
+  dplyr::group_by(faireCat.3LW_24h, cat, n) %>%
+  dplyr::tally() %>%
+#  dplyr::filter(faireCat.3LW_24h == 'closing') %>%
+  ggplot(aes(n, nn, fill = cat)) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  facet_grid(cat~faireCat.3LW_24h)
+#  geom_text(position = position_stack(vjust = 0.5), size = 8) +
+#  scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'Expression\n3LW-24h') +
   theme(axis.title = element_blank(),
         axis.text = element_text(size = 12)) 
 
@@ -1389,27 +1458,39 @@ brFimo %>%
 ```
 
 ### motifs in osa peaks
-
+Trying motif enrichment within the "osa bound enhancer" subgroup
+so - osa peaks within 3lw faire peaks annotated as distal or intronic - ie. not promoters or exons
+As a control, using any non
 ```{r}
 #using a slightly larger range becuase average peak size is closer to ~300bp - is this the right call?
-osa.seq <- osaPeaks %>%
-  resize(50, "center") %>%
+osa.enhancer.seq <- osaPeaks %>%
+  data.frame() %>%
+  dplyr::filter(WT.3LW & anno.new %in% c('Distal Intergenic','Intron')) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
   memes::get_sequence(dm6)
 
-osaBound.ame <- osa.seq %>%
-  memes::runAme() %>%
+osa.seq <- fairePeaks %>%
+  dplyr::filter(WT.3LW & anno.new %in% c('Distal Intergenic','Intron')) %>%
+  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+
+osaBound.ame <- osa.enhancer.seq %>%
+  memes::runAme(control = osa.seq) %>%
   dplyr::group_by(motif_alt_id) %>%
   dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
 
 osaBound.ame %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:15) %>%
-  dplyr::mutate(neglogE = -log10(evalue)) %>%
+  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
   dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
-  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogE)) %>%
-  ggplot(aes('Osa Bound', symbol, fill = neglogE)) +
+  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
+  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
   geom_raster() +
-  scale_fill_continuous(type = 'viridis', name = '-log(evalue)') +
+  scale_fill_continuous(type = 'viridis', name = '-log(adj.Pvalue)') +
   theme(axis.text.y = element_text(size = 12),
         axis.title = element_blank(),
         axis.text.x = element_blank(),
@@ -1441,12 +1522,12 @@ osaBound.ame %>%
 #  setNames(osaBound.streme$name)
 #names(osaBound.streme$motif) <- osaBound.streme$name
 
-purrr::map(names(osaBound.streme$motif), function(x) {
-  fp = paste0('rPlots/motif-analysis/osaBound_sreme-',x,'.png')
-  #return(osaBound.streme$motif[[.]])
-  universalmotif::view_motifs(osaBound.streme$motif[[x]] ) %>%
-    ggsave(fp, plot = ., device = 'png', width = 4, heigh = 3, dpi = 300)
-  })
+#purrr::map(names(osaBound.streme$motif), function(x) {
+#  fp = paste0('rPlots/motif-analysis/osaBound_sreme-',x,'.png')
+#  #return(osaBound.streme$motif[[.]])
+#  universalmotif::view_motifs(osaBound.streme$motif[[x]] ) %>%
+#    ggsave(fp, plot = ., device = 'png', width = 4, heigh = 3, dpi = 300)
+#  })
 
 
 #motif_plots <- purrr::map(names(osaBound.streme$motif), ~ {
@@ -1470,16 +1551,16 @@ purrr::map(names(osaBound.streme$motif), function(x) {
 #  setNames(paste0(.$name,'.png')) %>%
 #  purrr::map(png::writePNG())
   
-osaBound.streme %>%
-  dplyr::mutate(consensus = forcats::fct_reorder(name, log_evalue),
-                log_evalue = as.double(log_evalue)) %>%
-  dplyr::slice_min(order_by = log_evalue, n = 5) %>%
-  ggplot(aes('', y = name, fill = nsites)) + 
-  geom_raster()
-  geom_point(size = 5)
-  
-  
-memes::runTomTom(osaBound.streme,database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme' )
+#osaBound.streme %>%
+#  dplyr::mutate(consensus = forcats::fct_reorder(name, log_evalue),
+#                log_evalue = as.double(log_evalue)) %>%
+#  dplyr::slice_min(order_by = log_evalue, n = 5) %>%
+#  ggplot(aes('', y = name, fill = nsites)) + 
+#  geom_raster()
+#  geom_point(size = 5)
+#  
+#  
+#memes::runTomTom(osaBound.streme,database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme' )
 ```
 
 ```{r}
@@ -2849,12 +2930,12 @@ fairePeaks.osaDependent %>%
  # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
   ggplot(aes(x= n, y = '', fill = anno.new)) +
   geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =3,
+  geom_text_repel(aes(label= ifelse(pct > 0.08, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size = 4,
                   min.segment.length = 0,
-                  force = 0.01,
+                  force = 0.00,
                   force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
+  scale_fill_brewer(palette = 'Spectral') +
   ylab('Fraction') +
   theme(axis.title.x = element_blank(),
         legend.title = element_blank(),
@@ -2866,7 +2947,7 @@ fairePeaks.osaDependent %>%
         strip.background = element_blank(),) +
         #strip.text = element_blank())+
   facet_wrap(~faireCat.3LW_24h, ncol = 1)
-ggsave('rPlots/4-draft-1.png', width = 4, height = 5, units = 'in', dpi = 300)
+ggsave('rPlots/4-draft-1.png', width = 5, height = 3, units = 'in', dpi = 300)
 ```
 
 ```{r}
@@ -2878,12 +2959,13 @@ fairePeaks.osaEctopic %>%
  # dplyr::filter(faireCat.osaDeGrad != 'Osa Ectopic') %>%
   ggplot(aes(x = n, y = '', fill = anno.new)) +
   geom_bar(stat = 'identity', position = 'fill') +
-  geom_text_repel(aes(label= ifelse(pct > 0.009, paste0(sprintf("%1.1f", pct*100),"%"), "")),
-                     position=position_fill(vjust=0.5), colour="black", size =3,
+  geom_text_repel(aes(label= ifelse(pct > 0.07, paste0(sprintf("%1.1f", pct*100),"%"), "")),
+                     position=position_fill(vjust=0.5), colour="black", size =4,
                   min.segment.length = 0,
                   force = 0.01,
                   force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
+  #scale_fill_manual(values = cbPalette) +
+  scale_fill_brewer(palette = 'Spectral') +
   ylab('Fraction') +
   theme(axis.title.x = element_blank(),
         legend.title = element_blank(),
@@ -2895,7 +2977,7 @@ fairePeaks.osaEctopic %>%
         strip.background = element_blank(),) +
         #strip.text = element_blank())+
   facet_wrap(~faireCat.3LW_24h, ncol = 1)
-ggsave('rPlots/4-draft-2.png', width = 4, height = 5, units = 'in', dpi = 300)
+ggsave('rPlots/4-draft-2.png', width = 5, height = 3, units = 'in', dpi = 300)
 ```
 
 ## drafts
@@ -2917,7 +2999,7 @@ fairePeaks.deg %>%
                   min.segment.length = 0,
                   force = 0.01,
                   force_pull = 1) +
-  scale_fill_manual(values = cbPalette) +
+  scale_fill_brewer(palette = 'Spectral') +
   ylab('Fraction') +
   theme(axis.title.x = element_blank(),
         legend.title = element_blank(),

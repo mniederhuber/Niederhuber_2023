@@ -191,7 +191,7 @@ peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df, faire.deg.dds.df) %>%
 
 peaks.anno <- peaks %>%
   GRanges() %>%
-  ChIPseeker::annotatePeak(., tssRegion = c(-100,500), TxDb=dm6.TxDb, annoDb = "org.Dm.eg.db")
+  ChIPseeker::annotatePeak(., tssRegion = c(-100,500), TxDb=dm6.TxDb, annoDb = "org.Dm.eg.db", addFlankGeneInfo = T, level = 'gene', flankDistance = 50000)
 
 peaks <- ChIPseeker::as.GRanges(peaks.anno) %>% 
   data.frame() %>%
@@ -203,7 +203,11 @@ peaks <- ChIPseeker::as.GRanges(peaks.anno) %>%
                                             grepl("Exon", annotation) ~ "Exon",
                                             grepl("Intron", annotation) ~ "Intron",
                                             grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
-                                            grepl("Promoter", annotation) ~ "Promoter"))
+                                            grepl("Promoter", annotation) ~ "Promoter"),
+                flank_gene = stringr::str_split(flank_geneIds, ';'),
+                flank_distance = stringr::str_split(flank_gene_distances, ';')) %>%
+  tidyr::unnest(c(flank_gene, flank_distance)) %>%
+  dplyr::distinct()
 
 save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
   
