@@ -15,15 +15,15 @@ dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
 
 #make 1kb bin whole genomic granges
-dm6.1kb <- purrr::map(seqnames(dm6), function(x) {
+dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
   if(x %in% c('chr2L', 'chr2R', 'chr3L', 'chr3R', 'chrX')){
     lng <- length(dm6[[x]])
-    seqnames <- rep_len(x, lng/1000)    
-    start <- seq(0, lng-1000, by = 1000)
-    end <- seq(999, lng, by = 1000)
+    seqnames <- rep_len(x, lng/500)    
+    start <- seq(0, lng-500, by = 500)
+    end <- seq(499, lng, by = 500)
     df <- data.frame(seqnames, start, end)
   }
-}) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '1kb background')
+}) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '500bp background')
 
 
 ##### load peaks #####
@@ -150,8 +150,8 @@ names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
 # FAIRE - OsaGFP deGrad
 
-faire.deg.Counts <- Rsubread::featureCounts(faire.ss.osaDeg$bam, #just use Bam from WT timecourse - single-end data
-                                        annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
+faire.deg.Counts <- Rsubread::featureCounts(faire.ss.osaDeg$bam, 
+                                        annot.ext = makeSAF(peaks), 
                                         allowMultiOverlap = T,
                                         nthreads = 4,
                                         isPairedEnd = T)
@@ -161,7 +161,7 @@ colnames(faire.deg.Counts$counts) <- faire.ss.osaDeg$id
 faire.deg.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.deg.Counts$counts,  colData = faire.ss.osaDeg,  design = ~grp) %>%
   DESeq2::DESeq(.)
 
-faire.deg.dds.df <- DESeq2::results(faire.deg.dds, contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire')) %>% data.frame() 
+faire.deg.dds.df <- DESeq2::results(faire.deg.dds, contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire'), alpha = 0.1) %>% data.frame() 
 
 names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
 
@@ -182,7 +182,7 @@ peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df, faire.deg.dds.df) %>%
                                                       faire_osaDeGrad.log2FoldChange < 0.4 & faire_osaDeGrad.log2FoldChange > -0.4 ~ 'Osa Independent',
                                                       faire_osaDeGrad.log2FoldChange <= -0.4 ~ 'Osa Ectopic',
                                                       T ~ 'NA')) %>% 
-  dplyr::bind_rows(., dm6.1kb) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
+  dplyr::bind_rows(., dm6.500bp) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
                                # that way these regions will also get annotations
 
 #### 
@@ -205,9 +205,7 @@ peaks <- ChIPseeker::as.GRanges(peaks.anno) %>%
                                             grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
                                             grepl("Promoter", annotation) ~ "Promoter"),
                 flank_gene = stringr::str_split(flank_geneIds, ';'),
-                flank_distance = stringr::str_split(flank_gene_distances, ';')) %>%
-  tidyr::unnest(c(flank_gene, flank_distance)) %>%
-  dplyr::distinct()
+                flank_distance = stringr::str_split(flank_gene_distances, ';')) 
 
 save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
   
