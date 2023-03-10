@@ -80,7 +80,9 @@ peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
   dplyr::arrange(seqnames, start, end) %>%
   dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.3LW, T, F),
                 WT.6h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.6h, T, F),
+                WT.18h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.18h, T, F),
                 WT.24h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.24h, T, F),
+                WT.36h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.36h, T, F),
                 WT.44h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.44h, T, F),
                 osaGFP.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
                 osaGFP.deGrad = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
@@ -90,7 +92,7 @@ peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
                                                osa.cnr & !yw.cnr ~ 'osa',
                                                !osa.cnr & yw.cnr ~ 'control',
                                                T ~ 'other')) %>%
-  dplyr::filter(WT.3LW | WT.6h | WT.24h | WT.24h | WT.44h | osaGFP.control | osaGFP.deGrad | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
+  dplyr::filter(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h | osaGFP.control | osaGFP.deGrad | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
   #get osaGFP deGrad cnr bigwig scores...
   dplyr::mutate(peak = 1:nrow(.),
                 osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
@@ -105,7 +107,9 @@ peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
                 #get faire bigwig scores... 
                 faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.18h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_18h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                 faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
 
 #DONE - what's missing from these annotations?

@@ -692,6 +692,7 @@ doesnt dramatically chage osa binding percentage, but doesn reduce closing categ
 #TODO - combine fraction barplots and heatmaps into single figure - cowplots? grid?
 fairePeaks.wt.test <- fairePeaks.wt %>%
   data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
   #dplyr::filter(WT.3LW & !WT.6h & !WT.24h & !WT.44h | !WT.3LW & !WT.6h & WT.24h & !WT.44h) %>%
   GRanges()
 
@@ -703,7 +704,7 @@ common_max = max(c(faire.3lw.mat, faire.24h.mat))
 
 col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
 
-faire.count <- fairePeaks.wt %>%
+faire.count <- fairePeaks.wt.test %>%
   data.frame() %>%
   #dplyr::filter(WT.3LW & !WT.6h & !WT.24h & !WT.44h | !WT.3LW & !WT.6h & WT.24h & !WT.44h) %>%
   dplyr::group_by(faireCat.3LW_24h) %>%
@@ -713,7 +714,7 @@ faire.count <- fairePeaks.wt %>%
 
 names(faire.count) <- c('closing','opening','static')
 
-groups <- fairePeaks.wt %>%
+groups <- fairePeaks.wt.test %>%
   data.frame() %>%
   #dplyr::filter(WT.3LW & !WT.6h & !WT.24h & !WT.44h | !WT.3LW & !WT.6h & WT.24h & !WT.44h) %>%
   .$faireCat.3LW_24h
@@ -755,9 +756,11 @@ png('rPlots/3E.png', width = 4, height = 5, units = 'in', res = 300)
 ComplexHeatmap::draw(hm, annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'left', )
 dev.off() 
  
-peaks %>% 
-  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
-  dplyr::filter(WT.3LW & !WT.6h & !WT.24h & !WT.44h | !WT.3LW & !WT.6h & WT.24h & !WT.44h) %>%
+fairePeaks.wt.test %>%
+  data.frame() %>%
+#peaks %>% 
+ # dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  #dplyr::filter(WT.3LW & !WT.6h & !WT.24h & !WT.44h | !WT.3LW & !WT.6h & WT.24h & !WT.44h) %>%
 #  dplyr::filter(WT.3LW | WT.24h) %>%
   dplyr::group_by(faireCat.3LW_24h, osa.cnr, yw.cnr) %>%
   dplyr::count() %>%
@@ -776,6 +779,248 @@ peaks %>%
 ```
 
 ## Drafts
+### clustering faire data
+reproducing the clustered FAIRE heatmap that SLN made for 2020 paper
+he used mean cpm from rsubread counts
+here I'm just just pooled zNorm signal within peaks - not sure if one method is better than the other
+the clusters look very similar to what we previously published.
+
+TODO - what is the osa binding overlap within each cluster?
+  - get peak ID from each cluster than match the peaks df and plot fraction that are osa.cnr True
+
+```{r}
+tidymat <- fairePeaks.wt %>%
+  data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+  tidyr::pivot_longer(!peak) %>%
+#  dplyr::group_by(peak) %>%
+  dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2], 
+                #stage = stringr::str_remove(stage, 'h'), 
+                #stage = ifelse(stage == '3LW', -6, stage),
+                stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(peak) %>%
+  dplyr::mutate(value = value +1 , 
+                frac = value/max(value),
+                peak = as.character(peak)) %>%
+  tidyr::pivot_wider(id_cols = peak, names_from = stage, values_from = frac) %>%
+  tibble::column_to_rownames('peak') %>%
+  as.matrix()
+
+# based of nystrom
+set.seed(1230412)
+k8 <- kmeans(tidymat, 8, nstart = 24, iter.max = 15)
+figure_col_fun <- circlize::colorRamp2(breaks = c(0,0.25,0.5,0.75,1), colors = viridis::viridis(5))
+ComplexHeatmap::Heatmap(tidymat, split = k8$cluster, cluster_columns = F, show_row_dend = F, col = figure_col_fun, gap = unit(0.5, "lines"),
+                        show_row_names = F)
+
+```
+```{r}
+
+## merge in clusters to peak list and then plot line and pie charts
+cluster.df
+cluster.df <- data.frame(k8$cluster) %>%
+  tibble::rownames_to_column('peak') %>%
+  dplyr::mutate(peak = as.integer(peak)) %>%
+  dplyr::left_join(peaks, ., by = 'peak') %>%
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  dplyr::mutate(osabound = ifelse(osa.cnr & !yw.cnr, T, F),
+                k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) 
+
+
+purrr::map(unique(cluster.df$k8.cluster), function(x) {
+  name <- paste0("cluster-",x)
+  
+ piechart <- cluster.df %>%
+    dplyr::filter(k8.cluster == x) %>%
+    dplyr::group_by(osabound) %>%
+    dplyr::tally() %>% 
+    dplyr::mutate(frac = n/sum(n),
+                  percent = paste0(100*round(frac, 2),"%")) %>%
+    ggplot(aes(0,frac, fill = osabound, label = percent)) +
+    geom_bar(stat = 'identity', position = position_stack(vjust = 0.5)) + 
+    geom_text(position = position_stack(vjust = 0.5)) +
+    scale_x_continuous(expand = c(0,0)) +
+    coord_polar(theta = 'y') + 
+    scale_fill_manual(values = c('grey80', 'green')) + 
+    theme(axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title = element_blank(),
+          panel.background = element_blank(),
+          strip.background = element_blank(),
+          strip.text = element_blank(),
+          legend.position = 'none')  
+  
+  lineplot <- cluster.df %>%
+    dplyr::filter(k8.cluster == x) %>%
+     dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   #stage = stringr::str_remove(stage, 'h'), 
+                   #stage = ifelse(stage == '3LW', -6, stage),
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h')),
+                   k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
+     dplyr::group_by(peak) %>%
+     dplyr::mutate(frac = value/max(value)) %>%
+     dplyr::group_by(k8.cluster, stage) %>%
+     dplyr::summarise(mean = mean(frac),
+                      sd = sd(frac) ,
+                      n = dplyr::n()) %>%
+     ggplot(aes(stage, mean, group = k8.cluster)) +
+     geom_ribbon(aes(y = mean, ymin = mean-sd, ymax = mean+sd), alpha = 0.3) +
+     geom_line(aes(color = k8.cluster), size = 2) +
+     ylim(c(-0.1,1.1)) +
+     #facet_wrap(~k8.cluster, ncol = 1) + 
+     theme(legend.position = 'none')
+  
+  
+ rna <- cluster.df %>%
+    dplyr::filter(k8.cluster == x ) %>% 
+#  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
+    dplyr::rename(Geneid = geneId) %>%
+    dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+    dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
+    tidyr::pivot_longer(c(3:14)) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
+                  stage = stringr::str_remove(stage, 'X'),
+                 # stage = stringr::str_remove(stage, 'h'),
+                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
+#                  stage = ifelse(stage == 'L3', -6, stage),
+#                  stage = as.integer(stage),
+                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
+ #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
+ #   dplyr::summarise(mean = mean(value)) %>%
+    dplyr::group_by(Geneid, stage, k8.cluster) %>%
+    dplyr::summarise(rep_mean = mean(value)+0.001) %>%
+    dplyr::group_by(Geneid, k8.cluster) %>%
+    dplyr::mutate(norm = rep_mean/rep_mean[stage == 'L3'],
+                  norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
+    dplyr::group_by(k8.cluster,stage) %>%
+    dplyr::summarise(mean = mean(norm), 
+                     sd = sd(norm),
+                     n = dplyr::n(),
+                     se = sd / sqrt(n)) %>%
+    ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
+    geom_ribbon(aes(y = mean, ymin = mean-(se), ymax = mean+(se)), alpha = 0.2) +
+    geom_line(size = 2, color = 'black') +
+    theme(legend.position = 'none') +
+    facet_wrap(~k8.cluster, scales = 'free_y')
+  
+ # rna <- cluster.df %>%
+ #   dplyr::filter(k8.cluster == x ) %>% 
+##  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
+ #   dplyr::rename(Geneid = geneId) %>%
+ #   dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+ #   dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
+ #   tidyr::pivot_longer(c(3:14)) %>%
+ #   dplyr::distinct() %>%
+ #   dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
+ #                 stage = stringr::str_remove(stage, 'X'),
+ #                # stage = stringr::str_remove(stage, 'h'),
+ #                 stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
+##                  stage = ifelse(stage == 'L3', -6, stage),
+##                  stage = as.integer(stage),
+ #                 rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
+ ##   dplyr::group_by(Geneid, stage, k8.cluster) %>%
+ ##   dplyr::summarise(mean = mean(value)) %>%
+ #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
+ #   dplyr::summarise(rep_mean = mean(value)) %>%
+ #   dplyr::group_by(Geneid, k8.cluster ) %>%
+ #   #dplyr::mutate(frac = mean/max(mean)) %>%
+ #   #na.omit() %>%
+ #   dplyr::group_by(k8.cluster, stage) %>%
+ #   dplyr::summarise(mean = mean(rep_mean), 
+ #                    sd = sd(rep_mean)) %>%
+ #   ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
+ #   geom_ribbon(aes(y = mean, ymin = mean-(sd/2), ymax = mean+(sd/2))) +
+ #   geom_line(size = 2, color = 'black') +
+ #   theme(legend.position = 'none')
+    
+
+ ggsave(plot = piechart, filename = paste0('rPlots/pieChart-',name,'.png'), width = 1, height = 1 , dpi = 300) 
+ ggsave(plot = lineplot, filename = paste0('rPlots/linePolot-',name,'.png'), width = 3, height = 3 , dpi = 300) 
+ ggsave(plot = rna, filename = paste0('rPlots/rna-',name,'.png'), width = 3, height = 3 , dpi = 300) 
+    
+})
+  cluster.df %>%
+   # dplyr::filter(k8.cluster == x ) %>% 
+#  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
+    dplyr::rename(Geneid = geneId) %>%
+    dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+    dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
+    tidyr::pivot_longer(c(3:14)) %>%
+    dplyr::distinct() %>%
+    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
+                  stage = stringr::str_remove(stage, 'X'),
+                 # stage = stringr::str_remove(stage, 'h'),
+                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
+#                  stage = ifelse(stage == 'L3', -6, stage),
+#                  stage = as.integer(stage),
+                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
+ #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
+ #   dplyr::summarise(mean = mean(value)) %>%
+    dplyr::group_by(Geneid, stage, k8.cluster) %>%
+    dplyr::summarise(rep_mean = mean(value)+0.001) %>%
+    dplyr::group_by(Geneid, k8.cluster) %>%
+    dplyr::mutate(norm = log2(rep_mean/rep_mean[stage == 'L3']),
+                  norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
+    dplyr::group_by(k8.cluster,stage) %>%
+    dplyr::summarise(mean = mean(norm), 
+                     sd = sd(norm),
+                     n = dplyr::n(),
+                     se = sd / sqrt(n)) %>%
+    ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
+    geom_ribbon(aes(y = mean, ymin = mean-(se), ymax = mean+(se)), alpha = 0.2) +
+    geom_line(size = 2, color = 'black') +
+    theme(legend.position = 'none') +
+    facet_wrap(~k8.cluster, scales = 'free_y')
+
+  
+```
+
+```{r}
+cluster.1 <- data.frame(k8$cluster) %>%
+  tibble::rownames_to_column('peak') %>%
+  dplyr::mutate(peak = as.integer(peak)) %>%
+  dplyr::left_join(peaks, ., by = 'peak') %>%
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster == 8 & osa.cnr & !yw.cnr) %>%
+  memes::get_sequence(dm6)
+
+cluster.control <- data.frame(k8$cluster) %>%
+  tibble::rownames_to_column('peak') %>%
+  dplyr::mutate(peak = as.integer(peak)) %>%
+  dplyr::left_join(peaks, ., by = 'peak') %>%
+  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster != 8 & osa.cnr & !yw.cnr) %>%
+  memes::get_sequence(dm6)
+
+ame <- memes::runAme(cluster.1, control = cluster.control) %>% 
+  dplyr::group_by(motif_alt_id) %>%
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
+#streme <- memes::runStreme(cluster.1, control = cluster.control)  
+#memes::runTomTom(streme)
+
+
+ame %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:10) %>%
+  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
+  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
+  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
+  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
+  geom_raster() +
+  scale_fill_continuous(type = 'viridis', name = '-log(adj.Pvalue)') +
+  theme(axis.text.y = element_text(size = 12),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) 
+ggsave('rPlots/cluster-8_ame.png', width = 3, height = 3, dpi = 300)
+```
+
+
 ### binding around tss
 ```{r}
 
@@ -1759,6 +2004,54 @@ osaBound.ame %>%
 
 ggsave('rPlots/3E_osaBound.png', width = 3, height = 4, dpi = 300)
 ```
+#### osa bound closing vs static FAIRE "enhancer" peaks
+```{r}
+query <- fairePeaks.wt %>%
+  data.frame() %>%
+  #dplyr::filter(faireCat.3LW_24h == 'closing' & anno.new %in% c('Distal Intergenic','Intron')) %>%
+  dplyr::filter( osa.cnr & !yw.cnr) %>%
+  dplyr::filter(WT.3LW & !WT.6h & !WT.24h) %>%
+  #dplyr::filter(WT.3LW | WT.6h | WT.24h | WT.44h) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+
+control <- fairePeaks.wt %>%
+  data.frame() %>%
+  #dplyr::filter(faireCat.3LW_24h == 'static') %>%
+  #dplyr::filter(!WT.3LW) %>%
+  dplyr::filter(WT.3LW & WT.24h) %>%
+  #dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  #dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
+  dplyr::filter(osa.cnr & !yw.cnr) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+
+ame <- query %>%
+  memes::runAme(control = control) %>%
+  dplyr::group_by(motif_alt_id) %>%
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
+
+ame %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:10) %>%
+  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
+  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
+  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
+  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
+  geom_raster() +
+  scale_fill_continuous(type = 'viridis', name = '-log(adj.Pvalue)') +
+  theme(axis.text.y = element_text(size = 12),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) 
+
+
+
+#ggsave('rPlots/3E_osaBound.png', width = 3, height = 4, dpi = 300)
+```
+
 ```{r}
 #```{r}
 #using a slightly larger range becuase average peak size is closer to ~300bp - is this the right call?
