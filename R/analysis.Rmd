@@ -1,0 +1,165 @@
+```{r setup}
+library(magrittr)
+library(ggplot2)
+library(DESeq2)
+library(edgeR)
+```
+# normalizing with deseq2
+This might be better for timecourse comparison, but how does this impact setting an on/off gene threshold for motif analysis?
+```{r}
+counts <- read.table('featureCounts/counts_Aligned.txt', header = T) %>%
+  tibble::column_to_rownames('Geneid') 
+
+## rename columns by stage_rep
+rename <- function(x) {
+  b <- stringr::str_split_fixed( x, pattern = '\\.|_', n = 4) 
+  paste(b[2],b[3], sep = '_')
+}
+
+colnames(counts)[6:ncol(counts)] <- colnames(counts)[6:ncol(counts)] %>%
+  purrr::map_chr(function(x) rename(x))
+
+
+## make the counts only matrix with geneid as rowname
+counts.m <- counts %>%
+  .[c(6:17)] %>%
+  as.matrix()
+
+coldata <- 
+  tibble::tibble(sample = c('L3_rep1', 'L3_rep2', '36h_rep1', '44h_rep2','6h_rep1','18h_rep1','36h_rep2','44h_rep1','6h_rep2','24h_rep1','18h_rep2','24h_rep2')) %>%
+  dplyr::mutate(grp = stringr::str_split_fixed(sample, '_', n = 2)[,1],
+                grp = factor(grp)) %>%
+  tibble::column_to_rownames('sample') 
+
+all(rownames(coldata) == colnames(counts.m))
+
+
+dds <- DESeq2::DESeqDataSetFromMatrix(counts.m, 
+                                      coldata,
+                                      ~grp)
+
+#set reference level to L3
+dds$grp <- relevel(dds$grp, ref = "L3")
+
+dds <- DESeq2::DESeq(dds)
+DESeq2::fpkm(dds)
+# run comparison relative to L3 for all timepoints
+dds.results <- purrr::map(unique(coldata$grp), function(x){
+  test <- as.character(x)
+  if(test != 'L3'){
+    results <- DESeq2::results(dds, contrast = c('grp', test, 'L3'))  %>% data.frame()
+    colnames(results) <- paste(colnames(results),test,sep = "_")
+    return(results)
+    }
+}) %>%
+  dplyr::bind_cols()
+
+dds.results %<>%
+  dplyr::select(matches('baseMean_6h|log2*')) # my understanding is that basemean is the same for all samples, so just taking one 
+
+
+save(dds.results, file = 'rData/wing-rnaseq-DDS.RData')
+```
+
+# previous normalization - GeTMM
+where did i get this from? 
+i remember the idea was to combine between sample normalization with within sample 
+here:
+https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2246-7
+"Gene length corrected trimmed mean of M-values (GeTMM) processing of RNA-seq data performs similarly in intersample analyses while improving intrasample comparisons"
+
+theres a word doc in main project directory that describes method
+```{r data}
+
+counts <- read.table('featureCounts/counts_Aligned.txt', header = T) %>%
+  tibble::column_to_rownames('Geneid') %>%
+  dplyr::mutate(Length = Length/1000) # transcript lengths are in bp and need kb for RPK
+
+#colnames(counts)[6:ncol(counts)] <- c('L3_Rep1','L3_Rep2','36h_Rep1','44h_Rep2','6h_Rep1','18h_Rep1','36h_Rep2','44h_Rep1','6h_Rep2','24h_Rep1','18h_Rep2','24h_Rep2')
+
+## rename columns by stage_rep
+rename <- function(x) {
+  b <- stringr::str_split_fixed( x, pattern = '\\.|_', n = 4) 
+  paste(b[2],b[3], sep = '_')
+}
+
+colnames(counts)[6:ncol(counts)] <- colnames(counts)[6:ncol(counts)] %>%
+  purrr::map_chr(function(x) rename(x))
+
+## make the counts only matrix with geneid as rowname
+counts.m <- counts %>%
+  .[c(6:17)] %>%
+  as.matrix()
+
+## calc rpk matrix -- reads per kilobase -- should add /1000 ? for kb?
+rpk <- (counts[,6:ncol(counts)]/counts[,'Length'])  %>% as.matrix
+
+
+```
+
+
+```{r}
+### to do -- functionalize grouping
+group <- c('L3','L3','36h','44h','6h','18h','36h','44h','6h','24h','18h','24h')
+
+
+# just examples ?
+#dge <- DGEList(counts = counts.m, group = group) 
+#keep <- filterByExpr(dge)
+#dge <- dge[keep, , keep.lib.sizes = F]
+
+## edgeR norm
+#dge <- calcNormFactors(dge, method = 'TMM', ) 
+#dge.cpm <- cpm(dge)
+
+## GeTMM
+dge.rpk <- DGEList(counts = rpk, group = group) # takes rpk normalized counts as input
+dge.rpk <- calcNormFactors(dge.rpk, method = 'TMM')
+dge.rpk.cpm <- cpm(dge.rpk)
+
+
+## make dataframe
+wing.rnaseq <- dge.rpk.cpm %>%
+  data.frame(check.names = F) %>% # check names F because header has numeric names
+  dplyr::mutate(mean = rowMeans(.[1:12])) %>%
+  dplyr::mutate(log_mean = log10(mean+1)) %>%
+  tibble::rownames_to_column('Geneid') 
+
+save(wing.rnaseq, file = 'rData/wing-rnaseq-GeTMM.RData')
+```
+
+
+```{r}
+# UBX = FBgn0003944 
+wing.rnaseq %>% dplyr::filter(Geneid == 'FBgn0003944')
+wing.rnaseq %>% dplyr::filter(log_mean >= 0.8)
+wing.rnaseq %>%
+  ggplot(aes(x = mean)) + 
+  geom_histogram(bins = 50) +
+  xlim(c(0,25))
+  geom_vline(xintercept = 0.8) +
+  geom_text(aes(0.95, 4000), label = 'Ubx') +
+  geom_vline(xintercept = 0.03) +
+  geom_text(aes(0.18, 4000), label = 'Cad') +
+  geom_vline(xintercept = 1.18) +
+  geom_text(aes(1.33, 4000), label = 'Osa') +
+ # geom_vline(xintercept = 0.38, color = 'green') 
+  NULL
+  
+ggsave('rOut/log_mean_distribution.png', dpi = 300, width = 6, height = 5)
+
+#write.table(on.genes$Geneid, 'rOut/on-genes.txt', quote = F, sep = " ", row.names = F, col.names = F)
+```
+
+
+```{r}
+wing.rnaseq %>% dplyr::filter(Geneid == 'FBgn0035625') %>% 
+  reshape2::melt() %>%
+  dplyr::group_by(variable) %>%
+  dplyr::mutate(grp = stringr::str_split_fixed(variable,'_',2)[[1]],
+                grp = stringr::str_remove(grp, 'X'),
+                grp = factor(grp, levels = (c('L3','6h','18h','24h','36h','44h')))) %>%
+  ggplot(aes(grp, value)) +
+  geom_point()
+```
+
