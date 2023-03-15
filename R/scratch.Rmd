@@ -38,8 +38,16 @@ load('rData/sheets.rda')
 load('rData/peaks.rda')
 
 #TODO move RNAseq data into BAP project
-load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
+# TODO this is in progress - mixed across directories
+load('rData/wing-rnaseq-GeTMM.RData')  # GeTMM normalized RNAseq
 #loads 'wing.rnaseq'
+
+#load('rData/wing-rnaseq-DDS.RData')  # loads dds.results 
+## TODO -- no id validation yet need to fix
+#rna.dds <- dds.results %>%
+#  dplyr::filter(baseMean_6h > 0) %>%
+#  tibble::rownames_to_column(var = 'Geneid')
+
 ON.genes <- wing.rnaseq %>%
   dplyr::filter(mean >= 2) %>%
   dplyr::select(Geneid) 
@@ -239,8 +247,11 @@ fairePeaks.osaEctopic %>%
   data.frame() %>%
   dplyr::select(seqnames, start, end) %>%
   write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
 ### for gviz
 genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white')
+
+
 ```
 
 TODO - make reference table of different peak categories and parameters,
@@ -789,6 +800,7 @@ TODO - what is the osa binding overlap within each cluster?
   - get peak ID from each cluster than match the peaks df and plot fraction that are osa.cnr True
 
 ```{r}
+
 tidymat <- fairePeaks.wt %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
@@ -811,29 +823,66 @@ tidymat <- fairePeaks.wt %>%
 set.seed(1230412)
 k8 <- kmeans(tidymat, 8, nstart = 24, iter.max = 15)
 figure_col_fun <- circlize::colorRamp2(breaks = c(0,0.25,0.5,0.75,1), colors = viridis::viridis(5))
-ComplexHeatmap::Heatmap(tidymat, split = k8$cluster, cluster_columns = F, show_row_dend = F, col = figure_col_fun, gap = unit(0.5, "lines"),
+
+k_df <- k8$cluster %>% 
+  data.frame %>% 
+  dplyr::rename(k = ".") %>% 
+  tibble::rownames_to_column("id") %>% 
+  dplyr::mutate(new_k1 = dplyr::case_when(k == 1 ~ 8,
+                                          k == 2 ~ 7,
+                                          k == 3 ~ 5,
+                                          k == 4 ~ 2,
+                                          k == 5 ~ 6,
+                                          k == 6 ~ 4,
+                                          k == 7 ~ 3,
+                                          k == 8 ~ 1)) %>% 
+  dplyr::rename(old_k = k,
+                k = new_k1)
+
+
+ComplexHeatmap::Heatmap(tidymat, split = k_df$k, cluster_columns = F, show_row_dend = F, col = figure_col_fun, gap = unit(0.5, "lines"),
                         show_row_names = F)
+
 
 ```
 ```{r}
+# annotate all WT FAIRE peaks with flanking gene info - returns more than 3 genes because of shared distances
+fairePeaks.anno <- ChIPseeker::annotatePeak(fairePeaks.wt, tssRegion = c(-100,500), TxDb = dm6.TxDb, level = 'gene', addFlankGeneInfo = T, flankDistance = 5000) %>%
+  ChIPseeker::as.GRanges() %>%
+  data.frame() %>%
+  dplyr::mutate(Geneid_flank = stringr::str_split(flank_geneIds, ';'), 
+                Gene_distance = stringr::str_split(flank_gene_distances, ';')) %>%
+#  tidyr::unnest(Geneid) %>%
+  #tidyr::unnest(Gene_distance) %>% 
+#  dplyr::mutate(Geneid = ifelse(is.na(Geneid), geneId, Geneid)) %>% # in case where there are no genes withing 10kb, take the nearest gene annotation
+  dplyr::group_by(peak) %>%
+#  dplyr::slice_min(Gene_distance, n = 4) %>%
+  dplyr::rename(Geneid = geneId) %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid')
 
+```
+
+```{r}
 ## merge in clusters to peak list and then plot line and pie charts
-cluster.df
+
 cluster.df <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
   dplyr::mutate(peak = as.integer(peak)) %>%
-  dplyr::left_join(peaks, ., by = 'peak') %>%
-  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+  dplyr::left_join(fairePeaks.anno, ., by = 'peak') %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
   dplyr::mutate(osabound = ifelse(osa.cnr & !yw.cnr, T, F),
                 k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) 
+cluster.df
+```
 
 
+```{r}
 purrr::map(unique(cluster.df$k8.cluster), function(x) {
   name <- paste0("cluster-",x)
   
  piechart <- cluster.df %>%
     dplyr::filter(k8.cluster == x) %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
     dplyr::group_by(osabound) %>%
     dplyr::tally() %>% 
     dplyr::mutate(frac = n/sum(n),
@@ -854,11 +903,10 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
   
   lineplot <- cluster.df %>%
     dplyr::filter(k8.cluster == x) %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
      dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
-                   #stage = stringr::str_remove(stage, 'h'), 
-                   #stage = ifelse(stage == '3LW', -6, stage),
                    stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h')),
                    k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
      dplyr::group_by(peak) %>%
@@ -871,87 +919,49 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
      geom_ribbon(aes(y = mean, ymin = mean-sd, ymax = mean+sd), alpha = 0.3) +
      geom_line(aes(color = k8.cluster), size = 2) +
      ylim(c(-0.1,1.1)) +
-     #facet_wrap(~k8.cluster, ncol = 1) + 
      theme(legend.position = 'none')
   
   
- rna <- cluster.df %>%
-    dplyr::filter(k8.cluster == x ) %>% 
-#  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
-    dplyr::rename(Geneid = geneId) %>%
-    dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
-    dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
-    tidyr::pivot_longer(c(3:14)) %>%
-    dplyr::distinct() %>%
+ rna <-  cluster.df %>%
+   dplyr::filter(k8.cluster == x ) %>% 
+    dplyr::select(Geneid,k8.cluster,c(70:81)) %>%
+    tidyr::pivot_longer(c(4:15)) %>%    
+    #dplyr::distinct() %>% #should drop any genes represented >1 per cluster
     dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
                   stage = stringr::str_remove(stage, 'X'),
-                 # stage = stringr::str_remove(stage, 'h'),
                   stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
-#                  stage = ifelse(stage == 'L3', -6, stage),
-#                  stage = as.integer(stage),
                   rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
- #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
- #   dplyr::summarise(mean = mean(value)) %>%
     dplyr::group_by(Geneid, stage, k8.cluster) %>%
-    dplyr::summarise(rep_mean = mean(value)+0.001) %>%
+    dplyr::summarise(rep_mean = mean(value)+0.001) %>% # average rnaseq replicates
     dplyr::group_by(Geneid, k8.cluster) %>%
-    dplyr::mutate(norm = rep_mean/rep_mean[stage == 'L3'],
-                  norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
-    dplyr::group_by(k8.cluster,stage) %>%
-    dplyr::summarise(mean = mean(norm), 
-                     sd = sd(norm),
-                     n = dplyr::n(),
-                     se = sd / sqrt(n)) %>%
-    ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
-    geom_ribbon(aes(y = mean, ymin = mean-(se), ymax = mean+(se)), alpha = 0.2) +
+   dplyr::filter(any(rep_mean >= 2)) %>% # drop genes with little to no expression
+   #dplyr::mutate(frac = rep_mean / max(rep_mean)) %>% # fraction of max per gene
+    dplyr::group_by(k8.cluster,stage) %>% 
+    dplyr::summarise(mean = mean(rep_mean), 
+                     sd = sd(rep_mean)) %>% #average all the fraction of max together per stage per cluster
+   dplyr::group_by(k8.cluster) %>%
+   dplyr::mutate(frac = mean/max(mean)) %>%
+    ggplot(aes(stage, frac, group = k8.cluster,color = k8.cluster) ) +
     geom_line(size = 2, color = 'black') +
-    theme(legend.position = 'none') +
-    facet_wrap(~k8.cluster, scales = 'free_y')
-  
- # rna <- cluster.df %>%
- #   dplyr::filter(k8.cluster == x ) %>% 
-##  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
- #   dplyr::rename(Geneid = geneId) %>%
- #   dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
- #   dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
- #   tidyr::pivot_longer(c(3:14)) %>%
- #   dplyr::distinct() %>%
- #   dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
- #                 stage = stringr::str_remove(stage, 'X'),
- #                # stage = stringr::str_remove(stage, 'h'),
- #                 stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
-##                  stage = ifelse(stage == 'L3', -6, stage),
-##                  stage = as.integer(stage),
- #                 rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
- ##   dplyr::group_by(Geneid, stage, k8.cluster) %>%
- ##   dplyr::summarise(mean = mean(value)) %>%
- #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
- #   dplyr::summarise(rep_mean = mean(value)) %>%
- #   dplyr::group_by(Geneid, k8.cluster ) %>%
- #   #dplyr::mutate(frac = mean/max(mean)) %>%
- #   #na.omit() %>%
- #   dplyr::group_by(k8.cluster, stage) %>%
- #   dplyr::summarise(mean = mean(rep_mean), 
- #                    sd = sd(rep_mean)) %>%
- #   ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
- #   geom_ribbon(aes(y = mean, ymin = mean-(sd/2), ymax = mean+(sd/2))) +
- #   geom_line(size = 2, color = 'black') +
- #   theme(legend.position = 'none')
-    
+ #  geom_ribbon(aes(y = mean, ymin = mean-sd, ymax=mean+sd))
+    theme(legend.position = 'none') 
+
 
  ggsave(plot = piechart, filename = paste0('rPlots/pieChart-',name,'.png'), width = 1, height = 1 , dpi = 300) 
  ggsave(plot = lineplot, filename = paste0('rPlots/linePolot-',name,'.png'), width = 3, height = 3 , dpi = 300) 
  ggsave(plot = rna, filename = paste0('rPlots/rna-',name,'.png'), width = 3, height = 3 , dpi = 300) 
     
 })
-  cluster.df %>%
-   # dplyr::filter(k8.cluster == x ) %>% 
+
+
+cluster.df
+ cluster.df %>%
+   #dplyr::filter(k8.cluster == x ) %>% 
 #  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
-    dplyr::rename(Geneid = geneId) %>%
-    dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
-    dplyr::select(Geneid,k8.cluster,c(72:83)) %>%
-    tidyr::pivot_longer(c(3:14)) %>%
-    dplyr::distinct() %>%
+    #dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
+    dplyr::select(Geneid,k8.cluster,c(70:81)) %>%
+    tidyr::pivot_longer(c(4:15)) %>%
+    dplyr::distinct() %>% #should drop any genes represented >1 per cluster
     dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
                   stage = stringr::str_remove(stage, 'X'),
                  # stage = stringr::str_remove(stage, 'h'),
@@ -964,18 +974,50 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
     dplyr::group_by(Geneid, stage, k8.cluster) %>%
     dplyr::summarise(rep_mean = mean(value)+0.001) %>%
     dplyr::group_by(Geneid, k8.cluster) %>%
-    dplyr::mutate(norm = log2(rep_mean/rep_mean[stage == 'L3']),
-                  norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
+   dplyr::filter(any(rep_mean >= 2)) %>%
+    dplyr::mutate(norm = log2(rep_mean/rep_mean[stage == 'L3'])) %>%
+#   dplyr::filter(!is.na(norm)) %>%
+#   dplyr::filter(norm != Inf | norm != -Inf)  %>%
+                  #norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
     dplyr::group_by(k8.cluster,stage) %>%
     dplyr::summarise(mean = mean(norm), 
                      sd = sd(norm),
                      n = dplyr::n(),
                      se = sd / sqrt(n)) %>%
     ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
-    geom_ribbon(aes(y = mean, ymin = mean-(se), ymax = mean+(se)), alpha = 0.2) +
+   # geom_ribbon(aes(y = mean, ymin = mean-(sd/2), ymax = mean+(sd/2)), alpha = 0.2) +
     geom_line(size = 2, color = 'black') +
     theme(legend.position = 'none') +
     facet_wrap(~k8.cluster, scales = 'free_y')
+  cluster.df %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+    dplyr::group_by(osabound) 
+    dplyr::tally()  
+
+
+   cluster.df 
+  # dplyr::filter(k8.cluster == x ) %>% 
+    dplyr::select(Geneid,k8.cluster,c(70:81)) 
+    tidyr::pivot_longer(c(4:15)) %>%    
+    #dplyr::distinct() %>% #should drop any genes represented >1 per cluster
+    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
+                  stage = stringr::str_remove(stage, 'X'),
+                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
+                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
+    dplyr::group_by(Geneid, stage, k8.cluster) %>%
+    dplyr::summarise(rep_mean = mean(value)+0.001) %>% # average rnaseq replicates
+    dplyr::group_by(Geneid, k8.cluster) %>%
+   dplyr::filter(any(rep_mean >= 2)) %>% # drop genes with little to no expression
+   dplyr::mutate(frac = rep_mean / max(rep_mean)) %>% # fraction of max per gene
+    dplyr::group_by(k8.cluster,stage) %>% 
+    dplyr::summarise(mean = mean(frac), 
+                     sd = sd(frac)) %>% #average all the fraction of max together per stage per cluster
+#   dplyr::group_by(k8.cluster) %>%
+#   dplyr::mutate(frac = mean/max(mean)) %>%
+    ggplot(aes(stage, mean, group = k8.cluster,color = k8.cluster) ) +
+    geom_line(size = 2, color = 'black') +
+ #  geom_ribbon(aes(y = mean, ymin = mean-sd, ymax=mean+sd))
+    theme(legend.position = 'none') 
 
   
 ```
@@ -1220,8 +1262,6 @@ anno.test <- ChIPseeker::annotatePeak(GRanges(fairePeaks),tssRegion = c(-100,500
 
 anno.test.df <- ChIPseeker::as.GRanges(anno.test) %>% data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & osa.cnr & !yw.cnr) 
-
-
 
 anno.test.df.unnest <- anno.test.df %>%
   dplyr::mutate(flank_genes = stringr::str_split(flank_geneIds, pattern = ';'),

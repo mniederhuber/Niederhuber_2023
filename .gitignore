@@ -6,3 +6,5 @@ R/Peaks
 R/Bam
 R/rPlots
 .Rproj.user
+dm6.ensGene.gtf
+featureCounts/
