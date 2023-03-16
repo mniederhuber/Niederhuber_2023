@@ -859,20 +859,22 @@ fairePeaks.anno <- ChIPseeker::annotatePeak(fairePeaks.wt, tssRegion = c(-100,50
 #  dplyr::slice_min(Gene_distance, n = 4) %>%
   dplyr::rename(Geneid = geneId) %>%
   dplyr::left_join(., wing.rnaseq, by = 'Geneid')
-
 ```
 
 ```{r}
+
 ## merge in clusters to peak list and then plot line and pie charts
 
 cluster.df <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
-  dplyr::mutate(peak = as.integer(peak)) %>%
-  dplyr::left_join(fairePeaks.anno, ., by = 'peak') %>%
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  dplyr::mutate(peak = as.integer(peak)) %>% 
+  dplyr::left_join(data.frame(fairePeaks.wt), ., by = 'peak') %>% # join cluster info to the wt FAIRE peak df
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>% # filter out to just "distal regulatory"
   dplyr::mutate(osabound = ifelse(osa.cnr & !yw.cnr, T, F),
-                k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) 
-cluster.df
+                k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
+  dplyr::rename('Geneid' = 'geneId') %>%
+  dplyr::left_join(., wing.rnaseq, by = 'Geneid')
+
 ```
 
 
@@ -892,7 +894,7 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
     geom_text(position = position_stack(vjust = 0.5)) +
     scale_x_continuous(expand = c(0,0)) +
     coord_polar(theta = 'y') + 
-    scale_fill_manual(values = c('grey80', 'green')) + 
+    scale_fill_manual(values = c('grey80', 'magenta')) + 
     theme(axis.text = element_blank(),
           axis.ticks = element_blank(),
           axis.title = element_blank(),
@@ -922,30 +924,32 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
      theme(legend.position = 'none')
   
   
- rna <-  cluster.df %>%
-   dplyr::filter(k8.cluster == x ) %>% 
-    dplyr::select(Geneid,k8.cluster,c(70:81)) %>%
+rna <-   cluster.df %>%
+  dplyr::filter(!grepl('RNA',SYMBOL)) %>% # filter out stuff like lncRNA, tRNA, snoRNA etc. 
+   dplyr::filter(k8.cluster == x) %>% 
+    dplyr::select(Geneid,k8.cluster,osabound,c(68:79)) %>% #TODO stop indexing like this!
     tidyr::pivot_longer(c(4:15)) %>%    
-    #dplyr::distinct() %>% #should drop any genes represented >1 per cluster
+    dplyr::distinct() %>% #should drop any genes represented >1 per cluster... 
+  #TODO -- good idea to filter on distinct() - quick check this doesn't look like it dramatically changes the plots, check numbers. 
     dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
                   stage = stringr::str_remove(stage, 'X'),
                   stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
                   rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
-    dplyr::group_by(Geneid, stage, k8.cluster) %>%
+    dplyr::group_by(Geneid, stage, k8.cluster, osabound) %>%
     dplyr::summarise(rep_mean = mean(value)+0.001) %>% # average rnaseq replicates
     dplyr::group_by(Geneid, k8.cluster) %>%
    dplyr::filter(any(rep_mean >= 2)) %>% # drop genes with little to no expression
-   #dplyr::mutate(frac = rep_mean / max(rep_mean)) %>% # fraction of max per gene
-    dplyr::group_by(k8.cluster,stage) %>% 
+    dplyr::group_by(k8.cluster,stage, osabound) %>% 
     dplyr::summarise(mean = mean(rep_mean), 
                      sd = sd(rep_mean)) %>% #average all the fraction of max together per stage per cluster
-   dplyr::group_by(k8.cluster) %>%
+   dplyr::group_by(k8.cluster, osabound) %>%
    dplyr::mutate(frac = mean/max(mean)) %>%
-    ggplot(aes(stage, frac, group = k8.cluster,color = k8.cluster) ) +
-    geom_line(size = 2, color = 'black') +
- #  geom_ribbon(aes(y = mean, ymin = mean-sd, ymax=mean+sd))
+    ggplot(aes(stage, frac, group = osabound,color = osabound) ) +
+    geom_line(size = 2) +
+  ylim(c(0,1.0)) + 
+   scale_color_manual(values = c('grey50','magenta')) +
     theme(legend.position = 'none') 
-
+   
 
  ggsave(plot = piechart, filename = paste0('rPlots/pieChart-',name,'.png'), width = 1, height = 1 , dpi = 300) 
  ggsave(plot = lineplot, filename = paste0('rPlots/linePolot-',name,'.png'), width = 3, height = 3 , dpi = 300) 
@@ -954,75 +958,11 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
 })
 
 
-cluster.df
- cluster.df %>%
-   #dplyr::filter(k8.cluster == x ) %>% 
-#  tidyr::unnest(cols = c(flank_gene, flank_distance)) 
-    #dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>%
-    dplyr::select(Geneid,k8.cluster,c(70:81)) %>%
-    tidyr::pivot_longer(c(4:15)) %>%
-    dplyr::distinct() %>% #should drop any genes represented >1 per cluster
-    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
-                  stage = stringr::str_remove(stage, 'X'),
-                 # stage = stringr::str_remove(stage, 'h'),
-                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
-#                  stage = ifelse(stage == 'L3', -6, stage),
-#                  stage = as.integer(stage),
-                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
- #   dplyr::group_by(Geneid, stage, k8.cluster) %>%
- #   dplyr::summarise(mean = mean(value)) %>%
-    dplyr::group_by(Geneid, stage, k8.cluster) %>%
-    dplyr::summarise(rep_mean = mean(value)+0.001) %>%
-    dplyr::group_by(Geneid, k8.cluster) %>%
-   dplyr::filter(any(rep_mean >= 2)) %>%
-    dplyr::mutate(norm = log2(rep_mean/rep_mean[stage == 'L3'])) %>%
-#   dplyr::filter(!is.na(norm)) %>%
-#   dplyr::filter(norm != Inf | norm != -Inf)  %>%
-                  #norm = ifelse(is.na(norm) | norm == Inf, 0, norm)) %>%
-    dplyr::group_by(k8.cluster,stage) %>%
-    dplyr::summarise(mean = mean(norm), 
-                     sd = sd(norm),
-                     n = dplyr::n(),
-                     se = sd / sqrt(n)) %>%
-    ggplot(aes(stage, mean, group = k8.cluster, color = k8.cluster) ) +
-   # geom_ribbon(aes(y = mean, ymin = mean-(sd/2), ymax = mean+(sd/2)), alpha = 0.2) +
-    geom_line(size = 2, color = 'black') +
-    theme(legend.position = 'none') +
-    facet_wrap(~k8.cluster, scales = 'free_y')
-  cluster.df %>%
-    dplyr::distinct(peak, .keep_all = T) %>%
-    dplyr::group_by(osabound) 
-    dplyr::tally()  
-
-
-   cluster.df 
-  # dplyr::filter(k8.cluster == x ) %>% 
-    dplyr::select(Geneid,k8.cluster,c(70:81)) 
-    tidyr::pivot_longer(c(4:15)) %>%    
-    #dplyr::distinct() %>% #should drop any genes represented >1 per cluster
-    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
-                  stage = stringr::str_remove(stage, 'X'),
-                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
-                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
-    dplyr::group_by(Geneid, stage, k8.cluster) %>%
-    dplyr::summarise(rep_mean = mean(value)+0.001) %>% # average rnaseq replicates
-    dplyr::group_by(Geneid, k8.cluster) %>%
-   dplyr::filter(any(rep_mean >= 2)) %>% # drop genes with little to no expression
-   dplyr::mutate(frac = rep_mean / max(rep_mean)) %>% # fraction of max per gene
-    dplyr::group_by(k8.cluster,stage) %>% 
-    dplyr::summarise(mean = mean(frac), 
-                     sd = sd(frac)) %>% #average all the fraction of max together per stage per cluster
-#   dplyr::group_by(k8.cluster) %>%
-#   dplyr::mutate(frac = mean/max(mean)) %>%
-    ggplot(aes(stage, mean, group = k8.cluster,color = k8.cluster) ) +
-    geom_line(size = 2, color = 'black') +
- #  geom_ribbon(aes(y = mean, ymin = mean-sd, ymax=mean+sd))
-    theme(legend.position = 'none') 
-
-  
 ```
 
+#### ame of clusters
 ```{r}
+#TODO functionalize to process all
 cluster.1 <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
   dplyr::mutate(peak = as.integer(peak)) %>%
@@ -1062,6 +1002,70 @@ ame %>%
 ggsave('rPlots/cluster-8_ame.png', width = 3, height = 3, dpi = 300)
 ```
 
+#### go of clusters
+In progress, there doesn't look like there's particularly strong enrichment within cluster 1, depends on how the analysis is controlled though. 
+When subset by osa bound, which seems most appropriate to me, its hard to find enrichment unless a very broad control is set, in which case terms tend to be mainly associated with appendage/wing dev and metamorphosis - nothing terribly specific. 
+
+cluster 1 osaBound vs all clusters - no enrichment
+cluster 1 osaBound vs all "on" genes - wing dev, appendage, metamorph, etc. 
+cluster 7 osaBound vs all clusters - anterior/posterior specification, segmentation, imag disc dev. 
+
+wiki pathway analysis -- 
+osa bound cluster 1 enriched for notch signalling 
+osa bound cluster 4 enriched for wnt signalling
+
+```{r}
+
+cluster <- cluster.df %>%
+  dplyr::filter(osa.cnr & !yw.cnr & !grepl('RNA', SYMBOL)) %>%
+  dplyr::filter(k8.cluster == 1 ) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+
+
+control <- ON.genes.validated %>%
+  dplyr::ungroup() %>%
+#  dplyr::filter(osa.cnr & !yw.cnr) %>%
+#  dplyr::filter(k8.cluster == 1 | k8.cluster == 4 ) %>%
+  dplyr::select(Geneid) %>%
+  dplyr::distinct() 
+
+#goEnrich(cluster, control, 'test')
+
+#test <- cluster.df %>% dplyr::ungroup() %>% dplyr::filter(k8.cluster == 1 & osabound) %>% GRanges() + 1000
+#test
+
+#test2 <- ChIPseeker::seq2gene(test, tssRegion = c(-100,500), TxDb = dm6.TxDb, flankDistance = 5000) %>% data.frame('Geneid' = .)
+
+entrez <- clusterProfiler::bitr(cluster$Geneid, 'FLYBASE', 'ENTREZID', OrgDb = org.Dm.eg.db)$ENTREZID
+
+clusterProfiler::enrichWP(entrez, organism = 'Drosophila melanogaster')
+
+test <- GOSemSim::mgeneSim(cluster$Geneid, semData = goData, verbose = F)
+
+test2 <- test %>% data.frame() %>% tibble::rownames_to_column() %>% tidyr::pivot_longer(!rowname, names_to = 'colname')
+
+
+
+test2.symbol <- AnnotationDbi::select(org.Dm.eg.db, keys = test2$rowname, columns = 'SYMBOL', keytype = 'FLYBASE') %>% dplyr::distinct()
+
+out <- test2 %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(rowSymbol = test2.symbol[rowname == test2.symbol$FLYBASE,]$SYMBOL,
+                colSymbol = test2.symbol[colname == test2.symbol$FLYBASE,]$SYMBOL)
+
+out %>%
+#  dplyr::group_by(cat) %>%
+ # dplyr::filter(cat == 'down') %>%
+  tidyHeatmap::heatmap(rowSymbol, colSymbol, value, 
+                       palette_value = c('white','blue','red'),
+                       row_km = 6,
+                       column_km = 6) %>% tidyHeatmap::save_pdf('test-down.pdf')
+ 
+  
+
+```
 
 ### binding around tss
 ```{r}
@@ -1206,14 +1210,16 @@ goData <- GOSemSim::godata(org.Dm.eg.db, ont='BP', keytype = 'FLYBASE')
 goEnrich <- function(geneList, universe, name) {  
 #  go <- select(org.Dm.eg.db, keys = geneList$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
 #  go.universe <- select(org.Dm.eg.db, keys = universe$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
-  
   ggo <- clusterProfiler::enrichGO(#gene = go$ENTREZID,
                                    gene = geneList$Geneid,
                                    universe = universe$Geneid,
                                    OrgDb = org.Dm.eg.db,
                                    keyType = 'FLYBASE',
                                    ont = 'BP',
-                                   readable = T)
+                                   readable = T,
+                                   pAdjustMethod = 'BH',
+                                   pvalueCutoff = 0.01,
+                                   qvalueCutoff = 0.05)
   
   ggo.df <- data.frame(ggo)
 
@@ -1224,7 +1230,7 @@ goEnrich <- function(geneList, universe, name) {
   scores <- setNames(-log10(ggo.df$qvalue), ggo.df$ID)
   reducedTerms <- rrvgo::reduceSimMatrix(simMatrix, scores, threshold = 0.5, orgdb = org.Dm.eg.db)
   
-  reducedTerms %>%
+ plot <- reducedTerms %>%
     dplyr::group_by(cluster, parentTerm) %>%
     dplyr::mutate(neg_log10_qval = mean(score)) %>%
     dplyr::ungroup() %>%
@@ -1244,7 +1250,7 @@ goEnrich <- function(geneList, universe, name) {
           axis.ticks.x = element_blank(),
           legend.text = element_text(size = 12),
           legend.title = element_text(size = 12))
-  
+    return(ggo.df)
 }
 ```
 
@@ -1487,76 +1493,7 @@ ggo %>%
 ggsave('rPlots/osabound-closing-nearDownGene-GO-summary.png', width = 8, height = 6, dpi = 300)
 ```
 
-##### nearest genes to osa bound closing by expression changes
-doesn't look like there is a greater occurence of down regulated genes around/near closing osa bound category of faire peaks
-```{r}
 
-fairePeaks.dm6 %>%
-  dplyr::filter(osa.cnr & !yw.cnr & faireCat.3LW_24h != 'opening') %>%
-  dplyr::select(peak, faireCat.3LW_24h, cat) %>%
-  #dplyr::distinct()%>%
-  dplyr::group_by(peak, faireCat.3LW_24h, cat) %>%
-  dplyr::tally() %>%
-  dplyr::group_by(faireCat.3LW_24h, cat, n) %>%
-  dplyr::tally() %>%
-#  dplyr::filter(faireCat.3LW_24h == 'closing') %>%
-  ggplot(aes(n, nn, fill = cat)) +
-  geom_bar(stat = 'identity', position = 'dodge') +
-  facet_grid(cat~faireCat.3LW_24h)
-#  geom_text(position = position_stack(vjust = 0.5), size = 8) +
-#  scale_fill_manual(values = c('#e8335d','grey80','#5ae342'), name = 'Expression\n3LW-24h') +
-  theme(axis.title = element_blank(),
-        axis.text = element_text(size = 12)) 
-
-ggsave('rPlots/3-draft-osabound-closing-nearestGeneexpression.png', width = 4, height = 3, dpi = 300)
-```
-
-#### are there hubs of differentially regulated genes around osa bound sites?
-
-ie. do osa bound closing sites tend to be found around clusters of
-downregulated genes?
-
-answer - no doesn't seem to be the case
-
-```{r}
-dm6.genes.osaPeaks.rna %>%
-  dplyr::filter(faireCat.3LW_24h != 'NA') %>% 
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
-  dplyr::group_by(osaPeak.index, faireCat.3LW_24h, cat) %>%
-  dplyr::tally() %>%
-  ggplot(aes(faireCat.3LW_24h, n, color = cat)) +
-  geom_violin()
-```
-
-```{r}
-dm6.genes.osaPeaks.rna %>%
-  dplyr::filter(faireCat.3LW_24h != 'NA') %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
- # dplyr::filter(faireCat.3LW_24h %in% c('closing','static')) %>%
-  dplyr::mutate(distance = abs(start.y - start.x)) %>%
-  ggplot(aes('', l3v24, fill = cat)) +
-#  geom_violin(alpha = 0.2, position = 'identity')
-  geom_violin(alpha = 0.5, position = 'identity')
-  geom_point() +
-  xlim(c(0,50000))
-  facet_wrap(~faireCat.3LW_24h)
-  
-  
-```
-
-```{r}
-wing.rnaseq %>%
-  dplyr::filter(Geneid == 'FBgn0263930') %>%
-  dplyr::select(!mean, !log_mean) %>%
-  tidyr::pivot_longer(!Geneid) %>%
-  dplyr::group_by(name) %>%
-  dplyr::mutate(name = stringr::str_remove(name, 'X'), 
-                stage = stringr::str_split_fixed(name, '_',n = 2)[[1]],
-                stage = factor(stage, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
-  ggplot(aes(stage, value)) +
-  geom_point()
-  
-```
 
 ### e93 sensitive sites
 
