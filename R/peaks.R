@@ -75,42 +75,46 @@ faire.wt.df <- faire.wt.union %>% data.frame() %>% dplyr::mutate(assay = 'faire'
 faire.osaDeg.df <- faire.osaDeg.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'osaGFP deGrad Pupal Wing FAIRE')
 cnr.df <- cnr.union %>% data.frame() %>% dplyr::mutate(assay = 'cnr', experiment = 'osaGFP 3LW Wing CUT&RUN')
 
-peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
-  dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
-  dplyr::arrange(seqnames, start, end) %>%
-  dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.3LW, T, F),
-                WT.6h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.6h, T, F),
-                WT.18h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.18h, T, F),
-                WT.24h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.24h, T, F),
-                WT.36h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.36h, T, F),
-                WT.44h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.44h, T, F),
-                osaGFP.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
-                osaGFP.deGrad = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
-                osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
-                yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F),
-                cnr.peakCat = dplyr::case_when(osa.cnr & yw.cnr ~ 'shared',
-                                               osa.cnr & !yw.cnr ~ 'osa',
-                                               !osa.cnr & yw.cnr ~ 'control',
-                                               T ~ 'other')) %>%
-  dplyr::filter(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h | osaGFP.control | osaGFP.deGrad | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
-  #get osaGFP deGrad cnr bigwig scores...
-  dplyr::mutate(peak = 1:nrow(.),
-                osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
-                #cnr zNorm...
-                osaGFP.rep1.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                osaGFP.rep2.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                yw.rep1.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                yw.rep2.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                #get faire bigwig scores... 
-                faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.18h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_18h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
-                faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+#TODO rename peaks at each step?
+peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df), function(x) {
+  x %>% #dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
+    dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
+    dplyr::arrange(seqnames, start, end) %>%
+    dplyr::mutate(WT.3LW = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.3LW, T, F),
+                  WT.6h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.6h, T, F),
+                  WT.18h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.18h, T, F),
+                  WT.24h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.24h, T, F),
+                  WT.36h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.36h, T, F),
+                  WT.44h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.44h, T, F),
+                  osaGFP.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
+                  osaGFP.deGrad = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
+                  osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
+                  yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F),
+                  cnr.peakCat = dplyr::case_when(osa.cnr & yw.cnr ~ 'shared',
+                                                 osa.cnr & !yw.cnr ~ 'osa',
+                                                 !osa.cnr & yw.cnr ~ 'control',
+                                                 T ~ 'other')) %>%
+    dplyr::filter(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h | osaGFP.control | osaGFP.deGrad | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
+    #get osaGFP deGrad cnr bigwig scores...
+    dplyr::mutate(peak = 1:nrow(.),
+                  osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                  osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                  yw.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                  yw.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
+                  #cnr zNorm...
+                  osaGFP.rep1.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  osaGFP.rep2.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  yw.rep1.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  yw.rep2.zScore = get_bw_score(cnr.ss[cnr.ss$baseName == 'yw-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  #get faire bigwig scores... 
+                  faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.18h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_18h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+}) %>%
+  setNames(c('faire.wt.df', 'faire.osaDeg.df', 'cnr.df'))
 
 #DONE - what's missing from these annotations?
 # - deseq annotation
@@ -120,8 +124,9 @@ peaks <- dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
 ##### Run deSeq2 #####
 
 # CnR
+
 cnr.Counts <- Rsubread::featureCounts(cnr.ss$bam,
-                                      annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
+                                      annot.ext = makeSAF(peaks$cnr.df), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
                                       allowMultiOverlap = T,
                                       nthreads = 4,
                                       isPairedEnd = T)
@@ -132,13 +137,14 @@ cnr.dds <- DESeq2::DESeqDataSetFromMatrix(countData = cnr.Counts$counts,  colDat
 
 cnr.dds.df <- DESeq2::results(cnr.dds, contrast = c('grp','osaGFP.sup','yw.sup')) %>% data.frame() 
 
-names(cnr.dds.df) <- paste0('cnr.',names(cnr.dds.df))
+#names(cnr.dds.df) <- paste0('cnr.',names(cnr.dds.df))
 
+peaks$cnr.df %<>% dplyr::bind_cols(., cnr.dds.df)
 
 # FAIRE 
 
 faire.Counts <- Rsubread::featureCounts(faire.ss.WT$bam, #just use Bam from WT timecourse - single-end data
-                                        annot.ext = makeSAF(peaks), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
+                                        annot.ext = makeSAF(peaks$faire.wt.df), #trying all peaks - FAIRE and CnR - so it will be easy to combine with main peaks df
                                         allowMultiOverlap = T,
                                         nthreads = 4,
                                         isPairedEnd = F)
@@ -152,10 +158,12 @@ faire.dds.df <- DESeq2::results(faire.dds, contrast = c('grp','wt.3LW','wt.24h')
 
 names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 
+peaks$faire.wt.df %<>% dplyr::bind_cols(., faire.dds.df)
 # FAIRE - OsaGFP deGrad
 
 faire.deg.Counts <- Rsubread::featureCounts(faire.ss.osaDeg$bam, 
-                                        annot.ext = makeSAF(peaks), 
+                                        annot.ext = makeSAF(peaks$faire.osaDeg.df),  #restricting counts to within the osaDeg union peak list - wondering if fully union peaks effects multiple testing correctiono
+                                        #annot.ext = makeSAF(peaks), 
                                         allowMultiOverlap = T,
                                         nthreads = 4,
                                         isPairedEnd = T)
@@ -165,9 +173,19 @@ colnames(faire.deg.Counts$counts) <- faire.ss.osaDeg$id
 faire.deg.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.deg.Counts$counts,  colData = faire.ss.osaDeg,  design = ~grp) %>%
   DESeq2::DESeq(.)
 
-faire.deg.dds.df <- DESeq2::results(faire.deg.dds, contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire'), alpha = 0.1) %>% data.frame() 
+faire.deg.dds.df <- DESeq2::results(faire.deg.dds, 
+                                    contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire'),
+                                    alpha = 0.1,
+                                    pAdjustMethod = 'BH') %>% 
+  data.frame() 
 
-names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
+#names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
+
+peaks$faire.osaDeg.df %<>% 
+  dplyr::bind_cols(., faire.deg.dds.df) %>%
+  dplyr::mutate(faireCat.osaDeGrad = dplyr::case_when(log2FoldChange >= 0.4 ~ 'Osa Dependent',
+                                                      log2FoldChange < 0.4 & log2FoldChange > -0.4 ~ 'Osa Independent',
+                                                      log2FoldChange <= -0.4 ~ 'Osa Ectopic', T ~ 'NA')) 
 
 ##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF #####
 
@@ -177,41 +195,36 @@ names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
 
 #TODO - currently gives ~500 closing, ~1100 opening, ~5400 static -- notably ~50% fewer closing regions than I or SLN previously annotated
 
-peaks <- dplyr::bind_cols(peaks, cnr.dds.df, faire.dds.df, faire.deg.dds.df) %>%
-  dplyr::mutate(faireCat.3LW_24h = dplyr::case_when(faire_3LW_24h.log2FoldChange >= 1 ~ 'closing',
-                                                    faire_3LW_24h.log2FoldChange < 1 & faire_3LW_24h.log2FoldChange > -1 ~ 'static',
-                                                    faire_3LW_24h.log2FoldChange <= -1 ~ 'opening',
-                                                    T ~ 'NA'),
-                faireCat.osaDeGrad = dplyr::case_when(faire_osaDeGrad.log2FoldChange >= 0.4 ~ 'Osa Dependent',
-                                                      faire_osaDeGrad.log2FoldChange < 0.4 & faire_osaDeGrad.log2FoldChange > -0.4 ~ 'Osa Independent',
-                                                      faire_osaDeGrad.log2FoldChange <= -0.4 ~ 'Osa Ectopic',
-                                                      T ~ 'NA')) %>% 
-  dplyr::bind_rows(., dm6.500bp) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
+     
+ # TODO - breaking change! withou this annotation here it will need to be done at the peak annotation step in plot notebook for fig 3F
+  #dplyr::bind_rows(., dm6.500bp) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
                                # that way these regions will also get annotations
 
 #### 
 # annotate peaks with dm6.TxDb 
 ####
+peaks <- purrr::map(peaks, function(x) {
+  anno <- x %>%
+    GRanges() %>%
+    ChIPseeker::annotatePeak(., tssRegion = c(-100,500), TxDb=dm6.TxDb, level = 'gene',  annoDb = "org.Dm.eg.db")
 
-peaks.anno <- peaks %>%
-  GRanges() %>%
-  ChIPseeker::annotatePeak(., tssRegion = c(-100,500), TxDb=dm6.TxDb, level = 'gene',  annoDb = "org.Dm.eg.db")
+  peaks.anno <- ChIPseeker::as.GRanges(anno) %>% 
+    data.frame() %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(anno.new = dplyr::case_when(grepl("3' UTR", annotation) ~ "3' UTR",
+                                              grepl("5' UTR", annotation) ~ "5' UTR",
+                                              grepl("Distal Intergenic", annotation) ~ "Distal Intergenic",
+                                              grepl("Downstream", annotation) ~ "Downstream", 
+                                              grepl("Exon", annotation) ~ "Exon",
+                                              grepl("Intron", annotation) ~ "Intron",
+                                              grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
+                                              grepl("Promoter", annotation) ~ "Promoter"))
 
-message('Ending...')
-peaks <- ChIPseeker::as.GRanges(peaks.anno) %>% 
-  data.frame() %>%
-  dplyr::rowwise() %>%
-  dplyr::mutate(anno.new = dplyr::case_when(grepl("3' UTR", annotation) ~ "3' UTR",
-                                            grepl("5' UTR", annotation) ~ "5' UTR",
-                                            grepl("Distal Intergenic", annotation) ~ "Distal Intergenic",
-                                            grepl("Downstream", annotation) ~ "Downstream", 
-                                            grepl("Exon", annotation) ~ "Exon",
-                                            grepl("Intron", annotation) ~ "Intron",
-                                            grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
-                                            grepl("Promoter", annotation) ~ "Promoter"))
-#                flank_gene = stringr::str_split(flank_geneIds, ';'),
-#                flank_distance = stringr::str_split(flank_gene_distances, ';')) 
+#                  flank_gene = stringr::str_split(flank_geneIds, ';'),
+#                  flank_distance = stringr::str_split(flank_gene_distances, ';')) 
+})
 
-#save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
+message('Saving output...')
+save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
   
 # 

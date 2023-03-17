@@ -153,7 +153,7 @@ ggsave('rOut/log_mean_distribution.png', dpi = 300, width = 6, height = 5)
 
 
 ```{r}
-wing.rnaseq %>% dplyr::filter(Geneid == 'FBgn0035625') %>% 
+wing.rnaseq %>% dplyr::filter(Geneid == 'FBgn0004652') %>% 
   reshape2::melt() %>%
   dplyr::group_by(variable) %>%
   dplyr::mutate(grp = stringr::str_split_fixed(variable,'_',2)[[1]],

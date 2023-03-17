@@ -97,6 +97,22 @@ sbb <- data.frame('seqnames' = 'chr2R',
                   'start' = 18278198,
                   'end' = 18357296) %>%
   GRanges()
+
+# Dl 
+#chr3R:19,265,389-19,350,508
+Dl <- data.frame('seqnames' = 'chr3R',
+                  'start' = 19265389,
+                  'end' = 19350508) %>%
+  GRanges()
+
+
+# E(spl)-c
+#chr3R:25,980,255-26,065,374
+espl <- data.frame('seqnames' = 'chr3R',
+                  'start' = 25980255,
+                  'end' = 26065374) %>%
+  GRanges()
+
 ### 
 # meme db 
 ###
@@ -128,50 +144,45 @@ cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','
 # peak subsets
 ###
 
-osaPeaks <- peaks %>% 
-  dplyr::filter(osa.cnr & !yw.cnr & assay == 'cnr') %>% 
+osaPeaks <- peaks$cnr.df %>% 
+  dplyr::filter(osa.cnr & !yw.cnr) %>% 
   GRanges() %>% 
   resize(width = 1, fix = "center")
 
 
-#TODO - this is maybe a bad control because its only 300 sites
-osaUnbound <- peaks %>%
-  dplyr::filter(yw.cnr & assay == 'cnr') %>% 
-  GRanges() %>% 
-  resize(width = 1, fix = "center")
+# REMOVED- this is maybe a bad control because its only 300 sites
+#osaUnbound <- peaks %>%
+#  dplyr::filter(yw.cnr & assay == 'cnr') %>% 
+#  GRanges() %>% 
+#  resize(width = 1, fix = "center")
 
 #trying this...
-background <- peaks %>%
-  dplyr::filter(assay == '1kb background') %>%
-  GRanges() %>%
-  resize(width = 1, fix = 'center')
+#background <- peaks %>%
+#  dplyr::filter(assay == '1kb background') %>%
+#  GRanges() %>%
+#  resize(width = 1, fix = 'center')
 
-closing.osaBound <- peaks %>%
-  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
-  GRanges() %>%
-  resize(width = 1, fix = "center")
+#closing.osaBound <- peaks %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse' & faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>%
+#  GRanges() %>%
+#  resize(width = 1, fix = "center")
 
-fairePeaks.wt <- peaks %>%
-  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+fairePeaks.wt <- peaks$faire.wt.df %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
   GRanges() %>%
   resize(width = 1, fix = "center")
 
 #redundant... but used in a couple chunks for motif analysis
-fairePeaks <- peaks %>% 
+fairePeaks <- peaks$faire.wt.df %>% 
   dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
 
 
 #DONE - remove the peakCat ? since now using log2fold change for these categories...
-fairePeaks.deg <- peaks %>%
-  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
-#  dplyr::mutate(deg.peakCat = dplyr::case_when(osaGFP.deGrad & !osaGFP.control ~ 'osa ectopic',
-#                                               !osaGFP.deGrad & osaGFP.control ~ 'osa dependent',
-#                                               osaGFP.deGrad & osaGFP.control ~ 'osa independent',
-#                                               T ~ as.character(NA))) %>%  # NA here would be peaks that aren't reproducible or of good quality
+fairePeaks.deg <- peaks$faire.osaDeg.df %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
   dplyr::filter(osaGFP.deGrad | osaGFP.control) %>% # want to only use peaks that are reproducible and of good quality 
   GRanges() %>%
   resize(width = 1, fix = "center")
-
 
 fairePeaks.osaDependent <- fairePeaks.deg %>% 
   data.frame() %>% 
@@ -249,7 +260,7 @@ fairePeaks.osaEctopic %>%
   write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
 
 ### for gviz
-genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white')
+genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
 
 
 ```
@@ -355,18 +366,18 @@ Manually draw venn in illustrator
 
 ```{r}
 
-ChIPpeakAnno::makeVennDiagram(list(peaks %>% dplyr::filter(assay == 'cnr' & yw.cnr) %>% GRanges(),
-                                   peaks %>% dplyr::filter(assay == 'cnr' & osa.cnr) %>% GRanges()))
+ChIPpeakAnno::makeVennDiagram(list(peaks$cnr.df %>% dplyr::filter(yw.cnr) %>% GRanges(),
+                                   peaks$cnr.df %>% dplyr::filter(osa.cnr) %>% GRanges()))
 
 ###
 
-peaks %>%
-  dplyr::filter(assay == 'cnr' & yw.cnr | assay == 'cnr' & osa.cnr) %>%
-  dplyr::mutate(twofold = ifelse(cnr.log2FoldChange <= -1 | cnr.log2FoldChange >= 1, T, F),
+peaks$cnr.df %>%
+  dplyr::filter(yw.cnr | osa.cnr) %>%
+  dplyr::mutate(twofold = ifelse(log2FoldChange <= -1 | log2FoldChange >= 1, T, F),
                 cat = dplyr::case_when(osa.cnr & !yw.cnr ~ 'Osa',
                                        !osa.cnr & yw.cnr ~ 'Control',
                                        T ~ 'Shared')) %>% 
-  ggplot(aes(x = '',  cnr.log2FoldChange, fill = cat)) + 
+  ggplot(aes(x = '',  log2FoldChange, fill = cat)) + 
 #  ggplot(aes(x = '',  cnr.log2FoldChange)) + 
   geom_violin(position = 'identity', alpha = 0.3, scale = 'count') +
   scale_alpha_manual(values = c(0,0.2)) +
@@ -471,19 +482,41 @@ dev.off()
 ```
 ### 3B-additional CnR browser 
 ```{r}
+
+
+
 track.colors <- c("grey40","#F1B6DA", "grey20","#D01C8B")
 
 cnr.ss.browser <- cnr.ss %>%
   dplyr::mutate(color = track.colors)
 
-cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,55))
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,45))
 
 axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
-png('rPlots/3B-sbb.png', width = 10, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(sbb) %>% as.character(), 
-                 from = start(sbb + 10000),
-                 to = end(sbb + 10000),
+png('rPlots/3B-espl.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(espl) %>% as.character(), 
+                 from = start(espl - 10000),
+                 to = end(espl - 40000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+
+#####
+cnr.ss.browser <- cnr.ss %>%
+  dplyr::mutate(color = track.colors)
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,50))
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
+
+png('rPlots/3B-Dl.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(Dl) %>% as.character(), 
+                 from = start(Dl),
+                 to = end(Dl),
                  cex.axis = 0.3,
                  cex.title = 0.5,
                  title.width = 1,
@@ -875,6 +908,7 @@ cluster.df <- data.frame(k8$cluster) %>%
   dplyr::rename('Geneid' = 'geneId') %>%
   dplyr::left_join(., wing.rnaseq, by = 'Geneid')
 
+cluster.df %>% dplyr::filter(k8.cluster ==8) #%>% dplyr::filter(osa.cnr & !yw.cnr)
 ```
 
 
@@ -1042,30 +1076,68 @@ entrez <- clusterProfiler::bitr(cluster$Geneid, 'FLYBASE', 'ENTREZID', OrgDb = o
 
 clusterProfiler::enrichWP(entrez, organism = 'Drosophila melanogaster')
 
-test <- GOSemSim::mgeneSim(cluster$Geneid, semData = goData, verbose = F)
-
-test2 <- test %>% data.frame() %>% tibble::rownames_to_column() %>% tidyr::pivot_longer(!rowname, names_to = 'colname')
-
-
-
-test2.symbol <- AnnotationDbi::select(org.Dm.eg.db, keys = test2$rowname, columns = 'SYMBOL', keytype = 'FLYBASE') %>% dplyr::distinct()
-
-out <- test2 %>%
-  dplyr::rowwise() %>%
-  dplyr::mutate(rowSymbol = test2.symbol[rowname == test2.symbol$FLYBASE,]$SYMBOL,
-                colSymbol = test2.symbol[colname == test2.symbol$FLYBASE,]$SYMBOL)
-
-out %>%
-#  dplyr::group_by(cat) %>%
- # dplyr::filter(cat == 'down') %>%
-  tidyHeatmap::heatmap(rowSymbol, colSymbol, value, 
-                       palette_value = c('white','blue','red'),
-                       row_km = 6,
-                       column_km = 6) %>% tidyHeatmap::save_pdf('test-down.pdf')
- 
-  
-
 ```
+##### scratch
+```{r}
+list <- cluster.df %>%
+  dplyr::filter(k8.cluster == 7 & osa.cnr & !yw.cnr) %>%
+  dplyr::select(Geneid, matches('L3_rep\\d'), matches('\\d{1,2}h_rep\\d')) %>%
+  dplyr::distinct()
+
+symbol <- clusterProfiler::bitr(list$Geneid, 'FLYBASE', 'SYMBOL', OrgDb = org.Dm.eg.db) %>% 
+  dplyr::rename(Geneid = FLYBASE)
+symbol
+
+cluster1.mat <- list %>%
+  dplyr::rowwise() %>%
+  dplyr::left_join(., symbol, by = 'Geneid') %>%
+  dplyr::select(!Geneid) %>%
+  tidyr::pivot_longer(!SYMBOL) %>%
+  dplyr::mutate(stage = stringr::str_split_fixed(name,'_', n = 2)[,1],
+                #stage = stringr::str_remove(stage, 'h'), 
+                #stage = ifelse(stage == '3LW', -6, stage),
+                stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(SYMBOL, stage) %>%
+  dplyr::summarise(mean = mean(value)) %>%
+  dplyr::group_by(SYMBOL) %>%
+  dplyr::mutate(frac = mean / max(mean),
+                frac = ifelse(is.na(frac), 0, frac)) %>%
+  dplyr::select(!mean) %>%
+  tidyr::pivot_wider(id_cols = SYMBOL, names_from = stage, values_from = frac) %>%
+  tibble::column_to_rownames('SYMBOL') %>%
+  as.matrix()
+  
+cluster1.mat
+set.seed(1230412)
+k5 <- kmeans(cluster1.mat, 8, nstart = 24, iter.max = 15)  
+  
+figure_col_fun <- circlize::colorRamp2(breaks = c(0,0.25,0.5,0.75,1), colors = viridis::viridis(5))
+
+k5_df <- k5$cluster %>% 
+  data.frame %>% 
+  dplyr::rename(k = ".") %>% 
+  tibble::rownames_to_column("id")# %>% 
+#  dplyr::mutate(new_k1 = dplyr::case_when(k == 1 ~ 8,
+#                                          k == 2 ~ 7,
+#                                          k == 3 ~ 5,
+#                                          k == 4 ~ 2,
+#                                          k == 5 ~ 6,
+#                                          k == 6 ~ 4,
+#                                          k == 7 ~ 3,
+#                                          k == 8 ~ 1)) %>% 
+#  dplyr::rename(old_k = k,
+#                k = new_k1)
+
+
+ComplexHeatmap::Heatmap(cluster1.mat, split = k5_df$k, cluster_columns = F, show_row_dend = F, col = figure_col_fun, gap = unit(0.5, "lines"),
+                        show_row_names = T)
+```
+
+
+```{r}
+k5_df %>% dplyr::filter(k == 1)
+```
+
 
 ### binding around tss
 ```{r}
@@ -2659,6 +2731,17 @@ There is very little change between control and osa deGrad conditions.
 Figure 4 should demonstrate this and highlight if there are any subtle
 changes, where they occur, and how they relate to osa binding.
 
+```{bash engine.opts='-l'}
+multiBamSummary bins --bamfiles Bam/*deGrad*dupsRemoved.bam \
+  -o deGrad-FAIRE-bamSummary.npz
+
+plotCorrelation -in deGrad-FAIRE-bamSummary.npz \
+  -c spearman -p heatmap --colorMap RdYlBu --plotNumbers \
+  --labels control.1 deGrad.1 control.2 deGrad.2  \
+  --removeOutliers --skipZeros \
+  -o deGrad-FAIRE-spearman.png
+```
+
 ## 4C - venn
 
 ```{r}
@@ -3642,6 +3725,23 @@ ggsave('rPlots/4-draft-2.png', width = 5, height = 3, units = 'in', dpi = 300)
 ```
 
 ## drafts
+### deseq2 padj plot
+```{r}
+fairePeaks.deg %>%
+  data.frame() %>%
+  ggplot(aes(faire_osaDeGrad.log2FoldChange, faire_osaDeGrad.stat)) +
+  geom_point() 
+  geom_point(color = ifelse(fairePeaks.deg$faire_osaDeGrad.pvalue <= 0.05, 'red','black'))
+
+# TODO - the adjusted p value plot is meaningless because almost all values ~ 1,
+# if that's true then fine, but is this a 'bug' in pvalue correction with few-none differential regions?
+fairePeaks.deg %>%
+  data.frame() %>%
+  ggplot(aes( faire_osaDeGrad.log2FoldChange, faire_osaDeGrad.padj)) +
+  geom_point(color = ifelse(fairePeaks.deg$faire_osaDeGrad.padj <= 0.05, 'red','black'))
+
+
+```
 
 ### peak annotations
 
