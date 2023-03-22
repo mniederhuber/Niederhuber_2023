@@ -38,6 +38,7 @@ cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
 #TODO - decide on filter cutoff -- 75% was pretty strict, only ~1000 osa specific peaks vs previous approach with no filtering that resulting in ~2700 specific peaks
 cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps'))
 
+
 #make union cnr peak list
 cnr.union <- cnr.byID %>%
   unlist() %>%
@@ -57,8 +58,8 @@ faire.osaDeg.byID <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$id) 
 faire.osaDeg.byGrp <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
 
 #filter by replicate specific qValue and only peaks that intersect between replicates
-faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
-faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps')) 
+faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps', with_reduce = T))
+faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps', with_reduce = T))
 
 #make union FAIRE peak list - includes any/all peak calls for all wt reps
 faire.wt.union <- faire.wt.byID %>%
@@ -225,6 +226,6 @@ peaks <- purrr::map(peaks, function(x) {
 })
 
 message('Saving output...')
-save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, file = 'rData/peaks.rda')
+save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, cnr.byID, file = 'rData/peaks.rda')
   
 # 

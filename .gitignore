@@ -1,3 +1,4 @@
+R/work
 /images
 /FIGS
 /DATA/Microscopy
@@ -5,6 +6,7 @@ R/BigWig
 R/Peaks
 R/Bam
 R/rPlots
+R/bed
 .Rproj.user
 dm6.ensGene.gtf
 featureCounts/

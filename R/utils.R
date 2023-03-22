@@ -1,7 +1,7 @@
 
 #DONE - add functionality to return only qfiltered peaks that are reproduced in each replicate - subsetByOverlaps() ? 
 #wrapper to pass faire peak lists (grangeslist) by experiment with replicate ids to qFilter()
-grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOverlaps', 'intersect'))  {
+grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOverlaps', 'intersect'), with_reduce = F)  {
   grp <- x$grp
   ids <- unique(x$id) #unique replicate ids
   
@@ -9,10 +9,19 @@ grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOve
   grp.filtered <- lapply(ids, function(y) qFilter(x, y, quantile, q)) 
   
   grp.list <- grp.filtered %>% GenomicRanges::GRangesList()
-  
+ 
   #TODO - cleaner way to write this?
+  # TODO -- potential BUG -- return of subsetByOverlaps is coordinates of query, ie rep 1 of the 2 reps. is this even a problem?
   if(operation == 'subsetByOverlaps'){
-    grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
+      # by using Reduce() subsetByOverlaps can be applied to > 2 replicates - which is true for some WT FAIRE experiments
+      # subsetByOverlaps will run A vs B => A[B] overlap; A[B] vs C => A[BC] overlap; etc. -- note that subsetByOverlaps returns ranges of query not a merge, in this example A
+    if(with_reduce){
+      grp.repShared <- Reduce(IRanges::subsetByOverlaps, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
+    }else{
+      grp.repShared.1 <- IRanges::subsetByOverlaps(grp.list[[1]], grp.list[[2]]) # get coords in 1st rep that overlap rep 2
+      grp.repShared.2 <- IRanges::subsetByOverlaps(grp.list[[2]], grp.list[[1]]) # recipricol, get coords in 2nd rep that overlap 1st
+      grp.repShared <- GenomicRanges::union(grp.repShared.1, grp.repShared.2) #union the two granges -- this avoids coordinates from only one rep being used in final granges
+    }
   }
   if(operation == 'intersect'){
     grp.repShared <- Reduce(GenomicRanges::intersect, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
