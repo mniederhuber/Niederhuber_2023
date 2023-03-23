@@ -149,6 +149,9 @@ osaPeaks <- peaks$cnr.df %>%
   GRanges() %>% 
   resize(width = 1, fix = "center")
 
+osaPeaks.full <- peaks$cnr.df %>% 
+  dplyr::filter(osa.cnr & !yw.cnr) %>% 
+  GRanges()
 
 # REMOVED- this is maybe a bad control because its only 300 sites
 #osaUnbound <- peaks %>%
@@ -286,7 +289,7 @@ purrr::map(names(cnr.byGrp), function(x) {
 ### for gviz
 genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
 
-
+peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full, genome = 'dm6', fill = '#D01C8B', col = 'transparent', background.title = 'white', showTitle = F )
 ```
 
 TODO - make reference table of different peak categories and parameters,
@@ -570,7 +573,7 @@ brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc',
 axis <- Gviz::GenomeAxisTrack(scale = 1000)
 
 png('rPlots/3B.png', width = 4, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
                  from = start(brD + 1000),
                  to = end(brD + 1000),
                  cex.axis = 0.3,
@@ -589,12 +592,15 @@ track.colors <- c("grey40","#F1B6DA", "grey20","#D01C8B")
 cnr.ss.browser <- cnr.ss %>%
   dplyr::mutate(color = track.colors)
 
-cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,45))
+
 
 axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
+#### espl
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,45))
+
 png('rPlots/3B-espl.png', width = 5, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(espl) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(espl) %>% as.character(), 
                  from = start(espl - 10000),
                  to = end(espl - 40000),
                  cex.axis = 0.3,
@@ -604,18 +610,28 @@ Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(espl) %>%
 dev.off()
 
 
-#####
-cnr.ss.browser <- cnr.ss %>%
-  dplyr::mutate(color = track.colors)
+##### Dl
 
 cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,50))
 
-axis <- Gviz::GenomeAxisTrack(scale = 10000)
-
 png('rPlots/3B-Dl.png', width = 5, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(Dl) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(Dl) %>% as.character(), 
                  from = start(Dl),
                  to = end(Dl),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+##### sbb
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,55))
+
+png('rPlots/3B-sbb.png', width = 7, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(sbb) %>% as.character(), 
+                 from = start(sbb-20000),
+                 to = end(sbb+5000),
                  cex.axis = 0.3,
                  cex.title = 0.5,
                  title.width = 1,
@@ -1204,6 +1220,80 @@ fairePeaks.wt.test %>%
 ```
 
 ## Drafts
+### peak clusters - are osa peak clustered together?
+```{r}
+distances <- GenomicRanges::distanceToNearest(osaPeaks.full) %>%
+  data.frame() %>%
+  dplyr::bind_cols(data.frame(osaPeaks.full), .) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(meanZ = mean(c(osaGFP.rep1.zScore, osaGFP.rep2.zScore))) 
+
+distances %>%
+  ggplot(aes(distance, '')) +
+ # geom_vline(xintercept = c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000), color = 'grey50', linetype = 'dashed') +
+  geom_histogram(aes(y = after_stat(count), fill = meanZ, group = meanZ), size = 1, binwidth = 100) +
+#  scale_fill_viridis_c(name = 'Density')+
+  xlab('Distance (kb)') +
+  ylab('Count') +
+  scale_fill_viridis_c() + 
+  scale_x_continuous(limits = c(-10,5000), breaks = c( 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000), 
+                     labels = scales::label_number(scale = 1e-3)) +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 12))
+
+ggsave('rPlots/3-peak_to_peak_distance.png', width = 4, height = 3, dpi = 300)
+
+
+distances %>%
+  ggplot(aes(distance, meanZ)) +
+  #geom_point() +
+  xlim(c(0, 1e04)) +
+  geom_hex(bins = 50)
+
+
+distances %>%
+  dplyr::mutate(frac_distance = ifelse(distance <= 5000, '<=5kb','>5kb')) %>%
+  dplyr::select(peak, frac_distance) %>%
+  dplyr::group_by(frac_distance) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(per = n/sum(n)) %>%
+  ggplot(aes('', y = per, fill = frac_distance)) +
+  geom_bar(stat = 'identity') +
+  coord_polar(theta = 'y')  
+  
+```
+
+#### binned cluster mapping across genome
+```{r}
+# 200kb bins
+bins <- GenomicRanges::tileGenome(GenomeInfoDb::seqinfo(dm6),tilewidth = 2e05) %>% 
+  unlist() %>%
+  data.frame() %>%
+  dplyr::filter(seqnames %in% c('chrX','chr2L','chr2R', 'chr3L', 'chr3R'))  %>%
+  GRanges()
+
+counts <- GenomicRanges::countOverlaps(bins, osaPeaks.full) %>% data.frame('count' = .) %>%
+  dplyr::bind_cols(data.frame(bins), .) %>%
+  dplyr::mutate(range = 1:nrow(.)) 
+
+counts %>%
+  dplyr::arrange(desc(count))
+
+counts %>%
+  dplyr::mutate(chr = paste0('chr',stringr::str_extract(seqnames, '\\d'))) %>%
+  ggplot(aes(start, '', fill = count)) +
+  geom_tile(aes(width = width), color = NA) +
+  scale_fill_viridis_c() +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size =8),
+        axis.ticks.y = element_blank()) +
+  facet_wrap(~seqnames, ncol = 1, scales = 'free_x')
+ggsave('rPlots/3-peak-cluster-distribution.png', width = 6, height =6, dpi = 300)
+
+
+
+```
+
 ### scatter of osa vs control 
 ```{r}
 peaks$cnr.df %>%
