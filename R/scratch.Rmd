@@ -1825,29 +1825,32 @@ cluster.df %>%
 
 #### ame of clusters
 ```{r}
+
 #TODO functionalize to process all
-cluster.1 <- data.frame(k8$cluster) %>%
+cluster <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
   dplyr::mutate(peak = as.integer(peak)) %>%
-  dplyr::left_join(peaks, ., by = 'peak') %>%
+  dplyr::left_join(peaks$faire.wt.df, ., by = 'peak') %>%
   dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster == 8 & osa.cnr & !yw.cnr) %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster == 4 ) %>%
+  dplyr::filter(osa.cnr & !yw.cnr) %>%
   memes::get_sequence(dm6)
 
 cluster.control <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
   dplyr::mutate(peak = as.integer(peak)) %>%
-  dplyr::left_join(peaks, ., by = 'peak') %>%
+  dplyr::left_join(peaks$faire.wt.df, ., by = 'peak') %>%
   dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster != 8 & osa.cnr & !yw.cnr) %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & k8.cluster == 4) %>%
+  dplyr::filter(osa.cnr & yw.cnr | !osa.cnr & yw.cnr) %>%
   memes::get_sequence(dm6)
 
-ame <- memes::runAme(cluster.1, control = cluster.control) %>% 
+ame <- memes::runAme(cluster, control = cluster.control) %>% 
   dplyr::group_by(motif_alt_id) %>%
   dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
 #streme <- memes::runStreme(cluster.1, control = cluster.control)  
 #memes::runTomTom(streme)
-
+ame
 
 ame %>%
   dplyr::group_by(symbol) %>%
@@ -1862,7 +1865,7 @@ ame %>%
         axis.title = element_blank(),
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) 
-ggsave('rPlots/cluster-8_ame.png', width = 3, height = 3, dpi = 300)
+#ggsave('rPlots/cluster-8_ame.png', width = 3, height = 3, dpi = 300)
 ```
 
 #### go of clusters
@@ -2738,6 +2741,12 @@ osaBound.ame <- osa.enhancer.seq %>%
   dplyr::group_by(motif_alt_id) %>%
   dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
 
+#osaBound.streme <- osa.enhancer.seq %>%
+#  memes::runStreme(control = osa.seq) 
+
+#osaBound.streme %>%
+#  memes::runTomTom()
+
 osaBound.ame %>%
   dplyr::group_by(symbol) %>%
   dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
@@ -2753,6 +2762,12 @@ osaBound.ame %>%
         axis.ticks.x = element_blank()) 
 
 ggsave('rPlots/3E_osaBound-enhancer.png', width = 2.5, height = 2.5, dpi = 300)
+
+
+osaBound.ame %>%
+  ggplot(aes(tp_percent/100, -log(adj.pvalue))) +
+  geom_point() +
+  geom_text_repel(aes(label = symbol))
 ```
 #### osa bound open 3lw enhancers
 what motifs are enriched within osa bound "closed" 3lw sites annotated as distal or intronic - ie. "enhancers"
@@ -2796,6 +2811,11 @@ osaBound.ame %>%
         axis.ticks.x = element_blank()) 
 
 ggsave('rPlots/3E_osaBound-enhancer-3lwPeak.png', width = 2.5, height = 2.5, dpi = 300)
+
+osaBound.ame %>%
+  ggplot(aes(tp_percent/100, -log(adj.pvalue))) +
+  geom_point() +
+  geom_text_repel(aes(label = symbol))
 ```
 #### osa bound closed 3lw enhancers
 what motifs are enriched within osa bound "closed" 3lw sites annotated as distal or intronic - ie. "enhancers"
@@ -2838,6 +2858,10 @@ osaBound.ame %>%
         axis.ticks.x = element_blank()) 
 
 ggsave('rPlots/3E_osaBound-enhancer-no3lwPeak.png', width = 2.5, height = 2.5, dpi = 300)
+osaBound.ame %>%
+  ggplot(aes(tp_percent/100, -log(adj.pvalue))) +
+  geom_point() +
+  geom_text_repel(aes(label = symbol))
 ```
 #### osa bound vs unbound AME 
 ame enrichment of osa bound sites vs all potential regulatory sites not bound by osa 
@@ -3561,15 +3585,34 @@ There is very little change between control and osa deGrad conditions.
 Figure 4 should demonstrate this and highlight if there are any subtle
 changes, where they occur, and how they relate to osa binding.
 
+## multiBamsum
 ```{bash engine.opts='-l'}
 multiBamSummary bins --bamfiles Bam/*deGrad*dupsRemoved.bam \
-  -o deGrad-FAIRE-bamSummary.npz
+  -o R/rPlots/multiBamsum.npz
 
-plotCorrelation -in deGrad-FAIRE-bamSummary.npz \
+plotCorrelation -in R/rPlots/multiBamsum.npz \
   -c spearman -p heatmap --colorMap RdYlBu --plotNumbers \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
   --removeOutliers --skipZeros \
-  -o deGrad-FAIRE-spearman.png
+  -o R/rPlots/multiBamsum-spearman.png
+  
+plotPCA -in R/rPlots/multiBWsum.npz \
+  --labels control.1 deGrad.1 control.2 deGrad.2  \
+  -o R/rPlots/multiBWsum-PCA.png
+```
+## multiBWsum
+```{bash engine.opts='-l'}
+multiBigwigSummary bins -b R/BigWig/*deGrad*dupsRemoved_rpgcNorm_zNorm.bw -o R/rPlots/multiBWsum.npz
+
+plotCorrelation -in R/rPlots/multiBWsum.npz \
+  --corMethod spearman --skipZeros \
+  --labels control.1 deGrad.1 control.2 deGrad.2  \
+  --whatToPlot heatmap --colorMap RdYlBu --plotNumbers \
+  -o R/rPlots/multiBWsum-spearman.png
+  
+plotPCA -in R/rPlots/multiBWsum.npz \
+  --labels control.1 deGrad.1 control.2 deGrad.2  \
+  -o R/rPlots/multiBWsum-PCA.png
 ```
 
 ## 4C - venn
