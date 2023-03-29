@@ -252,6 +252,11 @@ osaPeaks %>%
   dplyr::select(seqnames, start, end) %>%
   write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
 
+osaPeaks.full %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
 peaks$cnr.df %>%
   data.frame() %>%
   dplyr::filter(yw.cnr) %>%
@@ -834,6 +839,83 @@ dev.off()
 
 
 ```
+#### promoters version
+```{r 3LW-FAIRE-in-OsaPeaks}
+#mats <- purrr::map(bws, ~{
+#  normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+#})
+#names(mats) <- names(bws)
+osaPeaks.enhancers <- osaPeaks %>%
+  data.frame() %>%
+  dplyr::filter(anno.new %in% c('Promoter')) %>%
+  GRanges()
+
+#fig3d.mats <- list(mats$wt_3LW, mats$osaGFP.rep1, mats$osaGFP.rep2)
+wt.3lw.mat <- normalizeToMatrix(bws$wt_3LW, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+osa.1.mat <- normalizeToMatrix(bws$osaGFP.rep1, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+osa.2.mat <- normalizeToMatrix(bws$osaGFP.rep2, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+fig3d.mats <- list(wt.3lw.mat, osa.1.mat, osa.2.mat)
+names(fig3d.mats) <- c('WT_3LW', 'Osa Rep1', 'Osa Rep2')
+  
+common_min = min(unlist(fig3d.mats))
+common_max = max(unlist(fig3d.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+groups <- ifelse(osaPeaks.enhancers$WT.3LW, "Open", "Closed")
+
+lgd = Legend(at = c("closed", "open"), legend_gp = gpar(fill = c('#fc5d63','#87d674')))
+
+l3.count <- osaPeaks.enhancers %>%
+  data.frame() %>%
+  dplyr::group_by(osa.cnr, WT.3LW) %>%
+  dplyr::count() %>%
+  dplyr::mutate(WT_FAIRE_3LW = ifelse(WT.3LW, 'Open','Closed'),
+                n = as.character(n)) %>%
+  .$n
+
+names(l3.count) = unique(groups)
+
+fig3d.hms <- EnrichedHeatmap(fig3d.mats$WT_3LW,
+                             axis_name = c(-2,0,+2),
+                             pos_line = F,
+                             column_title = '3LW-FAIRE',
+                             col = viridis.hex,
+                             width = unit(1.5, 'in'), 
+                             left_annotation = c(rowAnnotation(textbox = anno_textbox(groups, 
+                                                                                      as.list(l3.count), 
+                                                                                      side = 'left',
+                                                                                      background_gp = gpar(fill = NA, col = NA),
+                                                                                      gp = gpar(col = 'black'), 
+                                                                                      padding = unit(0, 'mm')))),
+                                                 #rowAnnotation(groups = anno_block(gp = gpar(fill = c('#fc5d63','#87d674')), show_name = F))), 
+                             top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'left'))),  
+                             row_title = NULL, 
+                             name = 'FAIRE zScore') +
+  EnrichedHeatmap(fig3d.mats$`Osa Rep1`,
+                  axis_name = c(-2,0,+2),
+                  pos_line = F,
+                  column_title = 'Osa.1',
+                  col = col_fun,
+                  name = 'Osa zScore',
+                  width = unit(0.5,'in'),
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis = F))) +
+  EnrichedHeatmap(fig3d.mats$`Osa Rep2`,
+                   axis_name = c(-2,0,+2),
+                   pos_line = F,
+                   column_title = 'Osa.2',
+                   col = col_fun,
+                   show_heatmap_legend = F, 
+                   width = unit(0.5,'in'),
+                   top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'right'))))
+  
+
+png('rPlots/3D-promoters.png', width = 5, heigh = 6, units = 'in', res = 300)
+ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, heatmap_legend_side = "bottom", merge_legend = T)
+dev.off()
+
+
+```
 ### control version
 #### control all peaks
 ```{r}
@@ -1220,6 +1302,119 @@ fairePeaks.wt.test %>%
 ```
 
 ## Drafts
+### intersect with hairless dm6 chip-chip
+```{r}
+hairless <- read.table('hairless-dm6.bed', sep = '\t') 
+colnames(hairless) <- c('seqnames', 'start', 'end')
+
+GRanges(hairless)
+
+hairless %>%
+#  data.frame() %>%
+  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::group_by(osa) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+```
+
+### intersect with smrter chip-chip
+```{r}
+#### smrter
+smrter <- read.table('smrter-dm6.bed', sep = '\t') 
+
+colnames(smrter) <- c('seqnames', 'start', 'end')
+
+smrter %>%
+#  data.frame() %>%
+  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::group_by(osa) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+
+
+```
+
+### intersect with ctbp peaks
+```{r}
+ctbp.ss <- read.csv('~/McKay/CtBP_CnR/sampleSheet.tsv', sep = '\t')
+
+
+ctbp.peak <- getPeakData(ctbp.ss, narrowPeak_colname = 'peakFile', by = 'fraction') %>%  dplyr::filter(fraction == 'sup')
+
+q <- quantile(ctbp.peak$qValue, probs = 0.5) #find the 75% qVal
+
+
+ctbp.peak.qf <- ctbp.peak %>%
+  dplyr::filter(qValue >= q)
+
+
+ctbp.peak.qf %>%
+  data.frame() %>%
+  dplyr::mutate(osa = dplyr::if_else(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::group_by(osa) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+
+osaPeaks %>%
+  data.frame() %>%
+  dplyr::mutate(ctbp = dplyr::if_else(GRanges(.) %over% GRanges(ctbp.peak.qf), T, F)) %>%
+  dplyr::group_by(ctbp) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+```
+### intersect with ecr peaks
+```{r}
+ecr.ss <- read.csv('~/McKay/ecrGFSTF-3LW-Wing-CnR/sampleSheet.tsv', sep = '\t') %>%
+  dplyr::mutate(peakFile = paste0('/Users/m/McKay/ecrGFSTF-3LW-Wing-CnR/',peak))
+
+ecr.peak <- getPeakData(ecr.ss, narrowPeak_colname = 'peakFile', by = 'fraction') %>%
+  dplyr::filter(fraction == 'sup')
+
+#q <- quantile(ecr.peak$qValue, probs = 0.75) #find the 75% qVal
+ecr.peak
+
+#ecr.peak.qf <- ecr.peak %>%
+#  dplyr::filter(qValue >= q)
+ecr.peak
+ecr.peak %>%
+  #data.frame() %>%
+  dplyr::mutate(ecr = dplyr::if_else(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::group_by(ecr) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+```
+### intersect with rotund peaks
+~20% of osa peaks overlap with q filtered and reproducible rn peaks
+~20% of rotund peaks overlap with osaPeaks 
+```{r}
+rn.ss <- read.csv('~/McKay/Rotund-ChIP/sampleSheet.tsv', sep = '\t') 
+
+rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp') 
+rn.peak
+q <- quantile(rn.peak$qValue, probs = 0.25) #find the 75% qVal
+
+rn.peak
+
+rn.peak.qf <- rn.peak %>%
+  dplyr::mutate(seqnames = paste0('chr',seqnames)) %>%
+  dplyr::filter(qValue >= q & seqnames %in% c('chr2L','chr2R','chr3L','chr3R','chrX')) 
+
+      #grp.repShared.1 <- IRanges::subsetByOverlaps(grp.list[[1]], grp.list[[2]]) # get coords in 1st rep that overlap rep 2
+rn.peak.1 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]), 
+                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]))
+
+ rn.peak.2 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]), 
+                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]))                                      
+ 
+rn.union <- union(rn.peak.1, rn.peak.2)
+
+rn.union %>%
+  data.frame() %>%
+  dplyr::mutate(osa = dplyr::if_else(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::group_by(osa) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
+```
 ### peak clusters - are osa peak clustered together?
 ```{r}
 distances <- GenomicRanges::distanceToNearest(osaPeaks.full) %>%
@@ -1231,7 +1426,7 @@ distances <- GenomicRanges::distanceToNearest(osaPeaks.full) %>%
 distances %>%
   ggplot(aes(distance, '')) +
  # geom_vline(xintercept = c(0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000), color = 'grey50', linetype = 'dashed') +
-  geom_histogram(aes(y = after_stat(count), fill = meanZ, group = meanZ), size = 1, binwidth = 100) +
+  geom_histogram(aes(y = after_stat(count), ), size = 1, binwidth = 100) +
 #  scale_fill_viridis_c(name = 'Density')+
   xlab('Distance (kb)') +
   ylab('Count') +
@@ -1251,22 +1446,61 @@ distances %>%
   geom_hex(bins = 50)
 
 
-distances %>%
-  dplyr::mutate(frac_distance = ifelse(distance <= 5000, '<=5kb','>5kb')) %>%
-  dplyr::select(peak, frac_distance) %>%
-  dplyr::group_by(frac_distance) %>%
-  dplyr::tally() %>%
-  dplyr::mutate(per = n/sum(n)) %>%
-  ggplot(aes('', y = per, fill = frac_distance)) +
-  geom_bar(stat = 'identity') +
-  coord_polar(theta = 'y')  
+#distances.frac <- distances %>%
+#  #dplyr::mutate(frac_distance = ifelse(distance <= 5000, '<=5kb','>5kb')) %>%
+#  dplyr::mutate(frac_distance = dplyr::case_when(distance <= 1000 ~ '<=1kb',
+#                                                 distance <= 5000 & distance > 1000 ~ '1-5kb',
+#                                                 distance <= 10000 & distance > 5000 ~ '5-10kb',
+#                                                 T ~ '>10kb')) 
+#
+#distances.frac %>%
+#  dplyr::select(peak, meanZ,frac_distance) %>%
+#  dplyr::group_by(frac_distance) %>%
+#  dplyr::summarise(n = dplyr::n(),
+#                   mean = mean(meanZ)) %>%
+#  dplyr::mutate(per = n/sum(n)) 
+#  ggplot(aes('', y = per, fill = mean, color = frac_distance)) +
+#  geom_bar(stat = 'identity') +
+# # coord_polar(theta = 'y') + 
+#  geom_text(aes(label = n), position = position_stack(), color = 'black') +
+#  scale_fill_viridis_c() +
+#  theme(axis.line = element_blank(),
+#        axis.text = element_blank(),
+#        axis.title = element_blank(),
+#        axis.ticks = element_blank(),
+#        panel.background = element_blank())
   
+```
+#### kmean clustering distances
+```{r}
+dist.mat <- distances %>%
+  dplyr::select(peak,distance) %>%
+  tibble::column_to_rownames('peak') %>%
+  as.matrix() 
+
+
+set.seed(1230412)
+k <- kmeans(dist.mat, 20, nstart = 24, iter.max = 15)
+
+k.df <- k$cluster %>% data.frame('cluster' = .) %>%
+  tibble::rowid_to_column('peak') 
+
+distances %>% 
+  dplyr::left_join(., k.df) %>%
+  dplyr::select(meanZ, distance, cluster) %>%
+  dplyr::mutate(cluster = as.factor(cluster)) %>%
+  dplyr::group_by(cluster) %>%
+  dplyr::summarise(meanD = mean(distance),
+                   meanZ = mean(meanZ),
+                   n = dplyr::n()) 
+  ggplot(aes('', cluster, fill = mean)) +
+  geom_tile()
 ```
 
 #### binned cluster mapping across genome
 ```{r}
-# 200kb bins
-bins <- GenomicRanges::tileGenome(GenomeInfoDb::seqinfo(dm6),tilewidth = 2e05) %>% 
+
+bins <- GenomicRanges::tileGenome(GenomeInfoDb::seqinfo(dm6),tilewidth = 10e03) %>% 
   unlist() %>%
   data.frame() %>%
   dplyr::filter(seqnames %in% c('chrX','chr2L','chr2R', 'chr3L', 'chr3R'))  %>%
@@ -1276,8 +1510,19 @@ counts <- GenomicRanges::countOverlaps(bins, osaPeaks.full) %>% data.frame('coun
   dplyr::bind_cols(data.frame(bins), .) %>%
   dplyr::mutate(range = 1:nrow(.)) 
 
-counts %>%
-  dplyr::arrange(desc(count))
+
+counts
+genes <- GenomicFeatures::genes(dm6.TxDb)
+
+ov <- subsetByOverlaps(genes, bins) 
+
+bins %>%
+  GenomicRanges::countOverlaps(., osaPeaks.full) %>% data.frame('count' = .) %>%
+  dplyr::bind_cols(data.frame(bins))
+  mcols(.)$gene_id
+
+###
+
 
 counts %>%
   dplyr::mutate(chr = paste0('chr',stringr::str_extract(seqnames, '\\d'))) %>%
@@ -1293,6 +1538,23 @@ ggsave('rPlots/3-peak-cluster-distribution.png', width = 6, height =6, dpi = 300
 
 
 ```
+#### distance vs zscore scatter
+doesn't actually look like there's a strong correlation between high amplitude peaks and clustering
+```{r}
+distances %>%
+  dplyr::mutate(logD = log10(distance)) %>%
+  ggplot(aes(distance, meanZ)) +
+  geom_point() +
+ # geom_smooth(method = 'glm')
+  xlim(c(0,5000))
+
+```
+#### go term on clustered peaks
+```{r}
+
+```
+
+
 
 ### scatter of osa vs control 
 ```{r}
@@ -1328,8 +1590,10 @@ the clusters look very similar to what we previously published.
 TODO - what is the osa binding overlap within each cluster?
   - get peak ID from each cluster than match the peaks df and plot fraction that are osa.cnr True
 
-```{r}
 
+
+
+```{r}
 tidymat <- fairePeaks.wt %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
@@ -1356,11 +1620,11 @@ figure_col_fun <- circlize::colorRamp2(breaks = c(0,0.25,0.5,0.75,1), colors = v
 k_df <- k8$cluster %>% 
   data.frame %>% 
   dplyr::rename(k = ".") %>% 
-  tibble::rownames_to_column("id")  
-#  dplyr::mutate(new_k1 = dplyr::case_when(k == 1 ~ 8,
+  tibble::rownames_to_column("id")
+#  dplyr::mutate(new_k1 = dplyr::case_when(k == 1 ~ 2,
 #                                          k == 2 ~ 7,
 #                                          k == 3 ~ 5,
-#                                          k == 4 ~ 2,
+#                                          k == 4 ~ 8,
 #                                          k == 5 ~ 6,
 #                                          k == 6 ~ 4,
 #                                          k == 7 ~ 3,
@@ -1393,36 +1657,49 @@ fairePeaks.anno <- ChIPseeker::annotatePeak(fairePeaks.wt, tssRegion = c(-100,50
 
 ## merge in clusters to peak list and then plot line and pie charts
 
+cluster.levels = c('4', '7', '8','5','1','3','6','2')
+
 cluster.df <- data.frame(k8$cluster) %>%
   tibble::rownames_to_column('peak') %>%
   dplyr::mutate(peak = as.integer(peak)) %>% 
   dplyr::left_join(data.frame(fairePeaks.wt), ., by = 'peak') %>% # join cluster info to the wt FAIRE peak df
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>% # filter out to just "distal regulatory"
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron'))  %>% # filter out to just "distal regulatory"
   dplyr::mutate(osabound = ifelse(osa.cnr & !yw.cnr, T, F),
-                k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
+                k8.cluster = factor(k8.cluster, levels = cluster.levels)) %>%
   dplyr::rename('Geneid' = 'geneId') %>%
   dplyr::left_join(., wing.rnaseq, by = 'Geneid')
 
-cluster.df %>% dplyr::filter(k8.cluster ==8) #%>% dplyr::filter(osa.cnr & !yw.cnr)
+#cluster.df %>% dplyr::filter(k8.cluster ==8) #%>% dplyr::filter(osa.cnr & !yw.cnr)
 ```
 
+Plot the percentage of osa Peaks that overlap FAIRE cluster peaks. 
+Decided to focus on 3 clusters for comparison, the two that are high at 3LW and close, relative to the static set. 
+
+I was concerned that the static set would include a not insignificant number of sites that are relatively closed throughout the timecourse, so I added an additional `WT.3LW == T` filter.
+Without this, I think it's difficult to argue for a biological connection between osa binding the closing groups rather than just binding open sites. ie. we need to be sure that the "static" group are in fact open at L3 like the other two categories. 
 
 ```{r}
-purrr::map(unique(cluster.df$k8.cluster), function(x) {
+
+cluster.sub <- c(2,6,4)
+
+#purrr::map(unique(cluster.df$k8.cluster), function(x) {
+purrr::map(cluster.sub, function(x) {
   name <- paste0("cluster-",x)
-  
+
  piechart <- cluster.df %>%
-    dplyr::filter(k8.cluster == x) %>%
+    dplyr::filter(k8.cluster == x & WT.3LW) %>% # adding in 3LW peak call filter -- logic is that I don't want to include static sites that are statically closed, or never really open. 
     dplyr::distinct(peak, .keep_all = T) %>%
     dplyr::group_by(osabound) %>%
     dplyr::tally() %>% 
+   
     dplyr::mutate(frac = n/sum(n),
                   percent = paste0(100*round(frac, 2),"%")) %>%
     ggplot(aes(0,frac, fill = osabound, label = percent)) +
     geom_bar(stat = 'identity', position = position_stack(vjust = 0.5)) + 
     geom_text(position = position_stack(vjust = 0.5)) +
+   geom_text(aes(x = 1, label = n), position = position_stack(vjust = 0.5), color = c('black','#e667d3' )) +
     scale_x_continuous(expand = c(0,0)) +
-    coord_polar(theta = 'y') + 
+    coord_polar(theta = 'y', start = 0) + 
     scale_fill_manual(values = c('grey80', '#e667d3')) + 
     theme(axis.text = element_blank(),
           axis.ticks = element_blank(),
@@ -1433,13 +1710,13 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
           legend.position = 'none')  
   
   lineplot <- cluster.df %>%
-    dplyr::filter(k8.cluster == x) %>%
+    dplyr::filter(k8.cluster == x & WT.3LW) %>%
     dplyr::distinct(peak, .keep_all = T) %>%
      dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
-                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h')),
-                   k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+#                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
      dplyr::group_by(peak) %>%
      dplyr::mutate(frac = value/max(value)) %>%
      dplyr::group_by(k8.cluster, stage) %>%
@@ -1451,57 +1728,24 @@ purrr::map(unique(cluster.df$k8.cluster), function(x) {
      geom_line(aes(color = k8.cluster), size = 2) +
      ylim(c(-0.1,1.1)) +
      theme(legend.position = 'none')
-  
-  
-#rna <-   cluster.df %>%
-#  dplyr::filter(!grepl('RNA',SYMBOL)) %>% # filter out stuff like lncRNA, tRNA, snoRNA etc. 
-#   dplyr::filter(k8.cluster == x) %>% 
-#    dplyr::select(Geneid,k8.cluster,osabound,c(68:79)) %>% #TODO stop indexing like this!
-#    tidyr::pivot_longer(c(4:15)) %>%    
-#    dplyr::distinct() %>% #should drop any genes represented >1 per cluster... 
-#  #TODO -- good idea to filter on distinct() - quick check this doesn't look like it dramatically changes the plots, check numbers. 
-#    dplyr::mutate(stage = stringr::str_split_fixed(name, '_', n = 2)[,1],
-#                  stage = stringr::str_remove(stage, 'X'),
-#                  stage = factor(stage, levels = c('L3', '6h', '18h','24h','36h','44h')),
-#                  rep = stringr::str_split_fixed(name, '_', n = 2)[,2]) %>%
-#    dplyr::group_by(Geneid, stage, k8.cluster, osabound) %>%
-#    dplyr::summarise(rep_mean = mean(value)+0.001) %>% # average rnaseq replicates
-#    dplyr::group_by(Geneid, k8.cluster) %>%
-#   dplyr::filter(any(rep_mean >= 2)) %>% # drop genes with little to no expression
-#    dplyr::group_by(k8.cluster,stage, osabound) %>% 
-#    dplyr::summarise(mean = mean(rep_mean), 
-#                     sd = sd(rep_mean)) %>% #average all the fraction of max together per stage per cluster
-#   dplyr::group_by(k8.cluster, osabound) %>%
-#   dplyr::mutate(frac = mean/max(mean)) %>%
-#    ggplot(aes(stage, frac, group = osabound,color = osabound) ) +
-#    geom_line(size = 2) +
-#  ylim(c(0,1.0)) + 
-#   scale_color_manual(values = c('grey50','magenta')) +
-#    theme(legend.position = 'none') 
-   
 
- ggsave(plot = piechart, filename = paste0('rPlots/pieChart-',name,'.png'), width = 1, height = 1 , dpi = 300) 
+ ggsave(plot = piechart, filename = paste0('rPlots/pieChart-',name,'.png'), width = 1.5, height = 1.5 , dpi = 300) 
  ggsave(plot = lineplot, filename = paste0('rPlots/linePolot-',name,'.png'), width = 3, height = 3 , dpi = 300) 
-# ggsave(plot = rna, filename = paste0('rPlots/rna-',name,'.png'), width = 3, height = 3 , dpi = 300) 
     
 })
 
-  #plot average of faire fract max per cluster - simple abstraction for figure
 cluster.df %>%
-#    dplyr::filter(k8.cluster == x) %>%
     dplyr::distinct(peak, .keep_all = T) %>%
      dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
-                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h')),
-                   k8.cluster = factor(k8.cluster, levels = c('8', '3', '4','5','1','6','2','7'))) %>%
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
      dplyr::group_by(peak) %>%
      dplyr::mutate(frac = value/max(value)) %>%
      dplyr::group_by(k8.cluster, stage) %>%
      dplyr::summarise(mean = mean(frac),
                       sd = sd(frac) ,
                       n = dplyr::n()) %>%
-  dplyr::mutate(k8.cluster = factor(k8.cluster, levels = c('4','8','5','2','3','6','7','1'))) %>%
      ggplot(aes(stage, k8.cluster, fill = mean ))+
      geom_raster() +
   scale_fill_viridis_c() +
@@ -1510,8 +1754,73 @@ cluster.df %>%
         legend.title = element_blank(),
         legend.key.size = unit(0.5, 'cm'))
 ggsave('rPlots/3I-FAIRE-cluster-simple.png', width = 4, height = 3, dpi = 300)
+```
+##### dynamics of osa bound open vs closed
+3lw open bound
+```{r}
+tidy.cluster <- cluster.df %>%
+  dplyr::filter(osabound & WT.3LW) %>%
+  dplyr::distinct(peak, .keep_all = T) %>%
+     dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+#                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
+     dplyr::group_by(peak) %>%
+     dplyr::mutate(value = ifelse(value < 0, 0, value), # remove negative zScores
+                   frac = value/max(value)) 
+tidy.cluster %>%
+  dplyr::group_by(k8.cluster) %>%
+  tidyHeatmap::heatmap(peak, stage, value,
+                       palette_value = circlize::colorRamp2(c(0, 1, 2, 3, 4, 5), viridisLite::viridis(6)),
+                       cluster_rows = F, 
+                       cluster_columns = F)
+max(tidy.cluster$value)
+```
+
+3lw closed bound
+```{r}
+tidy.cluster <- cluster.df %>%
+  dplyr::filter(osabound & !WT.3LW) %>%
+  dplyr::distinct(peak, .keep_all = T) %>%
+     dplyr::select(peak, k8.cluster, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+#                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
+     dplyr::group_by(peak) %>%
+     dplyr::mutate(value = ifelse(value < 0, 0, value), # remove negative zScores
+                   frac = value/max(value)) 
+tidy.cluster %>%
+  dplyr::group_by(k8.cluster) %>%
+  tidyHeatmap::heatmap(peak, stage, value,
+                       palette_value = circlize::colorRamp2(c(0, 1, 2, 3, 4, 5), viridisLite::viridis(6)),
+                       cluster_rows = F, 
+                       cluster_columns = F)
+max(tidy.cluster$value)
+```
+
+```{r}
+cluster.df %>%
+  dplyr::filter(k8.cluster == 4 & WT.3LW) %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+  dplyr::group_by(osabound) %>%
+  dplyr::tally() %>% 
+  dplyr::mutate(frac = n / sum(n))
+  
+
+cluster.df %>%
+  dplyr::filter(osa.cnr & !yw.cnr) %>%
+  dplyr::filter(!WT.3LW) %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+  dplyr::group_by(k8.cluster) 
+  dplyr::tally() %>% 
+  dplyr::mutate(frac = n / sum(n), 
+                sum = sum(n))
+```
 
 
+```{r}
 ```
 
 #### ame of clusters
@@ -2431,7 +2740,7 @@ osaBound.ame <- osa.enhancer.seq %>%
 
 osaBound.ame %>%
   dplyr::group_by(symbol) %>%
-  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:10) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
   dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
   dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
   dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
@@ -2443,12 +2752,13 @@ osaBound.ame %>%
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) 
 
-ggsave('rPlots/3E_osaBound-enhancer.png', width = 3, height = 4, dpi = 300)
+ggsave('rPlots/3E_osaBound-enhancer.png', width = 2.5, height = 2.5, dpi = 300)
 ```
 #### osa bound open 3lw enhancers
 what motifs are enriched within osa bound "closed" 3lw sites annotated as distal or intronic - ie. "enhancers"
-```{r}
 
+sqz and rn have very similar / almost identicle motifs
+```{r}
 osa.enhancer.seq <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
@@ -2473,7 +2783,7 @@ osaBound.ame <- osa.enhancer.seq %>%
 
 osaBound.ame %>%
   dplyr::group_by(symbol) %>%
-  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:10) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
   dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
   dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
   dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
@@ -2485,7 +2795,7 @@ osaBound.ame %>%
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) 
 
-ggsave('rPlots/3E_osaBound-enhancer-3lwPeak.png', width = 2.8, height = 2.5, dpi = 300)
+ggsave('rPlots/3E_osaBound-enhancer-3lwPeak.png', width = 2.5, height = 2.5, dpi = 300)
 ```
 #### osa bound closed 3lw enhancers
 what motifs are enriched within osa bound "closed" 3lw sites annotated as distal or intronic - ie. "enhancers"
