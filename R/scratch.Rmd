@@ -295,6 +295,7 @@ purrr::map(names(cnr.byGrp), function(x) {
 genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
 
 peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full, genome = 'dm6', fill = '#D01C8B', col = 'transparent', background.title = 'white', showTitle = F )
+
 ```
 
 TODO - make reference table of different peak categories and parameters,
@@ -572,13 +573,15 @@ cnr.ss.browser <- cnr.ss %>%
   dplyr::mutate(color = track.colors)
 
 cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,12))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
 
 brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
 
 axis <- Gviz::GenomeAxisTrack(scale = 1000)
 
 png('rPlots/3B.png', width = 4, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
                  from = start(brD + 1000),
                  to = end(brD + 1000),
                  cex.axis = 0.3,
@@ -603,9 +606,11 @@ axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
 #### espl
 cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,45))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
 
 png('rPlots/3B-espl.png', width = 5, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(espl) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(espl) %>% as.character(), 
                  from = start(espl - 10000),
                  to = end(espl - 40000),
                  cex.axis = 0.3,
@@ -618,9 +623,11 @@ dev.off()
 ##### Dl
 
 cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,50))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
 
 png('rPlots/3B-Dl.png', width = 5, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(Dl) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(Dl) %>% as.character(), 
                  from = start(Dl),
                  to = end(Dl),
                  cex.axis = 0.3,
@@ -632,9 +639,11 @@ dev.off()
 ##### sbb
 
 cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,55))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
 
 png('rPlots/3B-sbb.png', width = 7, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, peakTrack, genetrack), chromosome = seqnames(sbb) %>% as.character(), 
+Gviz::plotTracks(c(axis, cnr.tracks, genetrack), chromosome = seqnames(sbb) %>% as.character(), 
                  from = start(sbb-20000),
                  to = end(sbb+5000),
                  cex.axis = 0.3,
@@ -3588,31 +3597,31 @@ changes, where they occur, and how they relate to osa binding.
 ## multiBamsum
 ```{bash engine.opts='-l'}
 multiBamSummary bins --bamfiles Bam/*deGrad*dupsRemoved.bam \
-  -o R/rPlots/multiBamsum.npz
+  -o rPlots/multiBamsum.npz
 
-plotCorrelation -in R/rPlots/multiBamsum.npz \
+plotCorrelation -in rPlots/multiBamsum.npz \
   -c spearman -p heatmap --colorMap RdYlBu --plotNumbers \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
   --removeOutliers --skipZeros \
-  -o R/rPlots/multiBamsum-spearman.png
+  -o rPlots/multiBamsum-spearman.png
   
-plotPCA -in R/rPlots/multiBWsum.npz \
+plotPCA -in rPlots/multiBamsum.npz \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
-  -o R/rPlots/multiBWsum-PCA.png
+  -o rPlots/multiBamsum-PCA.png
 ```
 ## multiBWsum
 ```{bash engine.opts='-l'}
-multiBigwigSummary bins -b R/BigWig/*deGrad*dupsRemoved_rpgcNorm_zNorm.bw -o R/rPlots/multiBWsum.npz
+multiBigwigSummary bins -b BigWig/*deGrad*dupsRemoved_rpgcNorm_zNorm.bw -o R/rPlots/multiBWsum.npz
 
-plotCorrelation -in R/rPlots/multiBWsum.npz \
+plotCorrelation -in rPlots/multiBWsum.npz \
   --corMethod spearman --skipZeros \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
   --whatToPlot heatmap --colorMap RdYlBu --plotNumbers \
-  -o R/rPlots/multiBWsum-spearman.png
+  -o rPlots/multiBWsum-spearman.png
   
-plotPCA -in R/rPlots/multiBWsum.npz \
+plotPCA -in rPlots/multiBWsum.npz \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
-  -o R/rPlots/multiBWsum-PCA.png
+  -o rPlots/multiBWsum-PCA.png
 ```
 
 ## 4C - venn
@@ -3700,6 +3709,7 @@ log2(control/degrad) \>= 0.4, "independet" (no significant change).
 
 #TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
 
+cols <- c('black', '#469ae8')
 
 # union osa degrad peaks
 deg.mats <- purrr::map(deg.bws, ~{
@@ -3728,7 +3738,7 @@ names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
 
 groups <- fairePeaks.deg$faireCat.osaDeGrad
 
-lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = 2:4))
+lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
 
 deg.hms <- purrr::map(names(deg.mats), function(x) {
   if(grepl('control.Rep1',x)){
@@ -3739,7 +3749,7 @@ deg.hms <- purrr::map(names(deg.mats), function(x) {
                     col = col_fun,
                     name = 'zScore',
                     row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,8))),
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,8))),
                     left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
                                                                              as.list(deg.count),
                                                                              side = 'left',
@@ -3756,7 +3766,7 @@ deg.hms <- purrr::map(names(deg.mats), function(x) {
                     col = col_fun,
                     show_heatmap_legend = F, 
                     row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = 2:4, lwd = 2), ylim = c(0,8), axis = F)), 
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2), ylim = c(0,8), axis = F)), 
                     use_raster = F)
   }
 })
@@ -3837,11 +3847,15 @@ names(deg.hms) <- names(deg.mats)
 
 hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
 
-png('rPlots/4B-nogroups.png', width = 5, height = 5, units = 'in', res = 300)
+png('rPlots/4B-nogroups.png', width = 5, height = 4, units = 'in', res = 300)
 ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 dev.off()
 
+fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::filter(log2FoldChange >= 1)
 
+BiocManager::install('DiffBind')
 ```
 ### osa bound fraction
 ```{r}
@@ -3942,6 +3956,16 @@ fairePeaks.deg %>%
 ```{r, 4D}
 #TODO - add highlights for dependent regions - currently manually annotating in illustrator 
 
+
+dds.track <- Gviz::AnnotationTrack(range = GRanges(dds.dep), genome = 'dm6', fill = '#469ae8', col = 'transparent', background.title = 'white', showTitle = F)
+#chr2L:6,166,371-6,170,699 -
+#chr2R:18,244,125-18,248,497
+range <- data.frame(seqnames = 'chr2R',
+                    start = 18202429,
+                    end = 18290126) %>%
+  GRanges()
+#peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full, genome = 'dm6', fill = '#D01C8B', col = 'transparent', background.title = 'white', showTitle = F )
+
 #peaks %>%
 #  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE' & faireCat.osaDeGrad == 'Osa Dependent') %>%
 #  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>%
@@ -3952,20 +3976,24 @@ fairePeaks.deg %>%
 #  write.table(., file = '~/Desktop/osaDep.bed', col.names = F, row.names = F, quote = F)
   
 # chr2R:11,465,947-11,499,493 
-inv <- data.frame(seqnames = 'chr2R',
-                   start = 11465947,
-                   end = 11499493) %>%
-  GRanges()
   
 #track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("#50c42d","#c42d85","grey70","grey60","grey50")
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
 
 deg.ss.browser <- faire.osaDeGrad.ssPool %>%
   dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
   dplyr::mutate(color = track.colors)
 
-deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,10))
-deg.tracks <- c(deg.tracks$wt_3LW, 
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
+spacer <- Gviz::AnnotationTrack(background.title = 'white')
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,13))
+deg.tracks <- c(cnr.tracks, # add in osa cnr tracks with peaks
+                spacer,
+                spacer,
+                spacer,
+                deg.tracks$wt_3LW, 
                 deg.tracks$wt_24h, 
                 deg.tracks$wt_44h,
                 deg.tracks$osaGFP.deGrad_control_faire, 
@@ -3975,16 +4003,16 @@ deg.tracks <- c(deg.tracks$wt_3LW,
 
 axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
-png('rPlots/4E-browser.png', width = 10, height = 5, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, deg.tracks, genetrack), chromosome = seqnames(inv) %>% as.character(), 
-                 from = start(inv),
-                 to = end(inv),
+png('rPlots/4E-browser.png', width = 12, height = 5, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), chromosome = seqnames(range) %>% as.character(), 
+                 from = start(range-15000),
+                 to = end(range-10000),
                  cex.axis = 0.3,
                  cex.title = 0.5,
                  title.width = 1,
                  innerMargin = 10)
 dev.off()
-  
+ 
 ```
 
 ## 4H. motif enrichment in osa dependent regions
@@ -4187,10 +4215,12 @@ ComplexHeatmap::draw(hms, merge_legend = T, heatmap_legend_side = 'right', )
 Shows that there is no increase in accessibility.
 
 ```{r, 4D}
+
+
 #TODO - add 36h FAIRE data? better comparison for osa deGrad?
 
 #track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("#50c42d","#c42d85","grey70","grey60","grey50")
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
 
 deg.ss.browser <- faire.osaDeGrad.ssPool %>%
   dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
@@ -4208,7 +4238,7 @@ brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc',
 axis <- Gviz::GenomeAxisTrack(scale = 1000)
 
 png('rPlots/4D.png', width = 4, height = 6, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, deg.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
+Gviz::plotTracks(c(axis, deg.tracks,spacer,spacer, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
                  from = start(brD + 1000),
                  to = end(brD + 1000),
                  cex.axis = 0.3,
@@ -4600,13 +4630,194 @@ ggsave('rPlots/4-draft-2.png', width = 5, height = 3, units = 'in', dpi = 300)
 ```
 
 ## drafts
+### diffbind
+```{r}
+test  <- faire.osaDeGrad.ss %>%
+  dplyr::rename(SampleID = id,
+                Peaks = peaks,
+                bamReads = bam) %>%
+  dplyr::mutate(PeakCaller = "narrow", 
+                Replicate = ifelse(rep == 'Rep1', 1, 2),
+                Condition = ifelse(grepl('control', SampleID), 'control','nubG4'))
+
+test.db <- DiffBind::dba(sampleSheet = test)
+
+test.db <- DiffBind::dba.count(test.db)
+info <- DiffBind::dba.show(test.db)
+libsizes <- cbind(LibReads=info$Reads,
+                  FRiP=info$FRiP,
+                  PeakReads=round(info$Reads * info$FRiP))
+rownames(libsizes) <- info$ID 
+
+test.db <- DiffBind::dba.normalize(test.db, normalize = 'lib') #library size normalization may be more appropriate for non-rnaseq data
+norm <- DiffBind::dba.normalize(test.db, bRetrieve=T)
+normlibs <- cbind(FullLibSize=norm$lib.sizes,
+                  NormFacs=norm$norm.factors,
+                  NormLibSize=round(norm$lib.sizes/norm$norm.factors))
+rownames(normlibs) <- info$ID
+
+
+test.db <- DiffBind::dba.contrast(test.db, contrast = c('Condition', 'nubG4','control'))
+
+test.db <- DiffBind::dba.analyze(test.db)
+
+dds <- DiffBind::dba.analyze(test.db, bRetrieveAnalysis =TRUE) #retreive the deseq2 object
+
+dds.results <- DESeq2::results(dds, contrast = c('Condition', 'nubG4', 'control'))
+
+#DiffBind::dba.show(test.db, bContrasts = T, th = 0.1)
+
+
+#dds.results %>% data.frame() %>%
+#  ggplot(aes(log2FoldChange, padj)) +
+#  geom_point(color = ifelse(dds.results$padj <= 0.1, 'red','black')) +
+#  theme(axis.title = element_text(size = 12),
+#        axis.text = element_text(size = 12))
+
+#### 
+test.db.peaks <- test.db$peaks %>% data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  dplyr::mutate(peak = 1:nrow(.)) 
+
+dds.peaks <- dds.results %>% data.frame() %>%
+  dplyr::mutate(peak = 1:nrow(.)) %>%
+  dplyr::left_join(test.db.peaks, ., by = 'peak') 
+
+dds.peaks.qF <- IRanges::subsetByOverlaps(GRanges(dds.peaks), fairePeaks.deg) %>%
+  data.frame() %>%
+  dplyr::mutate(group = ifelse(log2FoldChange <= -1, "Osa Dependent", "Independent")) %>%
+  GRanges() %>%
+  resize(1, fix = 'center')
+
+dds.peaks.qF %>%
+  data.frame() %>%
+  ggplot(aes(log2FoldChange, padj)) +
+  geom_point(color = ifelse(dds.peaks.qF$padj <= 0.1, 'red','black')) +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 12))
+
+ggsave('rPlots/4D-diffBind.png', width =4, height = 3.5, dpi = 300)  
+
+dds.dep <- IRanges::subsetByOverlaps(GRanges(dds.peaks), fairePeaks.deg) %>%
+  data.frame() %>%
+  dplyr::filter(log2FoldChange <= -1) %>%
+  GRanges() 
+
+
+```
+#### diffbind groups heatmap
+```{r}
+
+cols <- c('black', '#469ae8')
+  
+deg.mats <- purrr::map(deg.bws, ~{
+  normalizeToMatrix(., GRanges(dds.peaks.qF), value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
+}) 
+
+names(deg.mats) <- faire.ss %>% 
+  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+                            '.',
+                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+  .$nm 
+
+common_min = min(unlist(deg.mats))
+common_max = max(unlist(deg.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+deg.count <- dds.peaks.qF %>%
+  data.frame() %>%
+  dplyr::group_by(group) %>% #peak category assigned in peaks.R
+  dplyr::tally() %>%
+  .$n
+
+names(deg.count) <- c('Independent', 'Osa Dependent')
+
+groups <- dds.peaks.qF$group 
+
+
+lgd = Legend(at = c("Osa Independent", "Osa Dependent"), legend_gp = gpar(fill = cols))
+
+deg.hms <- purrr::map(names(deg.mats), function(x) {
+  if(grepl('control.Rep1',x)){
+     EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1000, 0, 1000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    name = 'zScore',
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,6.5))),
+                    left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
+                                                                             as.list(deg.count),
+                                                                             side = 'left',
+                                                                             background_gp = gpar(fill = NA, col = NA),
+                                                                             gp = gpar(col = 'black'), 
+                                                                             padding = unit(0, 'mm'))),
+                    use_raster = F)
+  }else{
+    EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1000, 0, 1000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    show_heatmap_legend = F, 
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2), ylim = c(0,6.5), axis = F)), 
+                    use_raster = F)
+  }
+})
+
+names(deg.hms) <- names(deg.mats)
+
+hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+
+png('rPlots/4B-draft.png', width = 4.5, height = 4, units = 'in', res = 300)
+ComplexHeatmap::draw(hms,annotation_legend_list = c(lgd), row_split = groups,  merge_legend = T, heatmap_legend_side = 'right', )
+dev.off()
+```
+#### diffbind dynamic
+```{r}
+dds.peaks.qF <- dds.peaks.qF %>%
+  data.frame() %>%
+  dplyr::mutate(faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.18h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_18h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+
+tidy.dds <- dds.peaks.qF %>% 
+  dplyr::filter(log2FoldChange <= -1) %>%
+     dplyr::select(peak, group, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+#                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
+     dplyr::group_by(peak) %>%
+     dplyr::mutate(value = ifelse(value < 0, 0, value), # remove negative zScores
+                   frac = value/max(value)) 
+tidy.dds
+tidy.dds %>%
+  tidyHeatmap::heatmap(peak, stage, value,
+                       palette_value = circlize::colorRamp2(c(0, 1, 2, 3, 4, 5), viridisLite::viridis(6)),
+                       cluster_rows = F, 
+                       cluster_columns = F, 
+                       row_km = 5)
+  max(tidy.cluster$value)
+  
+dds.peaks.qF %>%
+  data.frame() %>%
+  dplyr::filter(padj <= 0.1)
+```
 ### deseq2 padj plot
 ```{r}
 fairePeaks.deg %>%
   data.frame() %>%
-  ggplot(aes(faire_osaDeGrad.log2FoldChange, faire_osaDeGrad.stat)) +
+  ggplot(aes(log2FoldChange, stat)) +
   geom_point() 
-  geom_point(color = ifelse(fairePeaks.deg$faire_osaDeGrad.pvalue <= 0.05, 'red','black'))
+  geom_point(color = ifelse(fairePeaks.deg$.pvalue <= 0.05, 'red','black'))
 
 # TODO - the adjusted p value plot is meaningless because almost all values ~ 1,
 # if that's true then fine, but is this a 'bug' in pvalue correction with few-none differential regions?
@@ -4616,6 +4827,16 @@ fairePeaks.deg %>%
   geom_point(color = ifelse(fairePeaks.deg$pvalue <= 0.05, 'red','black')) 
 ggsave('rPlots/4-draft-log2Fold_vs_Pval.png', width = 4, height = 4, dpi = 300)
 
+fairePeaks.deg %>%
+  data.frame() %>%
+  dplyr::mutate(logcat = dplyr::case_when(log2FoldChange <= 0.5 & log2FoldChange >= -0.5 ~ '0.5',
+                                         log2FoldChange <= 1 & log2FoldChange >= -1  ~ '1',
+                                         log2FoldChange > 1 ~ 'osa dependent', 
+                                         log2FoldChange < -1 ~ 'osa ectopic',
+                                         T ~ 'other')) %>%
+  dplyr::group_by(logcat) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
 ```
 
 ### peak annotations
