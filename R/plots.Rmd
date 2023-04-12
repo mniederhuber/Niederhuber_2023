@@ -1,1684 +1,205 @@
+# Setup
+
 ```{r setup}
+library(magrittr)
 library(ggplot2)
 library(ggrepel)
-library(magrittr)
 library(GenomicRanges)
-library(grid)
-
-library(GO.db)
-
-source('scripts/utils.R')
-
-load('rData/sheets.RDS')
-#load('rData/union-df.RData')
-load('rData/osa-idr-peak-sets.RDS')
-load('rData/deseq.RDS')
-load('rData/osa-DFs.RDS')
-
-load('rData/faire_dm6.RDS')
-load('rData/faireSheets.RDS')
-
 
 library(org.Dm.eg.db)
 library(AnnotationDbi)
 
+library(EnrichedHeatmap)
+library(ComplexHeatmap)
+
+library(GO.db)
+
+library(patchwork)
+
+source('utils.R')
+source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+###
+# load rData
+###
+
+load('rData/sheets.rda')
+load('rData/peaks.rda')
+
+#TODO move RNAseq data into BAP project
+# TODO this is in progress - mixed across directories
+load('rData/wing-rnaseq-GeTMM.RData')  # GeTMM normalized RNAseq
+#loads 'wing.rnaseq'
+
+#load('rData/wing-rnaseq-DDS.RData')  # loads dds.results 
+## TODO -- no id validation yet need to fix
+#rna.dds <- dds.results %>%
+#  dplyr::filter(baseMean_6h > 0) %>%
+#  tibble::rownames_to_column(var = 'Geneid')
+
+ON.genes <- wing.rnaseq %>%
+  dplyr::filter(mean >= 2) %>%
+  dplyr::select(Geneid) 
+
+ON.genes %>% write.table('on-rnaseq.txt', sep = '\n', row.names = F, col.names = F, quote = F)
+#TODO clean this up - had to write out the on list and use the flybase id validator tool... 
+ON.genes.validated <- read.table('~/McKay/Wing-RNAseq/on-genes-IDvalidation.txt', header = T) %>%
+  dplyr::rename(Geneid = submitted_item, 
+                Validated = validated_id,
+                Symbol = current_symbol)
+
+#TODO move flyfactor database to BAP - code to download to repo?
+## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
+
+## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+# FBgn0050420 -- is only Atf-2 in flyfactor db
+fbgn.validated <- read.table('~/McKay/Motif_databases/FLY/fbgn_validated.txt', header = F, sep = '\t')
+colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+fbgn.validated %<>% 
+  dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+  dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+                
+
+###
+# assign global variables
+###
+
 dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+
+dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100) 
+dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
 
 brD <- data.frame('seqnames' = 'chrX',
                   'start' = 1565708,
                   'end' = 1567401) %>%
   GenomicRanges::GRanges()
 
+shn <- data.frame('seqnames' = 'chr2R',
+                  'start' = 11159086,
+                  'end' = 11217394) %>% 
+  GRanges()
 
-dm6.1kb.bin <- read.table('dm6-1kb-binned.bed', col.names = c('seqnames','start','end')) %>% GenomicRanges::GRanges()
+sbb <- data.frame('seqnames' = 'chr2R',
+                  'start' = 18278198,
+                  'end' = 18357296) %>%
+  GRanges()
 
-
-```
-
-#thinking about how to determine if there are meaningful differences in the information contained within different fragment splits 
-What does this plot mean???
-Revealing something about non-specific mnase digestion and sequence preference?
-```{r frag-distribution}
-fg <- read.table('Bed/allSamples_byFrag.bed', header = T) 
- 
-fg %>%
-  dplyr::filter(fraction == 'sup' & !frag == 'allFrags') %>%
-#  dplyr::filter(frag == '20to120') %>%
-  ggplot(aes(fragSize, color = sample, after_stat(density))) +
-  geom_freqpoly(binwidth = 1) +
-  scale_x_continuous(breaks = seq(0,700, 10)) +
-  facet_wrap(fraction~frag, scales = 'free') +
-  theme(axis.text.x = element_text(size = 5)) +
-  NULL
-ggsave('rOut/fragSize_density.png', width = 8, height = 4, dpi = 300, units = 'in')  
- 
-fg %>% 
-  dplyr::group_by(sample, frag, fragSize, fraction, genotype) %>%
-  dplyr::count() %>%
-  #dplyr::filter(frag == 'allFrags', fraction == 'sup') 
-  dplyr::filter(fraction == 'sup' & !frag == 'allFrags') %>%
-  ggplot(aes(fragSize, n, color = sample)) +
-  geom_line() +
-  facet_wrap(frag~genotype, scales = 'free') +
-  NULL
-ggsave('rOut/fragSize_plot.png', width = 6, height = 5, dpi = 300, units = 'in')
-```
+# Dl 
+#chr3R:19,265,389-19,350,508
+Dl <- data.frame('seqnames' = 'chr3R',
+                  'start' = 19265389,
+                  'end' = 19350508) %>%
+  GRanges()
 
 
-#How many high-confidence binding sites?
-  - IDR (+ significantly different?) -- dropping deseq differential, seems potentially to stringent
+# E(spl)-c
+#chr3R:25,980,255-26,065,374
+espl <- data.frame('seqnames' = 'chr3R',
+                  'start' = 25980255,
+                  'end' = 26065374) %>%
+  GRanges()
 
-```{r peak-counts}
-osaGFP.df
-color.pal <- c('#00FFFF','#f556e2','#edf723','#9e9e9e')
+### 
+# meme db 
+###
+#TODO - so clunky...
+# loading in the fly factor database, drop out a couple of problematic fbgn
+# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+# then filter on the on gene list -- which has to go through a similar process of id validation
+# gross
+meme_db <- universalmotif::read_meme('~/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
+  universalmotif::to_df() %>%
+  dplyr::group_by(name) %>%
+  dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+  dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+                fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated) 
 
-osaGFP.df %>% 
-  ggplot(aes(osaGFP.rep2.All.zScore, osaGFP.rep1.All.zScore)) +
-  geom_point(color = 'grey30') +
-  geom_point(data = ~dplyr::filter(.x, log2FoldChange > 1), fill = 'magenta', shape = 21) +
-  geom_point(data = ~dplyr::filter(.x, osa.idr & !yw.idr), fill = 'green', shape = 21) +
-  scale_y_log10() +
-  scale_x_log10() +
-  ggtitle("log2Fold > 1 & specific IDR Peaks", subtitle =paste("n(High Confidence Peaks) = ", nrow(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)))) 
-ggsave('rOut/high-confidence-peaks.png', width = 5, height = 5)
+meme_db_on <- meme_db %>%
+  dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
 
-osaGFP.df
-osaGFP.df %>% 
-  dplyr::mutate(idr.cat = dplyr::case_when(osa.idr.sig.05 & !yw.idr ~ 'osa.idr.sig.05',
-                                           osa.idr.sig.3 & !yw.idr ~ 'osa.idr.sig.3',
-                                           osa.idr & !yw.idr ~ 'osa.idr',
-                                           osa.idr | !osa.idr ~ 'other')) %>%
-  dplyr::mutate(idr.cat.num = dplyr::case_when(idr.cat == 'osa.idr.sig.05' ~ 3,
-                                               idr.cat == 'osa.idr.sig.3' ~ 2,
-                                               idr.cat == 'osa.idr' ~ 1, 
-                                               idr.cat == 'other' ~ 0)) %>%
-  dplyr::arrange(idr.cat.num) %>%
-  ggplot(aes(osaGFP.rep2.All.zScore, osaGFP.rep1.All.zScore, fill = idr.cat)) +
-  geom_point(shape = 21) +
-  #geom_point(data = ~dplyr::filter(.x, osa.idr & !yw.idr), fill = 'yellow', shape = 21) +
-  #geom_point(data = ~dplyr::filter(.x, osa.idr.sig.3 & !yw.idr.sig.3), fill = 'magenta', shape = 21) +
-  #geom_point(data = ~dplyr::filter(.x, osa.idr.sig.05 & !yw.idr.sig.05), fill = 'cyan', shape = 21) +
-  scale_y_log10() +
-  scale_x_log10() +
-  scale_fill_manual(values = color.pal) +
-  ggtitle("Osa Peaks by IDR Significance") 
-ggsave('rOut/osa-peaks-by-IDR-sig.png', width = 6, height = 5)
+options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
 
 ```
 
-#How 
-  
-#Where are osaGFP binding sites?
-  - bed file
-  - browser shots
-  - proximity to TSS vs distal
-```{r peak-location}
-ywpeaks <- osaGFP.df %>% dplyr::filter(!osa.idr & yw.idr) %>% GenomicRanges::GRanges()
-
-# bkg is a randomly generated bed file of 2kb windows across the genome
-bkg.peakAnno <- ChIPseeker::annotatePeak(dm6.1kb.bin, tssRegion=c(-500, 500), TxDb=dm6.TxDb, annoDb="org.Dm.eg.db")
-yw.peakAnno <- ChIPseeker::annotatePeak(ywpeaks, TxDb=dm6.TxDb, annoDb="org.Dm.eg.db")
-
-osa.idr.peakAnno <- ChIPseeker::annotatePeak(GenomicRanges::GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)), TxDb=dm6.TxDb, annoDb="org.Dm.eg.db")
-osa.peakAnno <- ChIPseeker::annotatePeak(GenomicRanges::GRanges(osaGFP.df), TxDb=dm6.TxDb, annoDb="org.Dm.eg.db")
-
-
-```
-```{r}
+## colors
+```{r setup}
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
+cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
 
-ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame %>%
-  dplyr::mutate(log_dist_tss = log10(1+abs(distanceToTSS)),
-                mean_z = rowMeans(dplyr::select(.,c(osaGFP.rep1.All.zScore, osaGFP.rep2.All.zScore)))) %>%
-  ggplot(aes(log_dist_tss, mean_z, fill = L3_24h.FAIRE.cat)) +
-  geom_point(shape = 21) +
-  facet_wrap(~L3_24h.FAIRE.cat)
-
-
-ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame %>%
-  dplyr::mutate(log_dist_tss = log10(1+abs(distanceToTSS)),
-                mean_z = rowMeans(dplyr::select(.,c(osaGFP.rep1.All.zScore, osaGFP.rep2.All.zScore)))) %>%
-  ggplot(aes(log_dist_tss)) +
-  #geom_density(aes(color = L3_24h.FAIRE.cat), alpha = 0.4) +
-  geom_density( alpha = 0.4) +
-  #scale_x_log10() +
-  NULL
-
-##what do negative values mean for distanceToTSS?
-##within the gene body?
- 
-ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame %>%
-  dplyr::group_by(L3_24h.FAIRE.cat) %>%
-  dplyr::summarise(mean = mean(abs(distanceToTSS)))
+## browser 
+WTFAIRE.colors <- c("grey10","grey20","grey30","grey40","grey50","grey60")
 ```
 
-Trying to plot the osa signal relative to TSS to test the idea that osa binding is abundant far from TSS
-The scatterplots above suppport that, with a larger distribution of peaks farther from the TSS ~1kb-10kb from TSS
-But the heatmap below suggests the opposite, there is high average signal at the promoter. 
-Log transformation seems to be necessary to visualize any distribution of peaks away from the TSS, I think this appropriate.
-But don't know how to log transform distance with enrichedheatmap, maybe with deeptools?
-
-```{r heatmap_osa_rel_to_tss}
-osa.rep1 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-osa.rep2 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-
-
-dm6.promoters <- promoters(dm6.TxDb, upstream = 0, downstream = 0)
-
-osa.rep1 %>% data.frame() %>% ggplot(aes(score)) + geom_histogram(bins = 100)
-
-
-osa.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep1,
-                                                   dm6.promoters,
-                                                   value_column = 'score',
-                                                   keep = c(0.1,0.9),
-                                                   extend = c(10000,500))
-
-osa.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep2,
-                                                   dm6.promoters,
-                                                   value_column = 'score', 
-                                                   keep = c(0.1,0.9),
-                                                   extend = c(10000, 500))
-
-
-common_min = min(c(osa.rep1.mat, osa.rep2.mat))
-common_max = max(c(osa.rep1.mat, osa.rep2.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-
-hm <- EnrichedHeatmap::EnrichedHeatmap(osa.rep1.mat,
-                                       #axis_name = c(-1000, 0, 1000),
-                                       pos_line = F,
-                                       column_title = 'Osa Rep1',
-                                       col = col_fun,
-                                       name = 'Osa zScore',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis_param = list(side = 'left', facing = 'outside')))) +
-  EnrichedHeatmap::EnrichedHeatmap(osa.rep2.mat,
-                                   #axis_name = c(-1000, 0, 1000),
-                                   pos_line = F,
-                                   column_title = 'Osa Rep2',
-                                   col = col_fun, 
-                                   show_heatmap_legend = FALSE,
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(axis = F))) 
-
-
-png('rOut/osaPeaks_osaSignal.png', width = 6, height = 8, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, row_title = NULL, merge_legend = T)
-dev.off()
-
-```
-
-
-
-```{r save-plots}
-#png('rOut/signal-across-geneBodies.png', width = 6, height = 5, units = 'in', res = 300)
-#geneBodyplot
-#dev.off()
-
-png('rOut/osa-idr_distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(osa.idr.peakAnno)
-dev.off()
-
-png('rOut/osa-idr-sig-05 _distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(osa.idr.sig.05.peakAnno)
-dev.off()
-
-png('rOut/dm6-bkg_distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(bkg.peakAnno)
-dev.off()
-
-```
-
-#nearest gene and go term analysis
-
-Some useful analysis here with comparing go terms between yw and osa cnr, yw terms are less associated with chromatin regulation, transcriptional regulation
-on first glance. 
-
-would be nice to extend this to closing vs static category?
-```{r nearest_gene}
-
-ng.yw <- ChIPseeker::as.GRanges(yw.peakAnno) %>% data.frame() %>% dplyr::filter(!osa.idr & yw.idr) %>% dplyr::select(geneId)
-ng.osa <- ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame() %>% dplyr::filter(osa.idr & !yw.idr) %>% dplyr::select(geneId)
-
-ng.closing <- ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame() %>% dplyr::filter(osa.idr & !yw.idr & L3_24h.FAIRE.cat == 'closing') %>% dplyr::select(geneId)
-ng.static <- ChIPseeker::as.GRanges(osa.idr.peakAnno) %>% data.frame() %>% dplyr::filter(osa.idr & !yw.idr & L3_24h.FAIRE.cat == 'static') %>% dplyr::select(geneId)
-
-####
-ng.closing.go <- select(org.Dm.eg.db, 
-       keys = ng.closing$geneId, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE")
-
-ng.closing.terms <- select(GO.db, 
-       keys = ng.closing.go$GO, 
-       columns = c('DEFINITION', 'GOID', 'ONTOLOGY', 'TERM'))
-
-ng.closing.bind <- dplyr::bind_cols(ng.closing.go, ng.closing.terms)
-#####
-
-ng.static.go <- select(org.Dm.eg.db, 
-       keys = ng.static$geneId, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE")
-
-ng.static.terms <- select(GO.db, 
-       keys = ng.static.go$GO, 
-       columns = c('DEFINITION', 'GOID', 'ONTOLOGY', 'TERM'))
-
-ng.static.bind <- dplyr::bind_cols(ng.static.go, ng.static.terms)
-
-#####
-#####
-
-ng.osa.go <- select(org.Dm.eg.db, 
-       keys = ng.osa$geneId, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE")
-
-ng.osa.terms <- select(GO.db, 
-       keys = ng.osa.go$GO, 
-       columns = c('DEFINITION', 'GOID', 'ONTOLOGY', 'TERM'))
-
-ng.osa.bind <- dplyr::bind_cols(ng.osa.go, ng.osa.terms)
-
-#####
-
-#####
-
-ng.yw.go <- select(org.Dm.eg.db, 
-       keys = ng.yw$geneId, 
-       columns = c('SYMBOL','GO','ENTREZID'),
-       keytype = "FLYBASE")
-
-ng.yw.terms <- select(GO.db, 
-       keys = ng.yw.go$GO, 
-       columns = c('DEFINITION', 'GOID', 'ONTOLOGY', 'TERM'))
-
-ng.yw.bind <- dplyr::bind_cols(ng.yw.go, ng.yw.terms)
-
-#####
-
-ng.closing.bind %>%
-  dplyr::filter(ONTOLOGY...5 == 'MF') %>%
-  dplyr::group_by(TERM) %>%
-  dplyr::count() %>%
-  dplyr::arrange(desc(n))
-
-ng.static.bind %>%
-  dplyr::filter(ONTOLOGY...5 == 'MF') %>%
-  dplyr::group_by(TERM) %>%
-  dplyr::count() %>%
-  dplyr::arrange(desc(n)) 
-
-ng.osa.bind %>%
-  dplyr::filter(ONTOLOGY...5 == 'MF') %>%
-  dplyr::group_by(TERM) %>%
-  dplyr::count() %>%
-  dplyr::arrange(desc(n)) 
-
-ng.yw.bind %>%
-  dplyr::filter(ONTOLOGY...5 == 'MF') %>%
-  dplyr::group_by(TERM) %>%
-  dplyr::count() %>%
-  dplyr::arrange(desc(n)) 
-```
-```{r}
-library(GOSemSim)
-dmGO <- godata('org.Dm.eg.db', ont = 'MF')
-ng.osa.go
-
-closing.entrez <- ng.closing.go %>% dplyr::filter(ONTOLOGY == 'BP') %>% .$ENTREZID
-static.entrez <- ng.static.go %>% dplyr::filter(ONTOLOGY == 'BP') %>% .$ENTREZID
-osa.entrez <- ng.osa.go %>% dplyr::filter(ONTOLOGY == 'BP') %>% .$ENTREZID
-yw.entrez <- ng.yw.go %>% dplyr::filter(ONTOLOGY == 'BP') %>% .$ENTREZID
-
-ggo.closing <- clusterProfiler::groupGO(gene = closing.entrez,
-                         OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         level = 6, 
-                         readable = T)
-
-ggo.static <- clusterProfiler::groupGO(gene = static.entrez,
-                         OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         level = 6, 
-                         readable = T)
-
-ggo.closing@result %>% dplyr::arrange(desc(Count))
-ggo.static@result %>% dplyr::arrange(desc(Count))
-```
-
-```{r}
-ggo.closing <- clusterProfiler::enrichGO(gene = closing.entrez,
-                        OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         readable = T)
-
-ggo.static <- clusterProfiler::enrichGO(gene = static.entrez,
-                         OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         readable = T)
-
-ggo.osa <- clusterProfiler::enrichGO(gene = osa.entrez,
-                         OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         readable = T)
-
-ggo.yw <- clusterProfiler::enrichGO(gene = yw.entrez,
-                         OrgDb = org.Dm.eg.db,
-                         ont = 'BP',
-                         readable = T)
-
-
-png('rOut/goEnrich-closing.png', res = 300, width = 18, height = 18, units = 'in')
-clusterProfiler::goplot(ggo.closing)
-dev.off()
-
-png('rOut/goEnrich-static.png', res = 300, width = 18, height = 18, units = 'in')
-clusterProfiler::goplot(ggo.static)
-dev.off()
-
-png('rOut/goEnrich-osa.png', res = 300, width = 18, height = 18, units = 'in')
-clusterProfiler::goplot(ggo.osa)
-dev.off()
-
-png('rOut/goEnrich-yw.png', res = 300, width = 18, height = 18, units = 'in')
-clusterProfiler::goplot(ggo.yw)
-dev.off()
-```
-
-
-
-
-
-
-#What is correlation of osaGFP binding and chromatin accessibility?
-  - does osa bind equally at open vs closed sites?
-  - what happens to osa bound sites after 3LW? 
-  - osa peaks annotated as closing are great (~730) than faire closing sites annotated as osa bound (~500) - why? problem?
-    - Fixed, now these numbers are roughly the same ~730-760, the issue was using a filtered faire peak set for one analysis and an unfiltered set for another, this should be now corrected by processing faire data all at once in peaks.Rmd
-    
-    
-```{r faire-signal_vs_osa-signal}
-# How does osa signal correlate with faire signal - zScored data ok to use??
-
-osa.idr
-osaGFP.df %>% 
-  dplyr::mutate(idr.cat = dplyr::case_when( osa.idr & !yw.idr ~ 'osa.idr',
-                                           osa.idr | !osa.idr ~ 'other')) %>%
-  dplyr::mutate(idr.cat.num = dplyr::case_when( idr.cat == 'osa.idr' ~ 1, 
-                                               idr.cat == 'other' ~ 0)) %>%
-  dplyr::group_by(geneID) %>%
-  dplyr::mutate(osa.avg = mean(c(osaGFP.rep1.All.zScore, osaGFP.rep2.All.zScore))) %>%
-  ggplot(aes(faire.24h, osa.avg, fill = idr.cat)) +
-  geom_point(shape = 21) +
-  scale_fill_manual(values = c('red', 'grey20')) +
-  #scale_x_log10() +
-#  scale_y_log10()
-  xlim(0,15)+
-  ylim(0,15)+
-  NULL
-
-
-osaGFP.df
-osaGFP.df %>%
-   dplyr::filter(L3.FAIRE.Peak & osa.idr & !yw.idr) %>%
-   dplyr::group_by(geneID) %>%
-   dplyr::mutate(osa.avg = mean(c(osaGFP.rep1.All.zScore, osaGFP.rep2.All.zScore))) %>%
-   ggplot(aes(faire.6h, osa.avg)) +
-#   geom_point(alpha = 0.3) + 
-   geom_point() + 
-  #scale_color_manual(values = c('#d7191c','#ffffbf','#2c7bb6')) +
-  ylim(c(0,10)) +
- # facet_wrap(~L3_24h.FAIRE.cat) +
-  NULL
-```
-
-# TODO maybe change how closing, opening are defined to include faire peak calls - these numbers differ a lot from FAIRE peak set analysis
-```{r fraction-osa}
-
-cbPalette <- c("#E69F00","#56B4E9","#999999", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-colors <- c('#5cc4d6','#ebdc36','#f573ec')
-
-# there are ~14 regions annotated as both opening and closing - the code below gives these all to the closing category
-# maybe need to recheck the closing vs opening annotation? I'm guessing it's because of osa peaks taht just overlap two oppositely dynamic regions
-# this seems to be correct, larger osa peaks overlapping multiple faire sites with different dynamics
-# .... ok I think I've corrected this now
-
-osaGFP.df
-
-
-
-
-osaGFP.df
-osaGFP.df %>%
-  dplyr::filter(osa.idr & !yw.idr) %>%
-  dplyr::group_by(osa.idr, L3_24h.FAIRE.cat) %>%
-  dplyr::count() %>%
-  dplyr::group_by(osa.idr) %>%
-  dplyr::mutate(fraction = n / sum(n)) %>%
-  ggplot(aes(osa.idr, fraction, fill = L3_24h.FAIRE.cat )) +
-  #geom_bar(position = 'fill', stat = 'identity') +
-  geom_bar(stat = 'identity') +
-  geom_text(aes(label = n), position = position_stack(vjust = 0.5), size = 5) +
-  scale_fill_brewer(palette = 'YlGnBu') +
-#  scale_fill_manual(values = cbPalette) +
-  ggtitle('Osa Peaks by FAIRE Behavior L3-24h') +
-  theme(axis.text.x = element_blank(),
-        legend.title = element_blank(),
-        legend.position = 'bottom')
- ggsave('rOut/frac-osaIDR-FAIRE.png', width = 4, height = 7) 
-
-
- ## TO DO - redo this part and reincorporate e93 data
- 
-#osaGFP.dds %>% 
-#  dplyr::filter(osa.idr & !yw.idr & closing) %>%
-#  dplyr::group_by(osa.idr, e93_closing_dependent) %>%
-#  dplyr::count() %>%
-#  ggplot(aes(osa.idr, y = n, fill = e93_closing_dependent)) +
-#  #geom_bar(position = 'fill', stat = 'identity') +
-#  geom_bar(position = 'fill', stat = 'identity') +
-#  geom_text(aes(label = n), position = 'fill', vjust = 4, size = 6) +
-#  scale_fill_manual(values = c('#bababa','#E69F00')) +
-##  ggtitle('Fraction of osaIDR Closing + E93 Dependent') +
-#  theme(axis.text.x = element_blank(),
-#        legend.position = 'bottom')
-#ggsave('rOut/frac-osaIDR-Closing-E93dependent.png', width = 4, height = 6)
-
-```
-  
-  
-  
-  
-  
-  
-  
-  
-#If there are distinct categories of osa binding sites - eg. promoter vs distal vs opening vs closing...
-  - What is correlation with other factors? - E93, EcR, H3K27me3...
-  - Does the shape/size of osa peak differ between groups?
-  - What is motif content?
-  
-  - split by 3lw->24 opening vs closing 
-
-#are there different patterns of opening vs closing within the osa peak set? 
-For this I decided on using zNorm FAIRE signal rather than building a fraction of max matrix.
-I think fraction of max produced misleading patterns, and didn't accurately show closing vs opening behavior. 
-Using specific osa IDR peaks (allFrags) to make a tidy tibble of faire signal and faire_cat. 
-zNorm values are log transformed with a 0.5 constant to reduce the skew of the data. 
-
-Had issues with the static tibble and na value errors with kmeans clustering, despite many attempts to remove nas. 
-Don't have a solution.
-
-
-7/21 - faire cat now incorporates faire peak call at 3lw and 24h as defined in the annotated faire.df
-```{r faire-in-osa}
-timepoints <- c('3LW','6h', '18h', '24h')
-
-osa.faire.tibble <- osaGFP.df %>%
-  dplyr::filter(osa.idr & !yw.idr) %>%
-
-    .[c('faire.3lw','faire.6h','faire.18h','faire.24h','L3_24h.FAIRE.cat')] %>%
-  tibble::rownames_to_column() %>%
-  reshape2::melt(variable.name = 'Sample', value.name = 'zNorm') %>%
-  dplyr::filter(!is.na(zNorm)) %>%
-  dplyr::mutate(log_zNorm = log(zNorm + 0.5)) %>%
-  tibble::as.tibble()
-
-pdf('rOut/osa_bound_in_faire_static.pdf', width = 8, height = 8)
-na.omit(osa.faire.tibble) %>%
-  dplyr::filter(L3_24h.FAIRE.cat == 'static') %>%
-   tidyHeatmap::heatmap(rowname, Sample, log_zNorm,  
-                        cluster_columns = F,
-                        column_names_rot = 0,
-                        column_labels = timepoints,
-                        column_title = 'Osa-bound FAIRE Static 3LW-24h',
-                        show_row_dend = F,
-                        row_title = NA,
-                        use_raster = T, 
-                        #cluster_rows = T, 
-                        palette_value = circlize::colorRamp2(seq(-2.5, 2.5, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu")))
-dev.off() 
-
-pdf('rOut/osa_bound_in_faire_opening.pdf', width = 8, height = 8)
-osa.faire.tibble %>%
-  dplyr::filter(L3_24h.FAIRE.cat == 'opening' ) %>%
-  #to check for data skew and color ramp range...
- # ggplot() + geom_freqpoly(aes(log_zNorm))
-   tidyHeatmap::heatmap(rowname, Sample, log_zNorm,  
-                        cluster_columns = F,
-                        column_names_rot = 0,
-                        column_labels = timepoints,
-                        column_title = 'Osa-bound FAIRE Opening 3lW-24h',
-                        show_row_dend = F,
-                        row_title = NA,
-                        use_raster = T, 
-                        row_km = 6, 
-                        palette_value = circlize::colorRamp2(seq(-1.5, 2.5, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu")))
-dev.off()
-
-pdf('rOut/osa_bound_in_faire_closing.pdf', width = 8, height = 8)
-osa.faire.tibble %>%
-  dplyr::filter(L3_24h.FAIRE.cat == 'closing') %>%
-#  ggplot() + geom_freqpoly(aes(log_zNorm))
-   tidyHeatmap::heatmap(rowname, Sample, log_zNorm,  
-                        cluster_columns = F,
-                        show_row_dend = F,
-                        column_names_rot = 0,
-                        column_labels = timepoints,
-                        column_title = 'Osa-bound FAIRE Closing 3lW-24h',                       
-                        row_title = NA,
-                        use_raster = T, 
-                        row_km = 8, 
-                        palette_value = circlize::colorRamp2(seq(-1, 2.5, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu")))
-dev.off()
-
-#count <- function(bamPath_vector, df, fairePoolSheet, faireCat){
-#  
-#  faire_counts <- Rsubread::featureCounts(bamPath_vector, 
-#                                       annot.ext = makeSAF(df),
-#                                       nthreads = 4,
-#                                       countMultiMappingReads = T)
-# 
-#  colnames(faire_counts$counts) <- fairePoolSheet$sample
-# 
-#  faire_counts.fracMax <- DESeq2::DESeqDataSetFromMatrix(faire_counts$counts, colData = fairePoolSheet, ~time) %>% 
-#    DESeq2::estimateSizeFactors(.) %>%
-#    DESeq2::counts(normalized = T) %>% 
-#    {. / MatrixGenerics::rowMaxs(.)} %>%
-#    data.frame() %>%
-#    tibble::rownames_to_column('id') %>%
-#    reshape2::melt(id.vars = 'id', variable.name = 'Sample', value.name = 'fracMax.cpm') %>%
-#    dplyr::mutate(Sample = factor(Sample, levels = c('wt_3LW','wt_6h','wt_18h','wt_24h')),
-#                  faire_cat = faireCat) %>%
-#    tibble::as_tibble()  
-#  
-# return(faire_counts.fracMax) 
-#}
-#
-#
-#faire.cats <- c('closing L3-24', 'static', 'opening L3-24')
-#
-#
-#count.tibbles <- purrr::map(faire.cats, function(x) count(fairePoolSheet.no44$bam,dplyr::filter(osaGFP.dds, osa.idr & !yw.idr & faire_cat == x), fairePoolSheet.no44, faireCat = x)) 
-
-
-
-
-
-
-
-#
-#
-#count.tibbles
-#count.tibbles %>%
-#  purrr::map(function(x) x %>% dplyr::filter(!is.na(fracMax.cpm)) %>% tidyHeatmap::heatmap(., id, Sample, fracMax.cpm, 
-#                       cluster_columns = F,
-#                       cluster_rows = F, 
-#                       row_km = 6,
-#                       palette_value = circlize::colorRamp2(seq(0, 1, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu"))))
-#
-
-
-```
-```{r faire-in-osa}
-timepoints <- c('3LW','6h', '18h', '24h')
-faire.df
-faire_in_fairePeaks
-faire_in_fairePeaks <- faire.df %>%
-  dplyr::filter(osa.IDR)  %>% #osa.IDR is osa.idr & !yw.idr as set in annotation of faire.df in peaks notebook
-  .[c('faire.3lw','faire.6h','faire.18h','faire.24h','wt.L3_24h')] %>% 
-  tibble::rownames_to_column() %>%
-  reshape2::melt(variable.name = 'Sample', value.name = 'zNorm') %>%
-  dplyr::filter(!is.na(zNorm)) %>%
-  dplyr::mutate(log_zNorm = log(zNorm + 0.5)) %>%
-  tibble::as.tibble()
-
-
-pdf('rOut/allFAIRE_osaBound_ClosingPeaks_k8.pdf', width = 8, height = 8)
-na.omit(faire_in_fairePeaks) %>%
-  dplyr::filter(wt.L3_24h == 'closing') %>%
-#    ggplot() + geom_freqpoly(aes(log_zNorm))
-   tidyHeatmap::heatmap(rowname, Sample, log_zNorm,  
-                        cluster_columns = F,
-                        column_names_rot = 0,
-                        column_labels = timepoints,
-                        #column_title = 'Osa-bound FAIRE Static 3LW-24h',
-                        show_row_dend = F,
-                        row_title = NA,
-                        use_raster = T, 
-                        row_km = 8, 
-                        #cluster_rows = T, 
-                        #palette_value = circlize::colorRamp2(seq(-2.5, 2.5, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu")))
-                        palette_value = circlize::colorRamp2(seq(-1, 2, length.out = 9), RColorBrewer::brewer.pal(9, "GnBu")))
-dev.off() 
-
-
-```
-
-#where are closing osa bound sites?
-```{r}
-static_closing.colors = colorRampPalette(RColorBrewer::brewer.pal(9, 'Spectral'))(9)
-opening.colors = static_closing.colors[c(1,2,4:9)]
-
-
-osa.idr.closing.peakAnno <- ChIPseeker::annotatePeak(GenomicRanges::GRanges(osaGFP.df %>% 
-                                                                              dplyr::filter(osa.idr & !yw.idr & L3_24h.FAIRE.cat == 'closing')), 
-                                                     tssRegion=c(-500, 500), 
-                                                     TxDb=dm6.TxDb, 
-                                                     annoDb="org.Dm.eg.db")
-
-osa.idr.opening.peakAnno <- ChIPseeker::annotatePeak(GenomicRanges::GRanges(osaGFP.df %>%
-                                                                              dplyr::filter(osa.idr & !yw.idr & L3_24h.FAIRE.cat == 'opening')),
-                                                     tssRegion=c(-500, 500),
-                                                     TxDb=dm6.TxDb,
-                                                     annoDb="org.Dm.eg.db")
-
-osa.idr.static.peakAnno <- ChIPseeker::annotatePeak(GenomicRanges::GRanges(osaGFP.df %>% 
-                                                                             dplyr::filter(osa.idr & !yw.idr & L3_24h.FAIRE.cat == 'static')),
-                                                    tssRegion=c(-500, 500),
-                                                    TxDb=dm6.TxDb,
-                                                    annoDb="org.Dm.eg.db")
-
-png('rOut/osa-idr_closing_distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(osa.idr.closing.peakAnno, col = static_closing.colors)
-dev.off()
-
-png('rOut/osa-idr_opening_distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(osa.idr.opening.peakAnno, col = opening.colors)
-dev.off()
-
-png('rOut/osa-idr_static_distribution.png', width = 6, height = 4, res = 300, units = 'in')
-ChIPseeker::plotAnnoPie(osa.idr.static.peakAnno, col = static_closing.colors)
-dev.off()
-
-
-```
-
-#where are faire closing osa bound - L3-6h closing vs 6h-18h closing
-```{r faire-closing-by-timing}
-closing_6h_18h.colors = colorRampPalette(RColorBrewer::brewer.pal(9, 'Spectral'))(9)
-closing_l3_6h.colors = static_closing.colors[c(1,3,5:9)]
-
-Closing_L3_6h_OsaBound.peakAnno <- ChIPseeker::annotatePeak(GRanges(faire.df %>% dplyr::filter(wt.L3_6h == 'closing' & wt.6h_18h != 'opening' & osa.IDR)),
-                                 tssRegion=c(-500, 500),
-                                 TxDb=dm6.TxDb,
-                                 annoDb='org.Dm.eg.db')
-
-Closing_6h_18h_OsaBound.peakAnno <- ChIPseeker::annotatePeak(GRanges(faire.df %>% dplyr::filter(wt.6h_18h == 'closing' & wt.L3_6h != 'closing' & osa.IDR)),
-                                 tssRegion=c(-500, 500),
-                                 TxDb=dm6.TxDb,
-                                 annoDb='org.Dm.eg.db')
-
-ChIPseeker::plotAnnoPie(Closing_L3_6h_OsaBound.peakAnno, col = closing_l3_6h.colors)
-ChIPseeker::plotAnnoPie(Closing_6h_18h_OsaBound.peakAnno, col = closing_6h_18h.colors)
-
-
-
-```
-
-
-
-
-
-
-
-#Motifs
-- what is the difference in how dreme and streme run?
-- what's the best control for motif enrichment?
-- preliminary results have some interesting hits, e93, blimp1
-```{r}
-faire.df
-faire.df %>%
-  ggplot(aes(x = width, fill = osa.IDR)) + 
-  geom_density(alpha = 0.5) +
-  #geom_density(aes(y=..count../sum(..count..)), bins = 100) +
-  xlim(c(0, 3000))
-```
-
-```{r motifs}
-closing.bound.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'closing' & osa.IDR)) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
- 
-bound.sequences <- GenomicRanges::GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-
-unbound.sequences <- GenomicRanges::GRanges(osaGFP.df %>% dplyr::filter(!osa.idr & yw.idr)) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6) 
-
-static.bound.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'static' & osa.IDR)) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-
-closing.unbound.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'closing' & !osa.IDR)) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-
-static.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'static')) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-
-closing.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(wt.L3_24h == 'closing')) %>%
-  GenomicRanges::resize(1000, "center") %>%
-  memes::get_sequence(dm6)
-
-dm6.1kb <- read.table('dm6-1kb-binned.bed', col.names = c('seqnames', 'start','end')) %>% GenomicRanges::GRanges()
-
-dm6.1kb.seq <- dm6.1kb %>%
-  memes::get_sequence(dm6)
-
-#bound.sequences <- GenomicRanges::GRanges(faire.df %>% dplyr::filter(osa.IDR)) %>%
-#  GenomicRanges::resize(500, "center") %>%
-#  memes::get_sequence(dm6)
-```
-
-
-```{r motifs}
-#dreme_results <- memes::runDreme(sequences, control = "shuffle")
-#streme_results <- memes::runStreme(sequences, control = "shuffle")
-#streme.shuffle <- memes::runStreme(closing.bound.sequences, control = 'shuffle')
-#streme.bound <- memes::runStreme(closing.bound.sequences, control = bound.sequences)
-streme.allClosing.allStatic <- memes::runStreme(closing.sequences, control = static.sequences) # control will all sites that close
-streme.closingBound.allClosing <- memes::runStreme(closing.bound.sequences, control = closing.sequences) # control will all sites that close
-streme.closingBound.closingUnbound <- memes::runStreme(closing.bound.sequences, control = closing.unbound.sequences) # control with all closing and unbound sites
-streme.closingBound.staticBound <- memes::runStreme(closing.bound.sequences, control = static.bound.sequences) # control with all static and osa bound sites
-#streme.Opening.staticBound <- memes::runStreme(opening.bound.sequences, control = static.bound.sequences) # control with all static and osa bound sites
-
-streme.Bound.Unbound <- memes::runStreme(bound.sequences, control = unbound.sequences) 
-streme.Bound.shuffle <- memes::runStreme(bound.sequences, control = 'shuffle') 
-
-
-
-save(streme.allClosing.allStatic, streme.closingBound.allClosing, streme.closingBound.staticBound, streme.closingBound.closingUnbound, streme.Bound.Unbound, streme.Bound.shuffle, file = 'rOut/memes/streme_out.RData')
-```
-
-
-```{r motifs}
-
-streme.allClosing.allStatic.results <- memes::runTomTom(streme.allClosing.allStatic, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame() %>% dplyr::mutate(df = 'allClosing.allStatic')
-
-streme.closingBound.allClosing.results <- memes::runTomTom(streme.closingBound.allClosing, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame()  %>% dplyr::mutate(df = 'closingBound.allClosing')
-
-streme.closingBound.closingUnbound.results <- memes::runTomTom(streme.closingBound.closingUnbound, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame()  %>% dplyr::mutate(df = 'closingBound.closingUnbound')
-
-streme.closingBound.staticBound.results <- memes::runTomTom(streme.closingBound.staticBound, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame() %>% dplyr::mutate(df = 'closingBound.staticBound')
-
-streme.Bound.Unbound.results <- memes::runTomTom(streme.Bound.Unbound, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame() %>% dplyr::mutate(df = 'Bound.Unbound')
-
-streme.Bound.shuffle.results <- memes::runTomTom(streme.Bound.shuffle, database = '/Users/m/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
-  data.frame() %>% dplyr::mutate(df = 'Bound.shuffle')
-
-streme.closingBound.staticBound.results
-streme.Bound.random.results
-
-#streme.allClosing.allStatic.results
-#streme.closingBound.staticBound
-tomResults.list <- list(streme.allClosing.allStatic.results,
-                        streme.closingBound.allClosing.results,
-                        streme.closingBound.closingUnbound.results,
-                        streme.closingBound.staticBound.results)
-
-#streme.closingBound.staticBound.results
-lapply(tomResults.list, function(x) {
-  nm = x$df[1]
-  x %>%
-    dplyr::mutate(best_match_eval = as.double(best_match_eval),
-                  log_evalue = as.double(log_evalue), 
-                  evalue = as.double(evalue)) %>%
-    dplyr::mutate(neg_log_evalue = -log10(evalue), 
-                  neg_log_best_match_eval = -log10(best_match_eval)) %>%
-    ggplot(aes(neg_log_evalue, neg_log_best_match_eval, fill = best_match_altname)) +
-    scale_fill_brewer(palette = 'Paired') +
-    geom_point(shape = 21, size = 5) +
-    ggtitle(nm)
-    #xlab('-log(pval) Streme') + 
-    #ylab('-log(pval) TomTom')
-#  filepath = paste0('rOut/memes/',nm,'.png')
-#  ggsave(filepath, dpi = 300, width = 6, height = 4, units = 'in')
-})
-
-#stringr::str_split_fixed(streme.allClosing.allStatic.results$best_match_altname, pattern = '_', n =  3)[1]
-#streme.allClosing.allStatic.results$best_match_altname
-
-dplyr::bind_rows(streme.allClosing.allStatic.results, streme.closingBound.staticBound.results) %>%
-    dplyr::mutate(best_match_eval = as.double(best_match_eval),
-                  log_evalue = as.double(log_evalue), 
-                  evalue = as.double(evalue),
-                  symbol = purrr::map_chr(.$best_match_altname, function(x) stringr::str_split_fixed(x, '_', 3)[1]),
-                  control = ifelse(best_match_altname %in% .[df == 'allClosing.allStatic',]$best_match_altname, T, F)) %>%
-    dplyr::mutate(neg_log_evalue = -log10(evalue), 
-                  neg_log_best_match_eval = -log10(best_match_eval)) %>%
-  dplyr::filter(df == 'closingBound.staticBound') %>%
-  ggplot(aes(neg_log_evalue, neg_log_best_match_eval)) +
-  geom_point(aes(fill = control), shape = 21, size = 3) +
-  geom_text_repel(aes(label = symbol), point.padding = 10, direction = 'y', hjust = 0) + 
-  scale_fill_manual(values = c('green', 'grey40'), name = 'allClosing.allStatic') 
-  #scale_color_identity()
-  ggsave('rOut/memes/controlled.png', dpi = 300, height = 5, width = 7, unit = 'in')
-
-```
-
-```{r tomtom_data_functions}
-library(patchwork)
-
-load('/Users/m/McKay/Wing-RNAseq/rOut/wing-rnaseq.RData') 
-
-## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
-fbgn.validated <- read.table('~/McKay/Motif_databases/FLY/fbgn_validated.txt', header = F, sep = '\t')
-colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
-
-### DONE incorporate expression information eval tomtom match plots
-### maybe rotate the heatmaps to vertical and have line plots of each match for expression at L3, 6h, 18, 24h
-
-## unnest the tomtom results from the streme results df
-## subset the df to just consensus, match name, evalue
-tomUnnest <- function(x) {
-  unnest <- x %>%
-    tidyr::unnest(tomtom) %>%
-    dplyr::filter(!is.na(match_name)) %>%
-    .[c(6,50,51,56)] %>%
-    unique() %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(neg_log_eval = -log10(1 + match_eval),
-                  FF_FBgn= unlist(stringr::str_split_fixed(match_name, pattern = '_', n = 2)[1])) %>%
-    dplyr::filter(!FF_FBgn == 'FBgn0051782') %>%
-    dplyr::mutate(Geneid = purrr::map_chr(FF_FBgn, function(x) {
-                    fbgn.validated[fbgn.validated$FlyFactor == x,]$Validated
-                  })) 
-  
-  return(unnest)
-}
-
-## generate a new dataframe for each consensus sequence and its associated tomtom results
-tomResults <- function(x) {
-  
-  unnest <- tomUnnest(x) 
- 
-  ## make a list of dfs, one for each consensus in the input results 
-  tom <- lapply(unique(unnest$consensus), function(x) {
-    tom.seq <- unnest %>% 
-      dplyr::filter(consensus == x) %>%
-      dplyr::left_join(., wing.rnaseq, id = 'Geneid') %>%
-      dplyr::ungroup() %>%
-      dplyr::top_n(10, neg_log_eval) 
-    
-    tom.seq$match_altname = forcats::fct_reorder(tom.seq$match_altname, tom.seq$neg_log_eval, .desc = F)
-   
-    return(tom.seq)
-  })
-  
-  return(tom)
-}
-
-
-format_rna <- function(x) {
-  x %>%
-    .[c(1,3,8:19)] %>%
-    reshape2::melt() %>% 
-    dplyr::rowwise() %>%
-    dplyr::mutate(variable = stringr::str_replace(variable, 'X', ''),
-                rna_grp = stringr::str_split_fixed(variable, pattern = '_', n = 2)[1],
-                rna_grp = factor(rna_grp, levels = c('L3','6h','18h','24h','36h','44h'))) %>%
-    dplyr::group_by(consensus, match_altname, rna_grp) %>%
-    dplyr::summarise(mean = mean(value)) %>%
-    dplyr::mutate(log_mean = log10(1 + mean)) 
-}
-
-
-```
-
-
-```{r ClosingboundVSstaticBoundtomtom_plots}
-### DONE need to correct old flyfactor FBgn - maybe download directly from flybase within R?
-
-tom.results <- tomResults(streme.closingBound.staticBound.results)
-
-purrr::map(tom.results, function(x) {
-  ## subset the tomtom results to the <= 10 most significant matches
-  tom.df <- x %>%
-    dplyr::group_by(neg_log_eval) %>%
-    dplyr::arrange(neg_log_eval, .by_group = T) %>%
-    dplyr::top_n(n = 10) 
-  
-  ## plot the hm of tomtom results for current consensus 
-  tom.hm <- tom.df %>%
-    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
-    geom_tile() +
-    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
-    scale_y_discrete(expand = c(0,0)) +
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(), 
-          panel.border = element_blank(),
-          axis.title = element_blank(), 
-          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-          legend.key.size = unit(0.5, 'in'),
-          plot.margin = margin(0,0,0,0, "cm"), 
-          legend.position = 'bottom') 
- 
-  ## format the tom.results for the rna heatmap
-  rna.df <- format_rna(tom.df)
-  
-  ## plot the rna heatmap for current consensus 
-  rna.hm <- rna.df %>%
-    ggplot(aes(rna_grp,1, fill = log_mean)) +
-    geom_tile() + 
-    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
-    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
-    theme(legend.position = "bottom",
-          axis.text.y = element_blank(),
-          plot.background = element_blank(),
-          panel.background = element_blank(),
-          panel.grid = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank(),
-          strip.background = element_blank(),
-          strip.text.y = element_blank(), 
-          plot.margin = margin(0,0,0,0, "cm")) 
-  
-  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
-  
-  fp <- paste0('rOut/memes/',unique(x$consensus),'_tomtom.png')
-  ggsave(fp,plot = plot, width = 8, height = 8, dpi = 300, unit = 'in')
-  })
-
-
-```
-
-```{r boundVSrandom_tomtom_plots}
-### DONE need to correct old flyfactor FBgn - maybe download directly from flybase within R?
-
-tom.results <- tomResults(streme.Bound.shuffle.results)
-
-
-streme.Bound.shuffle.results %>%
-    dplyr::mutate(best_match_eval = as.double(best_match_eval),
-                  log_evalue = as.double(log_evalue), 
-                  evalue = as.double(evalue),
-                  neg_log_evalue = -log10(evalue), 
-                  neg_log_best_match_eval = -log10(best_match_eval),
-                  consensus = factor(consensus),
-                  consensus = forcats::fct_reorder(consensus, neg_log_evalue, .desc = F)) %>%
-    dplyr::filter(!is.na(best_match_altname)) %>%
-    ggplot(aes(1, consensus, fill = neg_log_evalue)) +
-    #ggplot(aes(neg_log_evalue, neg_log_best_match_eval, label = best_match_altname)) +
-   # scale_fill_brewer(palette = 'Paired') +
-    #geom_point( size = 2) + 
-    geom_tile()
-    geom_label_repel(box.padding = 0.5, max.overlaps = Inf)
-ggsave('rOut/memes/bound_vs_shuffle_matches.png', width = 10, height = 10, unit = 'in')
-
-purrr::map(tom.results, function(x) {
-  ## subset the tomtom results to the <= 10 most significant matches
-  tom.df <- x %>%
-    dplyr::group_by(neg_log_eval) %>%
-    dplyr::arrange(neg_log_eval, .by_group = T) %>%
-    dplyr::top_n(n = 10) 
-  
-  ## plot the hm of tomtom results for current consensus 
-  tom.hm <- tom.df %>%
-    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
-    geom_tile() +
-    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
-    scale_y_discrete(expand = c(0,0)) +
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(), 
-          panel.border = element_blank(),
-          axis.title = element_blank(), 
-          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-          legend.key.size = unit(0.5, 'in'),
-          plot.margin = margin(0,0,0,0, "cm"), 
-          legend.position = 'bottom') 
- 
-  ## format the tom.results for the rna heatmap
-  rna.df <- format_rna(tom.df)
-  
-  ## plot the rna heatmap for current consensus 
-  rna.hm <- rna.df %>%
-    ggplot(aes(rna_grp,1, fill = log_mean)) +
-    geom_tile() + 
-    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
-    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
-    theme(legend.position = "bottom",
-          axis.text.y = element_blank(),
-          plot.background = element_blank(),
-          panel.background = element_blank(),
-          panel.grid = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank(),
-          strip.background = element_blank(),
-          strip.text.y = element_blank(), 
-          plot.margin = margin(0,0,0,0, "cm")) 
-  
-  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
-  
-  fp <- paste0('rOut/memes/bound_vs_shuffle',unique(x$consensus),'_tomtom.png')
-  ggsave(fp,plot = plot, width = 8, height = 8, dpi = 300, unit = 'in')
-  })
-
-
-```
-
-```{r boundVSunbound_plots}
-### DONE need to correct old flyfactor FBgn - maybe download directly from flybase within R?
-
-tom.results <- tomResults(streme.Bound.Unbound.results)
-
-streme.Bound.Unbound.results %>%
-    dplyr::mutate(best_match_eval = as.double(best_match_eval),
-                  log_evalue = as.double(log_evalue), 
-                  evalue = as.double(evalue),
-                  neg_log_evalue = -log10(evalue), 
-                  neg_log_best_match_eval = -log10(best_match_eval),
-                  consensus = factor(consensus),
-                  consensus = forcats::fct_reorder(consensus, neg_log_evalue, .desc = F)) %>%
-    dplyr::filter(!is.na(best_match_altname)) %>%
-    ggplot(aes(1, consensus, fill = neg_log_evalue)) +
-    #ggplot(aes(neg_log_evalue, neg_log_best_match_eval, label = best_match_altname)) +
-   # scale_fill_brewer(palette = 'Paired') +
-    #geom_point( size = 2) + 
-    geom_tile()
-    #geom_label_repel(box.padding = 0.5, max.overlaps = Inf)
-ggsave('rOut/memes/bound_vs_unbound_matches.png', width = 10, height = 10, unit = 'in')
-
-
-
-
-purrr::map(tom.results, function(x) {
-  ## subset the tomtom results to the <= 10 most significant matches
-  tom.df <- x %>%
-    dplyr::group_by(neg_log_eval) %>%
-    dplyr::arrange(neg_log_eval, .by_group = T) %>%
-    dplyr::top_n(n = 10) 
-  
-  ## plot the hm of tomtom results for current consensus 
-  tom.hm <- tom.df %>%
-    ggplot(aes(consensus, match_altname, fill = neg_log_eval)) +
-    geom_tile() +
-    scale_fill_continuous(type = 'viridis', name = '-log_eval', limit = c(-1.2,0)) +
-    scale_y_discrete(expand = c(0,0)) +
-    theme(panel.background = element_blank(),
-          panel.grid = element_blank(), 
-          panel.border = element_blank(),
-          axis.title = element_blank(), 
-          #axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
-          legend.key.size = unit(0.5, 'in'),
-          plot.margin = margin(0,0,0,0, "cm"), 
-          legend.position = 'bottom') 
- 
-  ## format the tom.results for the rna heatmap
-  rna.df <- format_rna(tom.df)
-  
-  ## plot the rna heatmap for current consensus 
-  rna.hm <- rna.df %>%
-    ggplot(aes(rna_grp,1, fill = log_mean)) +
-    geom_tile() + 
-    scale_fill_gradient(low = '#e9edf5', high = 'Red', limit = c(0,3)) +
-    facet_grid(rows = vars(forcats::fct_rev(match_altname))) +
-    theme(legend.position = "bottom",
-          axis.text.y = element_blank(),
-          plot.background = element_blank(),
-          panel.background = element_blank(),
-          panel.grid = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title = element_blank(),
-          strip.background = element_blank(),
-          strip.text.y = element_blank(), 
-          plot.margin = margin(0,0,0,0, "cm")) 
-  
-  plot <- tom.hm + plot_spacer() + rna.hm + plot_layout(widths = c(4, -0.5 ,4.5))
-  
-  fp <- paste0('rOut/memes/bound_vs_unbound_',unique(x$consensus),'_tomtom.png')
-  ggsave(fp,plot = plot, width = 8, height = 8, dpi = 300, unit = 'in')
-  })
-
-
-```
-
-
-#quick check of fragment size distribution 
-```{r fragment-size}
-osaGFP.df %>%
-  dplyr::filter(osa.idr & !yw.idr) %>%
-#  ggplot(aes(width, )) + 
-  ggplot(aes(width, color = L3_24h.FAIRE.cat)) + 
-  geom_freqpoly(binwidth = 100) +
-#  scale_color_viridis_d()
-  xlim(0,2000) +
-  NULL
-```
-
-
-#AT GC content within peak categories
-Is there an AT enrichment within osa binding sites?
-```{r}
-
-## 1kb random regions of dm6
-dm6.1kb <- read.table('dm6-1kb-binned.bed', col.names = c('seqnames', 'start','end')) %>% GenomicRanges::GRanges()
-
-dm6.1kb.seq <- dm6.1kb %>%
-  memes::get_sequence(dm6)
-
-osa.bound.seq <- GenomicRanges::GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)) %>%
-  GenomicRanges::resize(200, "center") %>%
-  memes::get_sequence(dm6)
-
-osa.unbound.seq <- GenomicRanges::GRanges(osaGFP.df %>% dplyr::filter(!osa.idr & yw.idr)) %>%
-  GenomicRanges::resize(200, "center") %>%
-  memes::get_sequence(dm6) 
-
-
-## count AT frequency 
-bound.at <- data.frame(freq = Biostrings::letterFrequency(letters = "AT", osa.bound.seq) / Biostrings::width(osa.bound.seq)) %>%
-  dplyr::mutate(grp = 'bound')
-
-unbound.at <- data.frame(freq = Biostrings::letterFrequency(letters = "AT", osa.unbound.seq) / Biostrings::width(osa.unbound.seq)) %>% 
-  dplyr::mutate(grp = 'unbound')
-
-background.at <- data.frame(freq = Biostrings::letterFrequency(letters = "AT", dm6.1kb.seq) / Biostrings::width(dm6.1kb.seq)) %>% 
-  dplyr::mutate(grp = 'background')
-
-
-## combine to single df
-at.df <- dplyr::bind_rows(bound.at, unbound.at, background.at)
-colnames(at.df)[1] <- 'freq'
-
-## plot
-at.df %>%
-  ggplot(aes(freq, color = grp)) +
-  geom_density(bins = 100)
-```
-
-
-
-#FAIRE heatmaps
-```{r import-bw}
-
-viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
-
-osa.rep1 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-osa.rep2 <- rtracklayer::import.bw('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-yw.rep1 <- rtracklayer::import.bw('BigWig/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-yw.rep2 <- rtracklayer::import.bw('BigWig/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
-
-faire.3lw <- rtracklayer::import.bw('/Users/m/McKay/FAIRE_dm6/BigWig/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw')
-faire.6h <- rtracklayer::import.bw('/Users/m/McKay/FAIRE_dm6/BigWig/wt_6h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw')
-faire.18h <- rtracklayer::import.bw('/Users/m/McKay/FAIRE_dm6/BigWig/wt_18h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw')
-faire.24h <- rtracklayer::import.bw('/Users/m/McKay/FAIRE_dm6/BigWig/wt_24h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw')
-
-osaPeaks <- GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)) %>% resize(width = 1, fix = "center")
-```
-```{r osaPeak-signal}
-osa.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep1,
-                                                   osaPeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-osa.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep2,
-                                                   osaPeaks,
-                                                   value_column = 'score', 
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-yw.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(yw.rep1,
-                                                   osaPeaks,
-                                                   value_column = 'score',
-                                                  keep = c(0.01,0.99),
-                                                  extend = 1000)
-
-yw.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(yw.rep2,
-                                                   osaPeaks,
-                                                   value_column = 'score',
-                                                  keep = c(0.01, 0.99),
-                                                  extend = 1000)
-
-
-common_min = min(c(osa.rep1.mat, osa.rep2.mat, yw.rep1.mat, yw.rep2.mat))
-common_max = max(c(osa.rep1.mat, osa.rep2.mat, yw.rep1.mat, yw.rep2.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-osa.count <- osaPeaks %>%
-  data.frame() %>%
-  nrow()
-
-osa.count[1] <- as.character(osa.count[1])
-  
-names(osa.count) <- 'Osa Peak'
-
-groups <- ifelse(osaPeaks$osa.idr, 'Osa Peak', NA)
-
-hm <- EnrichedHeatmap::EnrichedHeatmap(osa.rep1.mat,
-                                       axis_name = c(-1000, 0, 1000),
-                                       pos_line = F,
-                                       column_title = 'Osa Rep1',
-                                       col = col_fun,
-                                       name = 'Osa zScore',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(ylim = c(0,4.5),
-                                                                                                                                    axis_param = list(side = 'left', facing = 'outside'))),
-                                       left_annotation = c(ComplexHeatmap::rowAnnotation(textbox = ComplexHeatmap::anno_textbox(align_to = groups,
-                                                                                                                                as.list(osa.count),
-                                                                                                                                side = 'left',
-                                                                                                                                background_gp = gpar(fill = NA, col = NA),
-                                                                                                                               gp = gpar(col = 'black'), 
-                                                                                                                                padding = unit(0, 'mm'))))) + 
-  EnrichedHeatmap::EnrichedHeatmap(osa.rep2.mat,
-                                   axis_name = c(-1000, 0, 1000),
-                                   pos_line = F,
-                                   column_title = 'Osa Rep2',
-                                   col = col_fun, 
-                                   show_heatmap_legend = FALSE,
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(ylim = c(0,4.5),
-                                                                                                                                axis = F))) +
-  EnrichedHeatmap::EnrichedHeatmap(yw.rep1.mat,
-                                   axis_name = c(-1000, 0, 1000),
-                                   pos_line = F,
-                                   column_title = 'Control Rep1',
-                                   col = col_fun, 
-                                   show_heatmap_legend = FALSE,
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(ylim = c(0,4.5), axis = F))) +
-  EnrichedHeatmap::EnrichedHeatmap(yw.rep2.mat, 
-                                   axis_name = c(-1000, 0, 1000),
-                                   pos_line = F,
-                                   column_title = 'Control Rep2',
-                                   col = col_fun, 
-                                   show_heatmap_legend = F,
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(enriched = EnrichedHeatmap::anno_enriched(ylim = c(0,4.5), axis = F))) 
-
-
-png('rOut/osaPeaks_osaSignal.png', width = 6, height = 8, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, row_title = NULL, merge_legend = T)
-dev.off()
-```
-
-```{r 3LW-FAIRE-in-OsaPeaks}
-
-osa.rep1.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep1,
-                                                   osaPeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-osa.rep2.mat <- EnrichedHeatmap::normalizeToMatrix(osa.rep2,
-                                                   osaPeaks,
-                                                   value_column = 'score', 
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-osaPeaks.mat <- EnrichedHeatmap::normalizeToMatrix(faire.3lw,
-                                   osaPeaks,
-                                   value_column = "score",
-                                   extend = 1000,
-                                   keep = c(0.01,0.99))
-
-common_min = min(c(osa.rep1.mat, osa.rep2.mat))
-common_max = max(c(osa.rep1.mat, osa.rep2.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 3), viridis.hex)
-
-groups <- ifelse(osaPeaks$L3.FAIRE.Peak, "Open", "Closed")
-
-lgd = ComplexHeatmap::Legend(at = c("closed", "open"), legend_gp = gpar(fill = c('#fc5d63','#87d674')))
-
-l3.count <- osaPeaks %>%
-  data.frame() %>%
-  dplyr::group_by(osa.idr, L3.FAIRE.Peak) %>%
-  dplyr::count() %>%
-  dplyr::mutate(L3.FAIRE.Peak = ifelse(L3.FAIRE.Peak, 'Open','Closed'),
-                n = as.character(n)) %>%
-  .$n
-
-
-names(l3.count) = unique(groups)
-
-
-hm <- EnrichedHeatmap::EnrichedHeatmap(osaPeaks.mat,
-                                       axis_name = c(-1,0,+1),
-                                       pos_line = F,
-                                       column_title = '3LW-FAIRE',
-                                       col = viridis.hex,
-                                       width = unit(1.5, 'in'), 
-                                       #left_annotation = ComplexHeatmap::rowAnnotation(groups = ComplexHeatmap::anno_block(gp = gpar(fill = c('black','grey70')), show_name = F)),
-                                       left_annotation = c(ComplexHeatmap::rowAnnotation(textbox = ComplexHeatmap::anno_textbox(groups,
-                                                                                                                                as.list(l3.count),
-                                                                                                                                side = 'left',
-                                                                                                                                background_gp = gpar(fill = NA, col = NA),
-                                                                                                                                gp = gpar(col = 'black'), 
-                                                                                                                                padding = unit(0, 'mm'))),
-                                                           ComplexHeatmap::rowAnnotation(groups = ComplexHeatmap::anno_block(gp = gpar(fill = c('#fc5d63','#87d674')), show_name = F))), 
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,6), axis_param = list(side = 'left'))),  
-                                       row_title = NULL, 
-                                       name = 'FAIRE zScore') +
-  EnrichedHeatmap::EnrichedHeatmap(osa.rep1.mat,
-                                       axis_name = c(-1,0,+1),
-                                       pos_line = F,
-                                       column_title = 'Osa.1',
-                                       col = col_fun,
-                                       name = 'Osa zScore',
-                                   width = unit(0.5,'in'),
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,4.5), axis = F))) + 
-  EnrichedHeatmap::EnrichedHeatmap(osa.rep2.mat,
-                                   axis_name = c(-1,0,+1),
-                                   pos_line = F,
-                                   column_title = 'Osa.2',
-                                   col = col_fun, 
-                                   show_heatmap_legend = FALSE,
-                                   width = unit(0.5, 'in'), 
-                                   top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,4.5), axis_param = list(side = 'right'))))
-
-png('rOut/osaBound_FAIREsignal_3LW_open-closed.png', width = 5, heigh = 8, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, merge_legend = T)
-dev.off()
-
-
-```
-```{r 3LW-FAIRE-in-OsaPeaks}
-osaPeaks.open
-osaPeaks.open <- GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr & L3.FAIRE.Peak)) %>%
-  resize(width = 1, fix = "center") 
-
-count <- osaPeaks.open %>%
-  data.frame() %>%
-  dplyr::group_by(L3_24h.FAIRE.cat) %>%
-  dplyr::count() %>%
-  .$n
-
-names(count) <- c('closing', 'opening', 'static')
-
-
-
-
-osaPeaks.open.mat.3LW <- EnrichedHeatmap::normalizeToMatrix(faire.3lw,
-                                   osaPeaks.open,
-                                   value_column = "score",
-                                   extend = 1000,
-                                   keep = c(0,0.99))
-
-osaPeaks.open.mat.24h <- EnrichedHeatmap::normalizeToMatrix(faire.24h,
-                                   osaPeaks.open,
-                                   value_column = "score",
-                                   extend = 1000,
-                                   keep = c(0,0.99))
-
-common_min = min(c(osaPeaks.open.mat.3LW, osaPeaks.open.mat.24h))
-common_max = max(c(osaPeaks.open.mat.3LW, osaPeaks.open.mat.24h))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-groups <- osaPeaks.open$L3_24h.FAIRE.cat
-
-lgd = ComplexHeatmap::Legend(at = c("closing", "opening", "static"), legend_gp = gpar(fill = 2:4))
-
-ht_list <- 
-  EnrichedHeatmap::EnrichedHeatmap(osaPeaks.open.mat.3LW,
-                                   pos_line = F, 
-                                   axis_name = c(-1000, 0, 1000),
-                                 col = col_fun,
-                                 column_title = '3LW',
-                                 top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = 2:4),
-                                                                                                                           ylim = c(0, 6))),  
-                                 name = 'FAIRE zScore',
-                                 left_annotation = ComplexHeatmap::rowAnnotation(textbox = ComplexHeatmap::anno_textbox(groups,
-                                                                                                                        as.list(count),
-                                                                                                                        side = 'left',
-                                                                                                                        background_gp = gpar(fill = NA, col = NA),
-                                                                                                                        gp = gpar(col = 'black'), 
-                                                                                                                        padding = unit(0, 'mm')),
-                                                                                 groups = ComplexHeatmap::anno_block(gp = gpar(fill = 2:4),
-                                                                                                                     show_name = F)),
-                                 row_title  = NULL) +
-  EnrichedHeatmap::EnrichedHeatmap(osaPeaks.open.mat.24h,
-                                   axis_name = c(-1000, 0, 1000),
-                                   pos_line = F, 
-                                 col = col_fun,
-                                 column_title = '24h',
-                                 top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = 2:4),
-                                                                                                                           ylim = c(0, 6))),  
-                                 show_heatmap_legend = FALSE)
-
-png('rOut/osaBound_FAIREsignal_3LW-24h_byFAIREcat.png', width = 5, height = 8, units = 'in', res = 300)
-ComplexHeatmap::draw(ht_list, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, merge_legend = T)
-dev.off()
-
-
-```
-
-```{r allFAIRE-heatmap}
-fairePeaks <- faire.df %>%
-  dplyr::filter(!is.na(wt.L3_24h)) %>%
+## peak subsets
+```{r setup}
+osaPeaks <- peaks$cnr.df %>% 
+  dplyr::filter(osa.cnr & !yw.cnr) %>% 
+  GRanges() %>% 
+  resize(width = 1, fix = "center")
+
+osaPeaks.full <- peaks$cnr.df %>% 
+  dplyr::filter(osa.cnr & !yw.cnr) %>% 
+  GRanges()
+
+fairePeaks.wt <- peaks$faire.wt.df %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
   GRanges() %>%
   resize(width = 1, fix = "center")
 
-faire.3lw.mat <- EnrichedHeatmap::normalizeToMatrix(faire.3lw,
-                                                   fairePeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-faire.24h.mat <- EnrichedHeatmap::normalizeToMatrix(faire.24h,
-                                                   fairePeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-common_min = min(c(faire.3lw.mat, faire.24h.mat))
-common_max = max(c(faire.3lw.mat, faire.24h.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-faire.count <- fairePeaks %>%
-  data.frame() %>%
-  dplyr::group_by(wt.L3_24h) %>%
-  dplyr::count() %>%
-  dplyr::mutate(n = as.character(n)) %>%
-  .$n
-
-test <- fairePeaks %>%
-  data.frame() %>%
-  dplyr::group_by(wt.L3_24h, osa.IDR) %>%
-  dplyr::count() %>%
-  dplyr::mutate(osa.IDR = ifelse(osa.IDR, 'Bound', 'Unbound')) %>%
-  reshape2::dcast(wt.L3_24h~osa.IDR)  %>%
-  dplyr::mutate(frac.Bound = Bound/(Unbound + Bound),
-                frac.Unbound = Unbound/(Unbound + Bound)) %>%
-  tibble::column_to_rownames('wt.L3_24h') %>%
-  .[,c(3,4)] %>%
-  as.matrix()
-
-#need input as matrix with columns for stacks and rows for groups
-
-ha = ComplexHeatmap::HeatmapAnnotation(foo = ComplexHeatmap::anno_barplot(test, gp = gpar(fill = 2:5), bar_width = 1, height = unit(6, "cm")))
-
-names(faire.count) <- c('closing','opening','static')
+#redundant... but used in a couple chunks for motif analysis
+fairePeaks.wt.full <- peaks$faire.wt.df %>% 
+  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
 
 
-groups <- fairePeaks$wt.L3_24h 
-
-
-lgd = ComplexHeatmap::Legend(at = c("closing", "opening", "static"), 
-                             legend_gp = gpar(fill = 2:4))
-                             
-
-
-hm <- EnrichedHeatmap::EnrichedHeatmap(faire.3lw.mat, 
-                                       pos_line = F, 
-                                       axis_name = c(-1000, 0, 1000),
-                                       col = col_fun,
-                                       column_title = '3LW',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = 2:4),
-                                                                                                                                 ylim = c(0,6),
-                                                                                                                                 axis_param = list(side = 'left'))),  
-                                       name = 'FAIRE zScore',
-                                       left_annotation = ComplexHeatmap::rowAnnotation(textbox = ComplexHeatmap::anno_textbox(groups,
-                                                                                                                                as.list(faire.count),
-                                                                                                                                side = 'left',
-                                                                                                                                background_gp = gpar(fill = NA, col = NA),
-                                                                                                                                gp = gpar(col = 'black'), 
-                                                                                                                                padding = unit(0, 'mm')),
-                                                                                       groups = ComplexHeatmap::anno_block(gp = gpar(fill = 2:4),
-                                                                                                                     show_name = F)),
-                                       row_title  = NULL) +
-  EnrichedHeatmap::EnrichedHeatmap(faire.24h.mat, 
-                                       pos_line = F, 
-                                       axis_name = c(-1000, 0, 1000),
-                                       col = col_fun,
-                                       column_title = '24h',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(lines = EnrichedHeatmap::anno_enriched(gp = gpar(col = 2:4),
-                                                                                                                                 ylim = c(0,6))), 
-                                      row_title  = NULL,
-                                   show_heatmap_legend = F) 
- 
- 
-png('rOut/FAIRE_inFAIRE_L3_24h.png', width = 6, height = 5, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
-dev.off()
-```
-```{r allFAIRE-heatmap}
-#hm_hex <- c('#d73027','#fc8d59','#fee090','#e0f3f8','#91bfdb','#4575b4')
-hm_hex <- c('#4575b4','#91bfdb','#e0f3f8','#fee090','#fc8d59','#d73027')
-
-
-fairePeaks <- faire.df %>%
-#  dplyr::filter(!is.na(wt.L3_6h) & !is.na(wt.6h_24h)) %>%
-  #dplyr::filter(wt.L3_24h == 'closing' | wt.6h_24h == 'closing') %>%
-  dplyr::filter(wt.L3_24h == 'closing') %>%
+#DONE - remove the peakCat ? since now using log2fold change for these categories...
+fairePeaks.deg <- peaks$faire.osaDeg.df %>%
+#  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
+  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>% # want to only use peaks that are reproducible and of good quality 
   GRanges() %>%
   resize(width = 1, fix = "center")
 
-faire.3lw.mat <- EnrichedHeatmap::normalizeToMatrix(faire.3lw,
-                                                   fairePeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-faire.6h.mat <- EnrichedHeatmap::normalizeToMatrix(faire.6h,
-                                                   fairePeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-faire.24h.mat <- EnrichedHeatmap::normalizeToMatrix(faire.24h,
-                                                   fairePeaks,
-                                                   value_column = 'score',
-                                                   keep = c(0.01,0.99),
-                                                   extend = 1000)
-
-common_min = min(c(faire.3lw.mat, faire.6h.mat, faire.24h.mat))
-common_max = max(c(faire.3lw.mat, faire.6h.mat, faire.24h.mat))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-
-
-# test <- fairePeaks %>%
-#   data.frame() %>%
-#   dplyr::group_by(wt.L3_24h, osa.IDR) %>%
-#   dplyr::count() %>%
-#   dplyr::mutate(osa.IDR = ifelse(osa.IDR, 'Bound', 'Unbound')) %>%
-#   reshape2::dcast(wt.L3_24h~osa.IDR)  %>%
-#   dplyr::mutate(frac.Bound = Bound/(Unbound + Bound),
-#                 frac.Unbound = Unbound/(Unbound + Bound)) %>%
-#   tibble::column_to_rownames('wt.L3_24h') %>%
-#   .[,c(3,4)] %>%
-#   as.matrix()
-
-#need input as matrix with columns for stacks and rows for groups
-
-#ha = ComplexHeatmap::HeatmapAnnotation(foo = ComplexHeatmap::anno_barplot(test, gp = gpar(fill = 2:5), bar_width = 1, height = unit(6, "cm")))
-
-#names(faire.count) <- c('closing','opening','static')
-
-groups <- fairePeaks %>%
-  data.frame() %>%
-  dplyr::mutate(temp_cat = dplyr::case_when(wt.L3_6h == 'opening' & wt.6h_24h == 'closing' ~ 1,
-                                            wt.L3_6h == 'static' & wt.6h_24h == 'closing' ~ 2)) %>%
-  #dplyr::filter(!is.na(temp_cat)) %>%
-  .$temp_cat
-
-
-#faire.count <- fairePeaks %>%
+#fairePeaks.osaDependent <- fairePeaks.deg %>% 
+#  data.frame() %>% 
+#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+#  GRanges()
+#
+#fairePeaks.osaIndependent <- fairePeaks.deg %>%
 #  data.frame() %>%
-#  dplyr::group_by(wt.L3_24h) %>%
-#  dplyr::count() %>%
-#  dplyr::mutate(n = as.character(n)) %>%
-#  .$n
-
-#groups <- fairePeaks$wt.L3_24h 
-
-
-#lgd = ComplexHeatmap::Legend(at = c("closing", "opening", "static"), 
-#                             legend_gp = gpar(fill = 2:4))
-                             
-
-#faire.count
-hm <- EnrichedHeatmap::EnrichedHeatmap(faire.3lw.mat, 
-                                       pos_line = F, 
-                                       axis_name = c(-1000, 0, 1000),
-                                       col = col_fun,
-                                       column_title = '3LW',
-                                       name = 'FAIRE zScore',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(test = ComplexHeatmap::anno_empty(height = unit(0.01,'in'))),
-                                       #left_annotation = ComplexHeatmap::rowAnnotation(#textbox = ComplexHeatmap::anno_textbox(groups,
-                                       #                                                #                                         as.list(faire.count),
-                                       #                                                #                                         side = 'left',
-                                       #                                                #                                         background_gp = gpar(fill = NA, col = NA),
-                                       #                                                #                                         gp = gpar(col = 'black'), 
-                                       #                                                #                                         padding = unit(0, 'mm')),
-                                       #                                                groups = ComplexHeatmap::anno_block(gp = gpar(fill = 1:9),
-                                       #                                                                              show_name = F)),
-                                    row_gap = unit(0.05,'in'), 
-                                       row_title  = NULL) +
-  
-   EnrichedHeatmap::EnrichedHeatmap(faire.6h.mat, 
-                                       pos_line = F, 
-                                       axis_name = c(-1000, 0, 1000),
-                                       col = col_fun,
-                                       column_title = '6h',
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(test = ComplexHeatmap::anno_empty(height = unit(0.01,'in'))),
-                                      row_title  = NULL,
-                                   row_gap = unit(0.05,'in'), 
-                                   show_heatmap_legend = F)  +
-  
-  EnrichedHeatmap::EnrichedHeatmap(faire.24h.mat, 
-                                       pos_line = F, 
-                                       axis_name = c(-1000, 0, 1000),
-                                       col = col_fun,
-                                       top_annotation = ComplexHeatmap::HeatmapAnnotation(test = ComplexHeatmap::anno_empty(height = unit(0.01,'in'))),
-                                       column_title = '24h',
-                                      row_title  = NULL,
-                                   show_heatmap_legend = F,
-                                   row_gap = unit(0.05,'in') )
- 
- 
-png('rOut/FAIRE_inFAIRE_L3_6h_24h.png', width = 6, height = 5, units = 'in', res = 300)
-ComplexHeatmap::draw(hm, row_split = groups, merge_legend = T, heatmap_legend_side = 'right', )
-#ComplexHeatmap::draw(hm, annotation_legend_list = c(lgd), row_split = groups, merge_legend = T, heatmap_legend_side = 'bottom', )
-dev.off()
+#  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+#  GRanges()
+#
+#fairePeaks.osaEctopic <- fairePeaks.deg %>%
+#  data.frame() %>%
+#  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+#  GRanges()
 ```
 
-#what fraction of faire peaks are osa bound?
-- neat it looks like ~50% of sites that close from L3-24h are bound by osa, 
-- TODO check this analysis - correctly identifying closing sites? 
-  - how do numbers compare to previous analyses?
 
-```{r osa-in-faire}
 
+## load bws 
+
+```{r setup}
+
+#TODO - cleanup - move matrices?
+
+bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id') 
+
+deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+
+```
+
+## functions 
+
+```{r setup}
 plot.frac <- function(x) {
  lapply(unique(x$change), function(i) {
    x %>%
      dplyr::filter(change == i) %>%
-     ggplot(aes(fraction, change, fill = osa.IDR)) +
+     ggplot(aes(fraction, change, fill = Osa.Bound)) +
      geom_bar(stat = 'identity', width = 1) +
      geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
      #geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
@@ -1696,395 +217,88 @@ plot.frac <- function(x) {
 #           axis.text.y = element_text(size = 12),
            panel.grid = element_blank()) + 
      NULL
-   fn = paste0('rOut/FAIREpeaks_by_osaIDR_',i,'.png')
+   fn = paste0('rPlots/3E_',i,'.png')
    ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
    })
 }
+```
 
-faire.df %>% 
-  dplyr::group_by(wt.L3_24h, osa.IDR) %>%
-  dplyr::count() %>%
-  na.omit() %>%
-  reshape2::melt(id = c("osa.IDR","n"), variable.name = 'stage', value.name = 'change') %>%
-  dplyr::group_by(stage, change, osa.IDR) %>%
-  dplyr::summarise(peaks = sum(n)) %>%
-  dplyr::mutate(fraction = peaks / sum(peaks),
-                change = factor(change, levels = c('static','opening','closing'))) %>%
-  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
-  plot.frac() 
+## .bed out
+```{r setup}
+osaPeaks %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
 
-ggsave('rOut/FAIREpeaks_by_osaIDR.png', width = 6, height = 6, dpi = 300, units = 'in')
+osaPeaks.full %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
+peaks$cnr.df %>%
+  data.frame() %>%
+  dplyr::filter(yw.cnr) %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('controlPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
+fairePeaks.osaDependent %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
+fairePeaks.osaEctopic %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+
 ```
 
 
-```{r osa-in-faire}
-# split l3-24 osa bound changes by sub stage ie. l3-6h, 6-18, etc. 
-faire.df %>%
-  dplyr::filter(wt.L3_24h == 'closing' & osa.IDR) %>%
-  dplyr::group_by(wt.L3_6h, wt.6h_18h, wt.18h_24h) %>%
-  dplyr::count() %>%
-  reshape2::melt(id = c('n'), variable.name = 'stage', value.name = 'change') %>%
-  dplyr::group_by(stage, change) %>%
-  dplyr::filter(change == 'closing') %>%
-  dplyr::summarise(peaks = sum(n)) %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(fraction_osaBound_closing = peaks / sum(peaks)) %>%
-  ggplot(aes(change, fraction_osaBound_closing, fill = stage)) +
-  geom_bar(stat = 'identity') +
-  geom_text(aes(label = peaks), position = position_stack(vjust = 0.5)) +
-  xlab('osa Bound - L3-24h Closing') +
-  ylab('Fraction of Peaks') +
-  scale_fill_brewer(palette = 'YlGnBu') +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
-ggsave('rOut/osaBound_l3-24h_fraction.png', width = 3, height = 5, dpi = 300, units = 'in')
-#faire.df %>% 
-#  dplyr::group_by(wt.L3_6h, wt.6h_18h, wt.L3_24h, osa.IDR.05) %>%
-#  dplyr::count() %>%
-#  reshape2::melt(id = c("osa.IDR.05","n"), variable.name = 'stage', value.name = 'change') %>%
-#  dplyr::filter(!is.na(change)) %>%
-#  ggplot(aes(change, n, fill = osa.IDR.05)) +
-#  geom_bar(stat = 'identity', position = 'fill') +
-#  scale_fill_manual(values = c('#f5c542','#e84189')) +
-#  facet_grid(~stage) 
-#faire.df %>% dplyr::filter(wt.L3_24h == 'opening')
+## gviz
+```{r setup}
+genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
+
+peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full, genome = 'dm6', fill = '#D01C8B', col = 'transparent', background.title = 'white', showTitle = F )
+
+spacer <- Gviz::AnnotationTrack(background.title = 'white')
 ```
 
-#correlation of faire change and osa signal
-```{r }
-osaGFP.df
+# Fig 1
+## A - brDisc browser shot
 
-osaGFP.df %>%
-  #dplyr::filter(osa.idr) %>%
-  ggplot(aes(L3.24h.log2, log2FoldChange)) +
-  #geom_point() +
-  #geom_density_2d(bins = 15,  geom = "polygon") +
-  #stat_density_2d(bins = 15, aes(fill = ..level..), geom = "polygon") +
-  #geom_bin2d(bins = 20, color = 'black') +
-  geom_hex(bins = 15, color = 'black') +
-  #geom_point(alpha = 0.8) +
-  scale_fill_gradient(low = 'white', high = 'red') +
-  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6, color = 'black') +
-  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6, color = 'black') +
-  ylim(c(-3,3)) +
-  xlim(c(-3,3)) +
-  #theme(legend.position = "none") +
-  NULL
-ggsave('rOut/osa_yw-log2_l3_24-log2_density.png', width = 7, height = 6, dpi = 300)
-```
+```{r, 1A}
 
-  
-#does osa bind brDisc?
-  - browser shot
-  - report pvalue and/or log2fold between yw and brDisc
-  
-```{r brDisc-ggcoverage}
-#testing out ggcoverage... simple to use, but no way to scale tracks?
+#TODO - best way to generate replicate average signal tracks
+#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+
+faire.wt.browser <- faire.wt.ssPool %>%
+  #dplyr::filter(grepl('3LW',time)) %>%
+  dplyr::mutate(color = WTFAIRE.colors)
+
+faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,15))
+faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+                     faire.wt.tracks$wt_6h,
+                     faire.wt.tracks$wt_18h,
+                     faire.wt.tracks$wt_24h,
+                     faire.wt.tracks$wt_36h,
+                     faire.wt.tracks$wt_44h)
+
+brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
 
-tracks <- ggcoverage::LoadTrackFile(track.file = c('BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-repsMean_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                                         'BigWig/yw-3LW-wing-aGFP-CnR-sup-repsMean_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                                         'BigWig/osaGFP-yw-zNorm_log2.bw'), format = 'bw')
-unique(tracks$seqnames)
-mark.region = data.frame(start = 1565208, end = 1568001)
-
-brDisc <- ggcoverage::ggcoverage(data = tracks, region = "chrX:1565208-1568001")
-brDisc
-```
-
-```{r brDisc-Gviz}
-
-track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-
-rep1 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                type = 'hist',
-                windowSize = 1000,
-                #type = 'h',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[1],
-                col = track.colors[1],
-                col.histogram = track.colors[1],
-                background.panel = "grey99",
-                name = 'osa.rep1')
-
-rep2 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[2],
-                col = track.colors[2],
-                col.histogram = track.colors[2],
-                background.panel = "grey99",
-                name = 'osa.rep2')
-
-osa.avg <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-repsMean_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[1],
-                col = track.colors[1],
-                col.histogram = track.colors[1],
-                background.panel = "grey99",
-                ylim = c(0,8),
-                name = 'osa-GFP')
-
-ywrep1 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[3],
-                col.histogram = track.colors[3],
-                col = track.colors[3],
-                background.panel = "grey99",
-                name = 'yw.rep1')
-
-ywrep2 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[4],
-                col.histogram = track.colors[4],
-                col = track.colors[4],
-                background.panel = "grey99",
-                name = 'yw.rep2')
-
-yw.avg <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-repsMean_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[3],
-                col = track.colors[3],
-                col.histogram = track.colors[3],
-                background.panel = "grey99",
-                ylim = c(0,8),
-                name = 'yw')              
-
-log2 <- Gviz::DataTrack(range = 'BigWig/osaGFP-yw-zNorm_log2.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = 'grey60',
-                col = track.colors[2],
-                col.histogram = 'grey60', 
-                background.panel = "grey99",
-                ylim = c(-2,2),
-                name = 'log2')              
-
-brdisc.at <- Gviz::AnnotationTrack(range = brD,
-                             genome = 'dm6',
-                             name = 'brDisc',
-                             fill = '#60cdfc',
-                            col = 'transparent')
-
-osa.idr.at <- Gviz::AnnotationTrack(range = GRanges(osaGFP.df %>% dplyr::filter(osa.idr & !yw.idr)),
-                             genome = 'dm6',
-                             name = 'osa.idr.specific',
-                             fill = track.colors[2],
-                            col = 'transparent',
-                            showtitle = T)
-
-yw.idr.at <- Gviz::AnnotationTrack(range = GRanges(osaGFP.df %>% dplyr::filter(yw.idr)),
-                             genome = 'dm6',
-                             name = 'yw.idr',
-                             fill = track.colors[4],
-                            col = 'transparent')
-
-
-gtrack <- Gviz::GenomeAxisTrack()
-gtrack@range
-```
-
-
-```{r}
-#brDisc gviz
-png('rOut/brDisc_gviz.png', width = 10, height = 6, units = 'in', res = 300)
-Gviz::plotTracks(trackList = c(osa.avg, yw.avg, log2, brdisc.at), from = 1565208, to = 1568001,
-                 col.histogram = NA, 
-                 background.title = NA, 
-                 fontcolor.title = "black", 
-                 col.axis = "black", 
-                 scale = 0.1, 
-                 cex.scale = 0.3, 
-                 cex.title = 0.8,
-                 rotation.title = 0,
-                 cex.axis = 0.4,
-                 baseline = 0,
-                 col.baseline = 'black',
-                 margin = 20,
-                 title.width = 1.5,
-                 lwd.baseline = 1)
+png('rPlots/1A.png', width = 14, height = 8, res = 300, units = 'in')
+Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(), 
+                 from = start(brD + 20000),
+                 to = end(brD + 20000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
 dev.off()
 
-```
-
-#extra plots, reusuing some variables here from allFrags brDisc Gviz plotting above
-```{r brDisc-Gviz-20to120}
-
-track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-
-rep1 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                type = 'hist',
-                #windowSize = 1000,
-                #type = 'h',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[1],
-                col = track.colors[1],
-                col.histogram = track.colors[1],
-                background.panel = "grey99",
-                name = 'osa.rep1')
-
-rep2 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[2],
-                col = track.colors[2],
-                col.histogram = track.colors[2],
-                background.panel = "grey99",
-                name = 'osa.rep2')
-
-ywrep1 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[3],
-                col.histogram = track.colors[3],
-                col = track.colors[3],
-                background.panel = "grey99",
-                name = 'yw.rep1')
-
-ywrep2 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[4],
-                col.histogram = track.colors[4],
-                col = track.colors[4],
-                background.panel = "grey99",
-                name = 'yw.rep2')
-               
-
-png('rOut/brDisc_gviz_20to120.png', width = 10, height = 6, units = 'in', res = 300)
-Gviz::plotTracks(trackList = c(gtrack, rep1, rep2, 
-                               ywrep1,ywrep2, 
-                               brdisc.at),from = 1565208, to = 1568001, ylim = c(0,15),
-                                         #col.histogram = NA, 
-                                         #background.title = .$color,
-                                         background.title = NA,
-                                         fontcolor.title = "black",
-                                         #background.panel = "grey95",
-                                         col.axis = "black", 
-                 scale = 0.1, 
-                 cex.scale = 0.3, 
-                 cex.title = 0.8,
-                 rotation.title = 0,
-                cex.axis = 0.4,
-                baseline = 0,
-                col.baseline = 'black',
-                margin = 20,
-                title.width = 1.5,
-                lwd.baseline = 1)
-
-dev.off()
-
-```
-```{r brDisc-Gviz-150to700}
-
-track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-
-rep1 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                type = 'hist',
-                windowSize = 1000,
-                #type = 'h',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[1],
-                col = track.colors[1],
-                col.histogram = track.colors[1],
-                background.panel = "grey99",
-                name = 'osa.rep1')
-
-rep2 <- Gviz::DataTrack(range = 'BigWig/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[2],
-                col = track.colors[2],
-                col.histogram = track.colors[2],
-                background.panel = "grey99",
-                name = 'osa.rep2')
-
-ywrep1 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[3],
-                col.histogram = track.colors[3],
-                col = track.colors[3],
-                background.panel = "grey99",
-                name = 'yw.rep1')
-
-ywrep2 <- Gviz::DataTrack(range = 'BigWig/yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw',
-                genome = 'dm6',
-                #type = 'h',
-                type = 'histogram',
-                chromosome = 'chrX',
-                fill.histogram = track.colors[4],
-                col.histogram = track.colors[4],
-                col = track.colors[4],
-                background.panel = "grey99",
-                name = 'yw.rep2')
-               
-
-png('rOut/brDisc_gviz_150to700.png', width = 10, height = 6, units = 'in', res = 300)
-Gviz::plotTracks(trackList = c(gtrack, rep1, rep2, 
-                               ywrep1,ywrep2, 
-                               brdisc.at),from = 1565208, to = 1568001, ylim = c(0,5),
-                                         #col.histogram = NA, 
-                                         #background.title = .$color,
-                                         background.title = NA,
-                                         fontcolor.title = "black",
-                                         #background.panel = "grey95",
-                                         col.axis = "black", 
-                 scale = 0.1, 
-                 cex.scale = 0.3, 
-                 cex.title = 0.8,
-                 rotation.title = 0,
-                cex.axis = 0.4,
-                baseline = 0,
-                col.baseline = 'black',
-                margin = 20,
-                title.width = 1.5,
-                lwd.baseline = 1)
-
-dev.off()
-
-```
-
-#EcR
-```{r}
-load('../ecrGFSTF-3LW-Wing-CnR/peaks.RData')
-ecr.peaks
-
-osaGFP.df %>%
-  dplyr::mutate(ecr = ifelse(GRanges(.) %over% ecr.peaks, T,F)) %>%
-  dplyr::group_by(ecr, L3_24h.FAIRE.cat, osa.idr, yw.idr) %>%
-  dplyr::count() %>%
-  dplyr::filter(osa.idr & !yw.idr) %>%
-  ggplot(aes(y = n, x = L3_24h.FAIRE.cat, fill = ecr)) +
-  geom_bar(position = 'fill', stat = 'identity')
 ```
 

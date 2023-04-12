@@ -771,7 +771,83 @@ ggsave('rPlots/3-draft-ATcontent.png', dpi = 300, width = 4, height = 3)
 ```
 
 ## 3D. How does osa binding correlate with wt faire data?
+### all sites
+```{r 3LW-FAIRE-in-OsaPeaks}
+#mats <- purrr::map(bws, ~{
+#  normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+#})
+#names(mats) <- names(bws)
+osaPeaks.enhancers <- osaPeaks %>%
+  data.frame() %>%
+  GRanges()
 
+#fig3d.mats <- list(mats$wt_3LW, mats$osaGFP.rep1, mats$osaGFP.rep2)
+wt.3lw.mat <- normalizeToMatrix(bws$wt_3LW, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+osa.1.mat <- normalizeToMatrix(bws$osaGFP.rep1, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+osa.2.mat <- normalizeToMatrix(bws$osaGFP.rep2, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+fig3d.mats <- list(wt.3lw.mat, osa.1.mat, osa.2.mat)
+names(fig3d.mats) <- c('WT_3LW', 'Osa Rep1', 'Osa Rep2')
+  
+common_min = min(unlist(fig3d.mats))
+common_max = max(unlist(fig3d.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+groups <- ifelse(osaPeaks.enhancers$WT.3LW, "Open", "Closed")
+
+lgd = Legend(at = c("closed", "open"), legend_gp = gpar(fill = c('#fc5d63','#87d674')))
+
+l3.count <- osaPeaks.enhancers %>%
+  data.frame() %>%
+  dplyr::group_by(osa.cnr, WT.3LW) %>%
+  dplyr::count() %>%
+  dplyr::mutate(WT_FAIRE_3LW = ifelse(WT.3LW, 'Open','Closed'),
+                n = as.character(n)) %>%
+  .$n
+
+names(l3.count) = unique(groups)
+
+fig3d.hms <- EnrichedHeatmap(fig3d.mats$WT_3LW,
+                             axis_name = c(-2,0,+2),
+                             pos_line = F,
+                             column_title = '3LW-FAIRE',
+                             col = viridis.hex,
+                             width = unit(1.5, 'in'), 
+                             left_annotation = c(rowAnnotation(textbox = anno_textbox(groups, 
+                                                                                      as.list(l3.count), 
+                                                                                      side = 'left',
+                                                                                      background_gp = gpar(fill = NA, col = NA),
+                                                                                      gp = gpar(col = 'black'), 
+                                                                                      padding = unit(0, 'mm')))),
+                                                 #rowAnnotation(groups = anno_block(gp = gpar(fill = c('#fc5d63','#87d674')), show_name = F))), 
+                             top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'left'))),  
+                             row_title = NULL, 
+                             name = 'FAIRE zScore') +
+  EnrichedHeatmap(fig3d.mats$`Osa Rep1`,
+                  axis_name = c(-2,0,+2),
+                  pos_line = F,
+                  column_title = 'Osa.1',
+                  col = col_fun,
+                  name = 'Osa zScore',
+                  width = unit(0.5,'in'),
+                  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis = F))) +
+  EnrichedHeatmap(fig3d.mats$`Osa Rep2`,
+                   axis_name = c(-2,0,+2),
+                   pos_line = F,
+                   column_title = 'Osa.2',
+                   col = col_fun,
+                   show_heatmap_legend = F, 
+                   width = unit(0.5,'in'),
+                   top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'right'))))
+  
+
+png('rPlots/3D-all.png', width = 5, heigh = 6, units = 'in', res = 300)
+ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, heatmap_legend_side = "bottom", merge_legend = T)
+dev.off()
+
+
+```
+### just "enhancers"
 ```{r 3LW-FAIRE-in-OsaPeaks}
 #mats <- purrr::map(bws, ~{
 #  normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
@@ -848,6 +924,139 @@ dev.off()
 
 
 ```
+#### faire timecourse 
+##### make mats
+```{r}
+tidymat <- osaPeaks %>%
+  data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+  tidyr::pivot_longer(!peak) %>%
+  dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2], 
+                stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(peak) %>%
+  dplyr::mutate(value = value + 1,
+                frac = value/max(value),
+                peak = as.character(peak)) %>%
+  tidyr::pivot_wider(id_cols = peak, names_from = stage, values_from = frac) %>%
+  tibble::column_to_rownames('peak') %>%
+  as.matrix()
+tidymat
+# based of nystrom
+set.seed(1230412)
+km <- kmeans(tidymat, 8, nstart = 24, iter.max = 15)
+figure_col_fun <- circlize::colorRamp2(breaks = seq(0,1,by=0.25), colors = viridis::viridis(5))
+
+k_df <- km$cluster %>% 
+  data.frame %>% 
+  dplyr::rename(k = ".") %>% 
+  tibble::rownames_to_column("id")
+
+#png('rPlots/osaPeaks-FAIREtimecourse.png', width = 5, height = 4, res = 300, units = 'in')
+ComplexHeatmap::Heatmap(tidymat, 
+                        split = k_df$k, 
+                       #row_km = 8,
+                        cluster_columns = F,
+                        show_row_dend = F,
+                        col = figure_col_fun,
+                        gap = unit(0.5, "lines"),
+                        show_row_names = F)
+#dev.off()
+
+####
+####
+cluster.levels = c('4', '7', '8','5','1','3','6','2')
+
+cluster.df <- data.frame(km$cluster) %>%
+  tibble::rownames_to_column('peak') %>%
+  dplyr::mutate(peak = as.integer(peak)) %>% 
+  dplyr::left_join(data.frame(osaPeaks), ., by = 'peak') %>% # join cluster info to the wt FAIRE peak df
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron'))   # filter out to just "distal regulatory"
+#  dplyr::mutate(k8.cluster = factor(k8.cluster, levels = cluster.levels)) 
+ 
+
+
+####
+```
+##### plot
+```{r}
+
+plot.df <- cluster.df %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+     dplyr::select(peak, km.cluster, WT.3LW, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+     dplyr::group_by(peak) %>%
+     dplyr::mutate(frac = value/max(value)) %>%
+     dplyr::group_by(km.cluster, stage, WT.3LW) %>%
+     dplyr::summarise(mean = mean(value),
+                      sd = sd(frac) ,
+                      n = dplyr::n()) %>%
+  dplyr::group_by( WT.3LW, stage) %>%
+  dplyr::mutate(per = 100 *(n/sum(n)),
+                km.cluster = factor(km.cluster, levels = c(4,8,1,2,5,7,6,3))) 
+
+## supp plot
+plot.df %>%
+     ggplot(aes(stage,'', fill = mean, height = per))+
+     geom_tile() +
+  scale_fill_viridis_c() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        strip.background = element_blank(),
+  strip.text.x = element_blank(),
+  panel.spacing.y = unit(0, 'lines')) +
+   facet_wrap(km.cluster~WT.3LW, nrow = 8, ncol = 2)
+
+## without height adjust
+plot.df %>%
+     ggplot(aes(stage,km.cluster, fill = mean))+
+     geom_tile() +
+  scale_fill_viridis_c() +
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        strip.background = element_blank(),
+  strip.text.x = element_blank(),
+  panel.spacing.y = unit(1, 'lines'),
+  legend.position = 'bottom',
+  legend.direction = "horizontal") +
+   facet_wrap(~WT.3LW, ncol = 1)
+ggsave('rPlots/3-draft_fraction_cluster.png', width = 4, height = 9)
+
+## fraction barplot
+plot.df %>% 
+  dplyr::ungroup() %>%
+  #dplyr::mutate(km.cluster = forcats::fct_rev(km.cluster)) %>%
+  dplyr::select(WT.3LW, km.cluster, n, per) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(group = dplyr::case_when(km.cluster %in% c('3','6','5','7') ~ 'Closing',
+                                         km.cluster %in% c('2','1','8') ~ 'Opening',
+                                         km.cluster %in% c('4') ~ 'Static')) %>%
+  ggplot(aes(per, km.cluster, fill = group)) +
+  geom_bar(stat = 'identity') +
+  #coord_polar(theta = 'y') +
+  geom_text(aes(x = per, hjust = -0.1, label = paste0(round(per, digits = 1),'%')), size = 5) +
+  scale_fill_manual(values = c('#ff2937','#85b524','#9c9c9c')) +
+  scale_x_continuous(expand = expansion(mult = 0.2))+ 
+  facet_wrap(~WT.3LW, ncol = 1) +
+    theme(axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.position = 'bottom',
+        strip.background = element_blank(),
+        panel.background = element_blank(),
+  strip.text.x = element_blank(),
+  panel.spacing.y = unit(1, 'lines')) 
+ggsave('rPlots/3-draft_fraction_cluster-pie.png', width = 4, height = 8)
+```
+
 #### promoters version
 ```{r 3LW-FAIRE-in-OsaPeaks}
 #mats <- purrr::map(bws, ~{
@@ -1423,6 +1632,14 @@ rn.union %>%
   dplyr::group_by(osa) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n))
+
+
+ChIPpeakAnno::makeVennDiagram(list(rn.union, osaPeaks.full),
+                              NameOfPeaks = c('Rotund','Osa'))
+
+rn.ss
+rn.bws <- get_bws(rn.ss, '') 
+rn.bws
 ```
 ### peak clusters - are osa peak clustered together?
 ```{r}
@@ -2120,22 +2337,23 @@ dendrite, but it drops some on the list \##### GO
 goData <- GOSemSim::godata(org.Dm.eg.db, ont='BP', keytype = 'FLYBASE')
 
 
-goEnrich <- function(geneList, universe, name) {  
+ goEnrich <- function(geneList, universe, name) {  
 #  go <- select(org.Dm.eg.db, keys = geneList$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
 #  go.universe <- select(org.Dm.eg.db, keys = universe$Geneid, columns = c('SYMBOL','GO','ENTREZID'), keytype = 'FLYBASE')
   ggo <- clusterProfiler::enrichGO(#gene = go$ENTREZID,
                                    gene = geneList$Geneid,
-                                   universe = universe$Geneid,
+                                   #universe = universe$Geneid,
                                    OrgDb = org.Dm.eg.db,
                                    keyType = 'FLYBASE',
                                    ont = 'BP',
                                    readable = T,
                                    pAdjustMethod = 'BH',
-                                   pvalueCutoff = 0.01,
-                                   qvalueCutoff = 0.05)
+                                   pvalueCutoff = 0.1,
+                                   qvalueCutoff = 0.1)
   
   ggo.df <- data.frame(ggo)
 
+  return(ggo.df)
   simMatrix <- rrvgo::calculateSimMatrix(ggo.df$ID,
                           orgdb='org.Dm.eg.db',
                           ont='BP',
@@ -2163,166 +2381,31 @@ goEnrich <- function(geneList, universe, name) {
           axis.ticks.x = element_blank(),
           legend.text = element_text(size = 12),
           legend.title = element_text(size = 12))
-    return(ggo.df)
 }
 ```
 
-```{r}
-symbol.lookup <- clusterProfiler::bitr(, fromType = 'FLYBASE', toType = 'SYMBOL', OrgDb = org.Dm.eg.db)
-
-data.frame(dm6.txdb)
-
-fairePeaks <- peaks %>% 
-  dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
-
-
-anno.test <- ChIPseeker::annotatePeak(GRanges(fairePeaks),tssRegion = c(-100,500), TxDb = dm6.TxDb, addFlankGeneInfo = T, level = 'gene')
-
-
-anno.test.df <- ChIPseeker::as.GRanges(anno.test) %>% data.frame() %>%
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron') & osa.cnr & !yw.cnr) 
-
-anno.test.df.unnest <- anno.test.df %>%
-  dplyr::mutate(flank_genes = stringr::str_split(flank_geneIds, pattern = ';'),
-                flank_distance = stringr::str_split(flank_gene_distances, pattern = ';')) %>%
-  tidyr::unnest(c(flank_genes, flank_distance)) %>%
-  dplyr::distinct() %>% 
-  dplyr::filter(!is.na(flank_genes)) %>%
-  dplyr::rowwise() %>%
-  dplyr::mutate(SYMBOL = clusterProfiler::bitr(flank_genes, 'FLYBASE','SYMBOL',org.Dm.eg.db))
-
-  dplyr::filter(!grepl('lncRNA',SYMBOL))
-  
-  dplyr::mutate(flank_distance = abs(as.integer(flank_distance))) %>%
-  dplyr::group_by(peak) %>%
-  dplyr::slice_min(flank_distance, n = 3)
-
-sum(!is.na(anno.test.df.unnest$flank_genes))
-anno.test.df.unnest[500,]
-lookup
-data.frame(lookup) %>% tidyr::pivot_longer()
-
-lookup <- AnnotationDbi::intraIDMapper(anno.test.df.unnest$flank_genes, 'DROME', srcIDType = 'FLYBASE', destIDType = 'SYMBOL') 
- #closing.osaBound.entrez <- clusterProfiler::bitr(closing.osaBound$Geneid, fromType = 'FLYBASE', toType = 'ENTREZID', OrgDb = org.Dm.eg.db)
-#fairePeaks.dm6 <- fairePeaks %>%
-#   purrr::pmap_dfr(function(...) {
-#     current <- tibble::tibble(...)
-#     distances <- GenomicRanges::distance(GRanges(current), dm6.genes) 
-#     df <- data.frame(Geneid = dm6.genes$gene_id, distances = distances)
-#     nearbyGenes <- dplyr::slice_min(df, distances, n = 4)
-#     out <- current %>% 
-#       dplyr::mutate(nearbyGenes = list(nearbyGenes)) 
-#     
-#     return(out)
-#   }) %>%
-#  tidyr::unnest(nearbyGenes) %>%
-#  dplyr::left_join(., wing.rnaseq, by = 'Geneid') %>% # join the rna seq data by Geneid
-#  # average transcription at 3LW and 24h APF then categorize gene by 'up', 'down', or 'static'
-#  dplyr::mutate(L3_mean = rowMeans(.[,c('L3_rep1', 'L3_rep2')]),
-#                h24_mean = rowMeans(.[,c('X24h_rep1', 'X24h_rep2')]),
-#                l3v24 = log2(L3_mean / h24_mean),
-#                cat = dplyr::case_when(l3v24 >= 1 ~ 'down',
-#                                       l3v24 <= -1 ~ 'up',
-#                                       T ~ 'static'))  
-
-
-```
-
 
 ```{r}
-closing.down.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'down' & osa.cnr & !yw.cnr) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() 
+cluster <- cluster.df %>%
+  dplyr::filter(!WT.3LW ) %>%
+  dplyr::rename(Geneid = geneId) 
 
-closing.static.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'static' & osa.cnr & !yw.cnr) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() 
+closing.cluster <- cluster.df %>%
+  dplyr::filter(WT.3LW & km.cluster %in% c('3','6','7','5') & !grepl('RNA',SYMBOL)) %>%
+  dplyr::rename(Geneid = geneId) 
 
+opening.cluster <- cluster.df %>%
+  dplyr::filter(WT.3LW & km.cluster %in% c('2','1','8') & !grepl('RNA',SYMBOL)) %>%
+  dplyr::rename(Geneid = geneId) 
 
-static.osaUnBound <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'static') %>%
-  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>% # not bound by osa specifically 
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'static.osaUnBound')
+opening.cluster <- cluster.df %>%
+  dplyr::filter(WT.3LW & km.cluster %in% c('4') & !grepl('RNA',SYMBOL)) %>%
+  dplyr::rename(Geneid = geneId) 
 
-down.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(L3_mean >= 2 & cat == 'down' & osa.cnr & !yw.cnr) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'down.osaBound')
+entrez <- clusterProfiler::bitr(closing.cluster$Geneid, 'FLYBASE','ENTREZID', OrgDb = org.Dm.eg.db)$ENTREZID
 
+clusterProfiler::enrichGO()
 
-down <- fairePeaks.dm6 %>%
-  dplyr::filter(L3_mean >= 2 & cat == 'down') %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() 
-
-###
-closing.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'closing' & osa.cnr & !yw.cnr) %>% # closing category, bound specifically by osa
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() 
-
-closing <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'closing') %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'closing')
-
-static.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'static' & osa.cnr & !yw.cnr) %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'static.osaBound')
-
-static <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'static') %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>% # gene must be expressed at L3 or 24h
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'static')
-####
-
-
-
-static.osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'static' & osa.cnr & !yw.cnr) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'static.osaBound')
-
-static.down <- fairePeaks.dm6 %>%
-  dplyr::filter(L3_mean >= 2 & faireCat.3LW_24h == 'static' & cat == 'down') %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'static.down.osaBound')
-
-osaBound <- fairePeaks.dm6 %>%
-  dplyr::filter(osa.cnr & !yw.cnr) %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() 
-
-osaBound
-
-allFAIRE <- fairePeaks.dm6 %>%
-#  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
-  dplyr::filter(L3_mean >= 2 | h24_mean >= 2) %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct() %>%
-  dplyr::mutate(grp = 'osaUnBound')
-
-closing.down <- fairePeaks.dm6 %>%
-  dplyr::filter(faireCat.3LW_24h == 'closing' & L3_mean >= 2 & cat == 'down') %>%
-  dplyr::select(Geneid) %>%
-  dplyr::distinct()
 ```
 
 ```{r}
@@ -2731,7 +2814,7 @@ As a control, using any non osa bound 3lw faire peaks
 osa.enhancer.seq <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
-  #dplyr::filter(WT.3LW) %>%
+  #dplyr::filter(!WT.3LW) %>%
   GRanges() %>%
   resize(250, "center") %>%
   memes::get_sequence(dm6)
@@ -2739,7 +2822,7 @@ osa.enhancer.seq <- osaPeaks %>%
 osa.seq <- fairePeaks.wt %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
-  #dplyr::filter(WT.3LW) %>%
+  #dplyr::filter(!WT.3LW) %>%
   dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
   GRanges() %>%
   resize(250, "center") %>%
@@ -2769,14 +2852,82 @@ osaBound.ame %>%
         axis.title = element_blank(),
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) 
-
 ggsave('rPlots/3E_osaBound-enhancer.png', width = 2.5, height = 2.5, dpi = 300)
 
 
 osaBound.ame %>%
-  ggplot(aes(tp_percent/100, -log(adj.pvalue))) +
-  geom_point() +
-  geom_text_repel(aes(label = symbol))
+  ggplot(aes(tp_percent/100, 
+             -log(adj.pvalue), 
+             fill = ifelse(adj.pvalue < 1e-7, T,F))) +
+  geom_point(size = 4, shape = 21) +
+  #xlim(c(-0.1, 0.7)) +
+  #ylim(c(-1, 35)) +
+  scale_fill_manual(values = c('black','red'), 
+                    name = 'adj.pvalue < 1e-7') +
+  geom_text_repel(#data = dplyr::filter(osaBound.ame, adj.pvalue < 1e-7), 
+    aes(label = symbol),
+                  min.segment.length = 0, 
+                  size = 5, 
+                  point.padding = 0.8,
+                  box.padding = 0.7, 
+                  max.overlaps = 20) 
+#ggsave('rPlots/3-draft-motif-scatter.png', width =6, height = 5, dpi = 300)
+
+```
+##### test
+```{r}
+
+
+
+pal = colorRampPalette(RColorBrewer::brewer.pal(n = 6, 'Spectral'))
+
+purrr::map(c(T,F), function(x){
+  name = ifelse(x,'open','closed')
+  fp = paste0('rPlots/3-draft-ame-',name,'.png')
+
+ query <- osaPeaks %>%
+  data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
+  dplyr::filter(WT.3LW == x) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+
+control <- fairePeaks.wt %>%
+  data.frame() %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
+  dplyr::filter(WT.3LW == x) %>%
+  dplyr::filter(!osa.cnr | osa.cnr & yw.cnr) %>%
+  GRanges() %>%
+  resize(250, "center") %>%
+  memes::get_sequence(dm6)
+
+osaBound.ame <- query %>%
+  memes::runAme(control = control) %>%
+  dplyr::group_by(motif_alt_id) %>%
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
+
+
+osaBound.ame %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
+  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
+  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
+  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
+  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
+  geom_raster() +
+  scale_fill_gradientn(limits = c(2,14),
+                       colours=c("#440154", "#21918c", "#fde725"),
+                      name = '-log(adj.Pvalue)') +
+  theme(axis.text.y = element_text(size = 12),
+        axis.title = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) 
+ggsave(fp, width = 2.5, height = 2.5, dpi = 300) 
+})
+
+
+
 ```
 #### osa bound open 3lw enhancers
 what motifs are enriched within osa bound "closed" 3lw sites annotated as distal or intronic - ie. "enhancers"
