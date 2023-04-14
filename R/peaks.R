@@ -61,6 +61,7 @@ faire.osaDeg.byGrp <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$grp
 faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps', with_reduce = T))
 faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps', with_reduce = T))
 
+
 #make union FAIRE peak list - includes any/all peak calls for all wt reps
 faire.wt.union <- faire.wt.byID %>%
   unlist() %>%
@@ -115,7 +116,10 @@ peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df), function(x) {
                   faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                   faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
 }) %>%
-  setNames(c('faire.wt.df', 'faire.osaDeg.df', 'cnr.df'))
+  append(GRanges(dm6.500bp)) %>%
+  setNames(c('faire.wt.df', 'faire.osaDeg.df', 'cnr.df','dm6.500bp'))
+
+
 
 #DONE - what's missing from these annotations?
 # - deseq annotation

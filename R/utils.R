@@ -26,7 +26,7 @@ grp_qFilter <- function(x, quantile = NULL, q = NULL, operation = c('subsetByOve
   if(operation == 'intersect'){
     grp.repShared <- Reduce(GenomicRanges::intersect, grp.list) #takes grangeslist of qval filtered peaks and returns a granges object with only regions shared between replicates
   }
-  return(grp.repShared)  
+  return(grp.repShared)
 }
 
 #takes grouped FAIRE granges object - ie. all replicates for same sample - and filters out bottom 25% peaks by qval per replicate

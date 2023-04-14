@@ -560,36 +560,7 @@ dev.off()
 
 ## 3B. Osa CnR brDisc browswer shot
 
-```{r, fig.width=4, fig.height=3}
 
-#TODO - best way to generate replicate average signal tracks
-#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
-
-#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-#track.colors <- c("#B8E186","#F1B6DA", "#4DAC26","#D01C8B")
-track.colors <- c("grey40","#F1B6DA", "grey20","#D01C8B")
-
-cnr.ss.browser <- cnr.ss %>%
-  dplyr::mutate(color = track.colors)
-
-cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,12))
-cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
-names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
-
-brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
-
-axis <- Gviz::GenomeAxisTrack(scale = 1000)
-
-png('rPlots/3B.png', width = 4, height = 4, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, cnr.tracks, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
-                 from = start(brD + 1000),
-                 to = end(brD + 1000),
-                 cex.axis = 0.3,
-                 cex.title = 0.5,
-                 title.width = 1,
-                 innerMargin = 10)
-dev.off()
-```
 ### 3B-additional CnR browser 
 ```{r}
 
@@ -2881,10 +2852,11 @@ osaBound.ame %>%
 
 pal = colorRampPalette(RColorBrewer::brewer.pal(n = 6, 'Spectral'))
 
-purrr::map(c(T,F), function(x){
+ames <- purrr::map(c(T,F), function(x){
   name = ifelse(x,'open','closed')
   fp = paste0('rPlots/3-draft-ame-',name,'.png')
-
+  p = paste0(name,'_adj.pvalue')
+  
  query <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
@@ -2902,31 +2874,50 @@ control <- fairePeaks.wt %>%
   resize(250, "center") %>%
   memes::get_sequence(dm6)
 
-osaBound.ame <- query %>%
+ ame <- query %>%
   memes::runAme(control = control) %>%
   dplyr::group_by(motif_alt_id) %>%
-  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]]) 
+  dplyr::mutate(symbol = stringr::str_split_fixed(motif_alt_id, '_|-', n = 2)[[1]],
+                neglog = -log(adj.pvalue)) %>%
+   dplyr::rename(!!paste0(name,'_neglog') := neglog)
 
-
-osaBound.ame %>%
-  dplyr::group_by(symbol) %>%
-  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
-  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
-  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
-  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
-  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
-  geom_raster() +
-  scale_fill_gradientn(limits = c(2,14),
-                       colours=c("#440154", "#21918c", "#fde725"),
-                      name = '-log(adj.Pvalue)') +
-  theme(axis.text.y = element_text(size = 12),
-        axis.title = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) 
-ggsave(fp, width = 2.5, height = 2.5, dpi = 300) 
+  return(ame)
+#osaBound.ame %>%
+#  dplyr::group_by(symbol) %>%
+#  dplyr::filter(adj.pvalue == min(adj.pvalue) & rank %in% 1:5) %>%
+#  dplyr::mutate(neglogP = -log10(adj.pvalue)) %>%
+#  dplyr::ungroup() %>% # fct_reorder fails with grouped data, so annoying
+#  dplyr::mutate(symbol = forcats::fct_reorder(symbol, neglogP)) %>%
+#  ggplot(aes('Osa Bound', symbol, fill = neglogP)) +
+#  geom_raster() +
+#  scale_fill_gradientn(limits = c(2,14),
+#                       colours=c("#440154", "#21918c", "#fde725"),
+#                      name = '-log(adj.Pvalue)') +
+#  theme(axis.text.y = element_text(size = 12),
+#        axis.title = element_blank(),
+#        axis.text.x = element_blank(),
+#        axis.ticks.x = element_blank()) 
+#ggsave(fp, width = 2.5, height = 2.5, dpi = 300) 
 })
 
 
+dplyr::left_join(ames[[1]],ames[[2]], by = 'symbol') %>%
+  dplyr::select(symbol, dplyr::matches('*neglog')) %>%
+  dplyr::mutate(group = dplyr::case_when(symbol %in% c('rn','sqz') ~ 'rn/sqz',
+                                         symbol == 'pan' ~ 'pan',
+                                         T ~ 'Other')) %>%
+  ggplot(aes(open_neglog, 
+             closed_neglog,
+             fill = group)) +
+  geom_point(size = 4,shape = 21) +
+  scale_fill_manual(values = c('black','green','red')) +
+  geom_text_repel(aes(label = symbol),
+                  min.segment.length = 0, 
+                  size = 5, 
+                  point.padding = 0.8,
+                  box.padding = 0.7, 
+                  max.overlaps = 20) 
+  ggsave('rPlots/3-draft-openvclosed_ame_scatter.png', width = 5, height = 4, dpi = 300)
 
 ```
 #### osa bound open 3lw enhancers
