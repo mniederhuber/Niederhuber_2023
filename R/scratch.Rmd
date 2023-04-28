@@ -812,9 +812,9 @@ fig3d.hms <- EnrichedHeatmap(fig3d.mats$WT_3LW,
                    top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'right'))))
   
 
-png('rPlots/3D-all.png', width = 5, heigh = 6, units = 'in', res = 300)
+#png('rPlots/3D-all.png', width = 5, heigh = 6, units = 'in', res = 300)
 ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, heatmap_legend_side = "bottom", merge_legend = T)
-dev.off()
+#dev.off()
 
 
 ```
@@ -951,81 +951,139 @@ cluster.df <- data.frame(km$cluster) %>%
 ```
 ##### plot
 ```{r}
-
 plot.df <- cluster.df %>%
     dplyr::distinct(peak, .keep_all = T) %>%
      dplyr::select(peak, km.cluster, WT.3LW, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
      dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
-                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
-     dplyr::group_by(peak) %>%
-     dplyr::mutate(frac = value/max(value)) %>%
-     dplyr::group_by(km.cluster, stage, WT.3LW) %>%
-     dplyr::summarise(mean = mean(value),
-                      sd = sd(frac) ,
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>% 
+    # dplyr::group_by(peak) %>%
+    # dplyr::mutate(frac = value/max(value)) %>%
+     dplyr::group_by(peak, km.cluster)  %>%
+     dplyr::mutate(value = value + 1, 
+                   norm = log2(value/value[stage == '3LW'])) %>%
+  dplyr::group_by(km.cluster, stage) %>%
+     dplyr::summarise(mean = mean(norm),
+                      sd = sd(norm) ,
                       n = dplyr::n()) %>%
-  dplyr::group_by( WT.3LW, stage) %>%
+  dplyr::group_by( stage) %>%
   dplyr::mutate(per = 100 *(n/sum(n)),
-                km.cluster = factor(km.cluster, levels = c(4,8,1,2,5,7,6,3))) 
+                km.cluster = factor(km.cluster, levels = rev(c(4,8,1,2,5,7,6,3)))) 
 
+plot.df
+```
+
+
+```{r}
+
+blues <- colorRampPalette(c("#6be2fa","#0047a3"))(7)
 ## supp plot
-plot.df %>%
-     ggplot(aes(stage,'', fill = mean, height = per))+
-     geom_tile() +
-  scale_fill_viridis_c() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_blank(),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.5, 'cm'),
-        strip.background = element_blank(),
-  strip.text.x = element_blank(),
-  panel.spacing.y = unit(0, 'lines')) +
-   facet_wrap(km.cluster~WT.3LW, nrow = 8, ncol = 2)
-
+#plot.df %>%
+#     ggplot(aes(stage,'', fill = mean, height = per))+
+#     geom_tile() +
+#  scale_fill_viridis_c() +
+#  theme(axis.text = element_text(size = 15),
+#        axis.title = element_blank(),
+#        legend.title = element_blank(),
+#        legend.key.size = unit(0.5, 'cm'),
+#        strip.background = element_blank(),
+#  strip.text.x = element_blank(),
+#  panel.spacing.y = unit(0, 'lines')) +
+#   facet_wrap(km.cluster~WT.3LW, nrow = 8, ncol = 2)
+#
 ## without height adjust
+
+#     ggplot(aes(stage,km.cluster, fill = mean))+
+     #geom_tile() +
 plot.df %>%
-     ggplot(aes(stage,km.cluster, fill = mean))+
-     geom_tile() +
-  scale_fill_viridis_c() +
-  theme(axis.text = element_text(size = 15),
-        axis.title = element_blank(),
-        legend.title = element_blank(),
-        legend.key.size = unit(1, 'cm'),
-        strip.background = element_blank(),
-  strip.text.x = element_blank(),
-  panel.spacing.y = unit(1, 'lines'),
-  legend.position = 'bottom',
-  legend.direction = "horizontal") +
-   facet_wrap(~WT.3LW, ncol = 1)
-ggsave('rPlots/3-draft_fraction_cluster.png', width = 4, height = 9)
+  dplyr::mutate(group = ifelse(km.cluster != 4, 'dynamic', 'static')) %>%
+     ggplot(aes(stage, y = mean, group = km.cluster))+
+  geom_ribbon(aes(ymin = mean - sd, ymax = mean+sd, x = stage, fill = group), 
+              alpha = 0.5) +
+  geom_line() +
+  scale_fill_manual(values = c('#46AEDB', 'grey40')) +
+#  scale_color_manual(values = c('#DE4A47', '#9CBD36')) +
+  ylab('mean log2(zScore/zScore[3LW])') +
+  facet_wrap(~km.cluster, ncol = 2, nrow = 4) +
+  theme(legend.position = 'none')
+ggsave('rPlots/3-draft_fraction_cluster.png', width = 3, height = 5)
+
+ # scale_fill_viridis_c() +
+ # theme(axis.text = element_text(size = 15),
+ #       axis.title = element_blank(),
+ #       legend.title = element_blank(),
+ #       legend.key.size = unit(1, 'cm'),
+ #       strip.background = element_blank(),
+ # strip.text.x = element_blank(),
+ # panel.spacing.y = unit(1, 'lines'),
+ # legend.position = 'bottom',
+ # legend.direction = "horizontal") +
+ #  facet_wrap(~WT.3LW, ncol = 1)
 
 ## fraction barplot
+
 plot.df %>% 
   dplyr::ungroup() %>%
   #dplyr::mutate(km.cluster = forcats::fct_rev(km.cluster)) %>%
-  dplyr::select(WT.3LW, km.cluster, n, per) %>%
+  dplyr::select(km.cluster, n, per) %>%
   dplyr::distinct() %>%
-  dplyr::mutate(group = dplyr::case_when(km.cluster %in% c('3','6','5','7') ~ 'Closing',
-                                         km.cluster %in% c('2','1','8') ~ 'Opening',
-                                         km.cluster %in% c('4') ~ 'Static')) %>%
-  ggplot(aes(per, km.cluster, fill = group)) +
-  geom_bar(stat = 'identity') +
+  dplyr::mutate(group = ifelse(km.cluster == '4', 'Static', 'Dynamic')) %>%
+  #dplyr::group_by(group) 
+  #dplyr::summarise(sum = sum(per),
+  #                 n = n())
+  ggplot(aes('', y = per, fill = km.cluster, group = km.cluster)) +
+  geom_bar(stat = 'identity', position = 'stack', alpha = 0.8, color = 'black') +
   #coord_polar(theta = 'y') +
-  geom_text(aes(x = per, hjust = -0.1, label = paste0(round(per, digits = 1),'%')), size = 5) +
-  scale_fill_manual(values = c('#ff2937','#85b524','#9c9c9c')) +
-  scale_x_continuous(expand = expansion(mult = 0.2))+ 
-  facet_wrap(~WT.3LW, ncol = 1) +
+  geom_text(aes(y = per, x = 1.2, vjust = 1.5, label = paste0('(',round(per, digits = 1),'%)')), position = 'stack') +
+  geom_text(aes(y = per,  x = 0.75, vjust = 1.5, label = paste0('n=',n)), position = 'stack') +
+  scale_fill_manual(values = c(blues, 'grey60')) +
     theme(axis.text = element_blank(),
         axis.title = element_blank(),
         axis.ticks = element_blank(),
         legend.title = element_blank(),
-        legend.key.size = unit(1, 'cm'),
-        legend.position = 'bottom',
-        strip.background = element_blank(),
-        panel.background = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.position = 'none',
+        legend.direction = "horizontal", 
+        #strip.background = element_blank(),
+       panel.background = element_blank(),
   strip.text.x = element_blank(),
-  panel.spacing.y = unit(1, 'lines')) 
-ggsave('rPlots/3-draft_fraction_cluster-pie.png', width = 4, height = 8)
+  #panel.spacing.y = unit(1, 'lines')) 
+    )
+ggsave('rPlots/3-draft_fraction_cluster-pie.png', width = 2, height = 6)
+```
+##### testing matrix of T F peak timecourse
+25% (119) of osa bound closed sites are called a peak later at some point in the FAIRE timecourse
+
+```{r}
+plot.df <- cluster.df %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+    dplyr::mutate(open = ifelse(WT.3LW,T,F)) %>%
+     dplyr::select(peak, open, km.cluster,dplyr::matches("WT.\\d*")) %>%
+     tidyr::pivot_longer(dplyr::matches("WT.\\d*")) %>%
+     dplyr::mutate(name = factor(name, levels = c('WT.3LW', 'WT.6h', 'WT.18h','WT.24h','WT.36h','WT.44h'))) %>%
+  dplyr::group_by(km.cluster, name, open, value) %>%
+  dplyr::summarise(nPeak = dplyr::n()) %>%
+  dplyr::mutate(fracPeak = nPeak/sum(nPeak),
+                km.cluster = factor(km.cluster, levels = c(4,8,1,2,5,7,6,3))) 
+
+plot.df %>%
+  dplyr::filter(value, !is.na(km.cluster)) %>%
+     ggplot(aes(name, km.cluster, fill = fracPeak))+
+  geom_raster() +
+  facet_wrap(~open, ncol = 1) +
+  scale_fill_viridis_c()
+ggsave('rPlots/S3-fracPeakCall.png', width = 4, height = 4, dpi =300)
+
+
+cluster.df %>%
+  dplyr::distinct(peak, .keep_all = T) %>%
+  dplyr::mutate(open = ifelse(WT.3LW,T,F)) %>%
+    # dplyr::select(peak, open, km.cluster,dplyr::matches("WT.\\d*")) %>%
+  dplyr::filter(!WT.3LW) %>%
+  dplyr::mutate(everpeak = ifelse(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h, T, F)) %>%
+  dplyr::group_by(everpeak) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n))
 ```
 
 #### promoters version
@@ -1604,8 +1662,8 @@ rn.union %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n))
 
-
-ChIPpeakAnno::makeVennDiagram(list(rn.union, osaPeaks.full),
+  
+ChIPpeakAnno::makeVennDiagram(list(rn.union, osaPeaks.enhancers),
                               NameOfPeaks = c('Rotund','Osa'))
 
 rn.ss
@@ -4098,15 +4156,50 @@ fairePeaks.deg %>%
 ```{r, 4D}
 #TODO - add highlights for dependent regions - currently manually annotating in illustrator 
 
+dds.dep %>%
+  data.frame() %>% 
+  dplyr::arrange(log2FoldChange)
 
 dds.track <- Gviz::AnnotationTrack(range = GRanges(dds.dep), genome = 'dm6', fill = '#469ae8', col = 'transparent', background.title = 'white', showTitle = F)
 #chr2L:6,166,371-6,170,699 -
 #chr2R:18,244,125-18,248,497
-range <- data.frame(seqnames = 'chr2R',
-                    start = 18202429,
-                    end = 18290126) %>%
+
+#chr2R:7,158,233-7,182,249 prickle
+
+#pk
+pk <- data.frame(seqnames = 'chr2R',
+                    start = 7168262,
+                    end = 7180560) %>%
+  GRanges()
+#arr
+#chr2R:13,461,490-13,468,897
+arr <- data.frame(seqnames = 'chr2R',
+                    start = 13461490,
+                    end = 13468897) %>%
+  GRanges()
+
+#ino80
+#chr3R:19,346,618-19,374,766
+ino <- data.frame(seqnames = 'chr3R',
+                  start = 19364703,
+                  end = 19374766) %>%
   GRanges()
 #peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full, genome = 'dm6', fill = '#D01C8B', col = 'transparent', background.title = 'white', showTitle = F )
+
+
+#eip74
+#chr3L:17,580,414-17,585,073
+e74 <- data.frame(seqnames = 'chr3L',
+                  start = 17580414,
+                  end = 17585073) %>%
+  GRanges()
+
+#eip78c
+#chr3L:21,257,236-21,266,557
+e78 <- data.frame(seqnames = 'chr3L',
+                  start = 21257236,
+                  end = 21266557) %>%
+  GRanges()
 
 #peaks %>%
 #  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE' & faireCat.osaDeGrad == 'Osa Dependent') %>%
@@ -4131,10 +4224,10 @@ cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
 cnr.tracks <- list(cnr.tracks$osaGFP.rep1, cnr.tracks$osaGFP.rep2, peakTrack, cnr.tracks$yw.rep1, cnr.tracks$yw.rep2)
 spacer <- Gviz::AnnotationTrack(background.title = 'white')
 deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,13))
-deg.tracks <- c(cnr.tracks, # add in osa cnr tracks with peaks
-                spacer,
-                spacer,
-                spacer,
+deg.tracks <- c(#cnr.tracks, # add in osa cnr tracks with peaks
+                #spacer,
+                #spacer,
+                #spacer,
                 deg.tracks$wt_3LW, 
                 deg.tracks$wt_24h, 
                 deg.tracks$wt_44h,
@@ -4143,18 +4236,80 @@ deg.tracks <- c(cnr.tracks, # add in osa cnr tracks with peaks
 
 #brdisc.at <- Gviz::AnnotationTrack(range = inv, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
 
-axis <- Gviz::GenomeAxisTrack(scale = 10000)
+axis <- Gviz::GenomeAxisTrack(scale = 2000)
 
-png('rPlots/4E-browser.png', width = 12, height = 5, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), chromosome = seqnames(range) %>% as.character(), 
-                 from = start(range-15000),
-                 to = end(range-10000),
+### prickle
+
+png('rPlots/4E-browser-prickle.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack),
+                 chromosome = seqnames(pk) %>% as.character(), 
+                 from = start(pk-4000),
+                 to = end(pk-4000),
                  cex.axis = 0.3,
                  cex.title = 0.5,
                  title.width = 1,
                  innerMargin = 10)
 dev.off()
- 
+
+### arr
+
+png('rPlots/4E-browser-arr.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), 
+                 chromosome = seqnames(arr) %>% as.character(), 
+                 from = start(arr),
+                 to = end(arr),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+#ino80
+png('rPlots/4E-browser-ino80.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), 
+                 chromosome = seqnames(ino) %>% as.character(), 
+                 from = start(ino),
+                 to = end(ino),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+
+#e74
+png('rPlots/4E-browser-e74.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), 
+                 chromosome = seqnames(e74) %>% as.character(), 
+                 from = start(e74),
+                 to = end(e74),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+#e78
+png('rPlots/4E-browser-e78.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), 
+                 chromosome = seqnames(e78) %>% as.character(), 
+                 from = start(e78),
+                 to = end(e78),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+### Dl
+ Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack),
+                  chromosome = seqnames(Dl) %>% as.character(), 
+                 from = start(Dl-35000),
+                 to = end(Dl-15000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
 ```
 
 ## 4H. motif enrichment in osa dependent regions
@@ -4847,6 +5002,33 @@ dds.dep <- IRanges::subsetByOverlaps(GRanges(dds.peaks), fairePeaks.deg) %>%
 
 
 ```
+```{r}
+ol.dep <- dds.dep %>%
+  data.frame() %>%
+  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks.full, T, F),
+                osa.enhancer = ifelse(GRanges(.) %over% osaPeaks.enhancers.full, T, F)) %>%
+  dplyr::group_by(osa.enhancer) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n),
+                id = 'Osa Overlap')
+
+ol.shuffle <- dds.dep %>%
+  data.frame() %>%
+  dplyr::mutate(shuffle = ifelse(GRanges(.) %over% osa.enhancer.shuffle, T, F)) %>%
+  dplyr::group_by(shuffle) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n),
+                id = 'Shuffle')
+
+ol.dep.n <- ol.dep[ol.dep$osa.enhancer,]$n
+ol.shuffle.n <- ol.shuffle[ol.shuffle$shuffle,]$n
+dep.sum <- sum(ol.dep$n)
+shuffle.sum <- sum(ol.shuffle$n)
+ol.shuffle.n
+
+prop.test(c(ol.dep.n, ol.shuffle.n), c(dep.sum, shuffle.sum), correct = T)
+```
+
 #### diffbind groups heatmap
 ```{r}
 

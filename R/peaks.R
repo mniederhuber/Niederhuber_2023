@@ -25,7 +25,6 @@ dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
   }
 }) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '500bp background')
 
-
 ##### load peaks #####
 
 ### get CUT&RUN peaks
@@ -33,6 +32,20 @@ dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
 cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
 cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
 cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
+
+# just using rep 1 coordinates for now
+cnr.summits.1 <- read.table('Peaks/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_summits.bed', sep = '\t') %>%
+  .[,1:3]
+colnames(cnr.summits.1) <- c('seqnames', 'start','end')
+cnr.summits <- GRanges(cnr.summits.1)
+
+#cnr.summits.2 <- read.table('Peaks/osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_summits.bed', sep = '\t') %>%
+#  .[,1:3]
+#colnames(cnr.summits.2) <- c('seqnames', 'start','end')
+
+# find the summits that overlap - keeping rep1 coordinates
+#cnr.summits <- subsetByOverlaps(GRanges(cnr.summits.1), GRanges(cnr.summits.2), maxgap = 100) 
+
 
 #filter cnr peaks by q val >= 10 and called in each replicate
 #TODO - decide on filter cutoff -- 75% was pretty strict, only ~1000 osa specific peaks vs previous approach with no filtering that resulting in ~2700 specific peaks
@@ -51,7 +64,8 @@ faire.ss.osaDeg <- faire.ss[faire.ss$experiment == 'osaGFP deGrad FAIRE',]
 faire.wt.peaks <- getPeakData(faire.ss.WT, by = 'id', narrowPeak_colname = 'peaks')
 faire.wt.byID <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
 faire.wt.byGrp <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
-#faire.byExp <- faire.peaks %>% GRanges() %>% split(., mcols(.)$experiment) #split by experiment
+
+
 
 faire.osaDeg.peaks <- getPeakData(faire.ss.osaDeg, by = 'id', narrowPeak_colname = 'peaks')
 faire.osaDeg.byID <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
@@ -61,7 +75,11 @@ faire.osaDeg.byGrp <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$grp
 faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps', with_reduce = T))
 faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps', with_reduce = T))
 
-
+faire.wt.3LW.summits <- read.table('Peaks/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_summits.bed', sep = '\t') %>%
+  .[,1:3]
+colnames(faire.wt.3LW.summits) <- c('seqnames', 'start', 'end')
+faire.wt.3LW.summits <- subsetByOverlaps(GRanges(faire.wt.3LW.summits), faire.wt.byGrp$wt.3LW)
+                                         
 #make union FAIRE peak list - includes any/all peak calls for all wt reps
 faire.wt.union <- faire.wt.byID %>%
   unlist() %>%
@@ -230,6 +248,14 @@ peaks <- purrr::map(peaks, function(x) {
 })
 
 message('Saving output...')
-save(peaks, faire.wt.byGrp, faire.osaDeg.byGrp, faire.osaDeg.byID, cnr.byGrp, cnr.byID, file = 'rData/peaks.rda')
+save(peaks, 
+     faire.wt.byGrp, 
+     faire.osaDeg.byGrp, 
+     faire.osaDeg.byID, 
+     cnr.byGrp, 
+     cnr.byID, 
+     cnr.summits,
+     faire.wt.3LW.summits,
+     file = 'rData/peaks.rda')
   
 # 

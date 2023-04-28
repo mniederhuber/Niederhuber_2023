@@ -58,6 +58,20 @@ makeSAF <- function(df) {
   return(df.saf)
 }
 
+## varient function for single bw
+get_cnr_track <- function(bw, ylim, fill, col, ...) {
+    track <- Gviz::DataTrack(range = bw,
+                    genome = 'dm6',
+                    type = 'hist',
+                    #windowSize = ,
+                    fill.histogram = fill,
+                    col.histogram = col, 
+                    background.title = 'white',
+                    fontcolor.title = 'black',
+                    col.axis = 'black',
+                    ylim = ylim)  
+  return(track)
+}
 
 get_cnr_tracks <- function(sheet, ylim, ...) {
   track <- purrr::map(split(sheet, sheet$id), ~{ #split will convert group variable to factor, so levels are default alphabetical which works out to be order I want
