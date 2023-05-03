@@ -518,7 +518,6 @@ ggsave('rPlots/3C.png', width = 5, height = 4, units = 'in', dpi = 300)
 # two-proportion z-test -- are proportions of different annotations the same between background and osa cnr?
 ###
 
-anno.df
 
 ztest <- purrr::map(unique(anno.df$anno.new), function(x) {
   df <- anno.df %>% dplyr::filter(anno.new == x) 
@@ -931,7 +930,7 @@ enrichtest <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-full.bed',
                               'bed/rn.bed',
                               TxDb = dm6.TxDb,
                               nShuffle = 1000)
-enrichtest
+
                               
 ```
 

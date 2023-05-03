@@ -4201,6 +4201,13 @@ e78 <- data.frame(seqnames = 'chr3L',
                   end = 21266557) %>%
   GRanges()
 
+#e93
+#chr3R:21,977,280-21,981,625
+e93 <- data.frame(seqnames = 'chr3R',
+                  start = 21977280,
+                  end = 21981625) %>%
+  GRanges()
+
 #peaks %>%
 #  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE' & faireCat.osaDeGrad == 'Osa Dependent') %>%
 #  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>%
@@ -4213,10 +4220,13 @@ e78 <- data.frame(seqnames = 'chr3L',
 # chr2R:11,465,947-11,499,493 
   
 #track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50", 'grey40')
 
 deg.ss.browser <- faire.osaDeGrad.ssPool %>%
-  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' |
+                                        faire.wt.ssPool$grp == 'wt.24h' | 
+                                        faire.wt.ssPool$grp == 'wt.36h' |
+                                        faire.wt.ssPool$grp == 'wt.44h',]) %>%
   dplyr::mutate(color = track.colors)
 
 
@@ -4230,6 +4240,7 @@ deg.tracks <- c(#cnr.tracks, # add in osa cnr tracks with peaks
                 #spacer,
                 deg.tracks$wt_3LW, 
                 deg.tracks$wt_24h, 
+                deg.tracks$wt_36h, 
                 deg.tracks$wt_44h,
                 deg.tracks$osaGFP.deGrad_control_faire, 
                 deg.tracks$osaGFP.deGrad_nubG4_faire)
@@ -4301,6 +4312,17 @@ Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, ge
                  innerMargin = 10)
 dev.off()
 
+#e93
+png('rPlots/4E-browser-e93.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack), 
+                 chromosome = seqnames(e93) %>% as.character(), 
+                 from = start(e93),
+                 to = end(e93),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
 ### Dl
  Gviz::plotTracks(c(axis, deg.tracks, spacer, spacer, dds.track,spacer,spacer, genetrack),
                   chromosome = seqnames(Dl) %>% as.character(), 
@@ -4311,6 +4333,37 @@ dev.off()
                  title.width = 1,
                  innerMargin = 10)
 ```
+#### rna seq
+```{r}
+wing.rnaseq %>%
+  dplyr::select(-log_mean,-mean) %>%
+  tidyr::pivot_longer(!Geneid) %>%
+  dplyr::filter(Geneid %in% c('FBgn0000567', 
+                              'FBgn0003090')) %>%
+                             #'FBgn0004865',
+                             #'FBgn0264490')) %>%
+  dplyr::group_by(name) %>%
+  dplyr::mutate(name = stringr::str_remove(name,'X'),
+                grp = stringr::str_split_fixed(name,'_',n=2)[[1]],
+                grp = factor(grp, levels = c('L3', '6h','18h','24h','36h','44h')),
+                Gene = dplyr::case_when(Geneid == 'FBgn0000567' ~ 'Eip74EF',
+                                        Geneid == 'FBgn0003090' ~ 'pk')) %>%
+#                                        Geneid == 'FBgn0004865' ~ 'Eip78C',
+#                                        Geneid == 'FBgn0264490' ~ 'Eip93F')) %>%
+  dplyr::group_by(Gene, grp) %>%
+  dplyr::summarise(mean = mean(value)) %>%
+  dplyr::mutate(fracmax = mean/max(mean)) %>%
+   ggplot(aes(grp, fracmax, color = Gene, group = Gene)) +
+  geom_line(size = 2) +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 12),
+        panel.grid.major = element_line(color = 'grey80'),
+        legend.key.size = unit(1, 'cm'),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 12))
+ggsave('rPlots/4G-pk-e74-expression.png', width = 5, height = 3, dpi = 300)
+```
+
 
 ## 4H. motif enrichment in osa dependent regions
 
@@ -5003,30 +5056,35 @@ dds.dep <- IRanges::subsetByOverlaps(GRanges(dds.peaks), fairePeaks.deg) %>%
 
 ```
 ```{r}
+osa.boot <- nullranges::bootRanges(osaPeaks.full, 
+                                   blockLength = 500, 
+                                   withinChrom = T,
+                                   R = 50)
 ol.dep <- dds.dep %>%
   data.frame() %>%
-  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks.full, T, F),
-                osa.enhancer = ifelse(GRanges(.) %over% osaPeaks.enhancers.full, T, F)) %>%
-  dplyr::group_by(osa.enhancer) %>%
+  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks.full, T, F)) %>%
+#                osa.enhancer = ifelse(GRanges(.) %over% osaPeaks.enhancers.full, T, F)) %>%
+  dplyr::group_by(osa) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n),
                 id = 'Osa Overlap')
 
-ol.shuffle <- dds.dep %>%
+
+ol.boot <- dds.dep %>%
   data.frame() %>%
-  dplyr::mutate(shuffle = ifelse(GRanges(.) %over% osa.enhancer.shuffle, T, F)) %>%
-  dplyr::group_by(shuffle) %>%
+  dplyr::mutate(boot = ifelse(GRanges(.) %over% osa.boot, T, F)) %>%
+  dplyr::group_by(boot) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n),
-                id = 'Shuffle')
-
-ol.dep.n <- ol.dep[ol.dep$osa.enhancer,]$n
-ol.shuffle.n <- ol.shuffle[ol.shuffle$shuffle,]$n
+                id = 'Boot')
+ol.dep
+ol.dep.n <- ol.dep[ol.dep$osa,]$n
+ol.boot.n <- ol.shuffle[ol.boot$boot,]$n
 dep.sum <- sum(ol.dep$n)
-shuffle.sum <- sum(ol.shuffle$n)
-ol.shuffle.n
+boot.sum <- sum(ol.boot$n)
+ol.boot.n
 
-prop.test(c(ol.dep.n, ol.shuffle.n), c(dep.sum, shuffle.sum), correct = T)
+prop.test(c(ol.dep.n, ol.boot.n), c(dep.sum, boot.sum), correct = T)
 ```
 
 #### diffbind groups heatmap
@@ -5112,28 +5170,85 @@ dds.peaks.qF <- dds.peaks.qF %>%
                   faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
                   faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
 
-tidy.dds <- dds.peaks.qF %>% 
-  dplyr::filter(log2FoldChange <= -1) %>%
-     dplyr::select(peak, group, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
-     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
-     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
-                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
-#                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
-     dplyr::group_by(peak) %>%
-     dplyr::mutate(value = ifelse(value < 0, 0, value), # remove negative zScores
-                   frac = value/max(value)) 
-tidy.dds
-tidy.dds %>%
-  tidyHeatmap::heatmap(peak, stage, value,
-                       palette_value = circlize::colorRamp2(c(0, 1, 2, 3, 4, 5), viridisLite::viridis(6)),
-                       cluster_rows = F, 
-                       cluster_columns = F, 
-                       row_km = 5)
-  max(tidy.cluster$value)
-  
-dds.peaks.qF %>%
-  data.frame() %>%
-  dplyr::filter(padj <= 0.1)
+dds.dep.df <- dds.peaks.qF %>% 
+  dplyr::filter(log2FoldChange <= -1) 
+
+dds.mat <- dds.dep.df %>%
+     dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tibble::column_to_rownames('peak') %>%
+     as.matrix()
+#     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+#     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+#                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+##                   k8.cluster = factor(k8.cluster, levels = c('2', '3', '6','1','5','8','7','4'))) %>%
+#     dplyr::group_by(peak) %>%
+#     dplyr::mutate(value = ifelse(value < 0, 0, value), # remove negative zScores
+#                   frac = value/max(value)) 
+
+
+set.seed(11)
+km <- kmeans(dds.mat, 2, nstart = 24, iter.max = 15)
+
+k_df <- km$cluster %>% 
+  data.frame %>% 
+  dplyr::rename(k = ".") %>% 
+  tibble::rownames_to_column("peak") %>%
+  dplyr::mutate(peak = as.integer(peak))
+
+dds.df <- dplyr::left_join(dds.dep.df, k_df)
+
+plot.df <- dds.df %>%
+  dplyr::select(peak, k, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+   tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2], ) %>%
+dplyr::group_by(peak, k)  %>%
+     dplyr::mutate(value = value + 1, 
+                   norm = log2(value/value[stage == '3LW'])) %>%
+  tidyr::pivot_wider(id_cols = peak, names_from = stage, values_from = norm) %>%
+  dplyr::mutate(group = dplyr::case_when(`24h` >= 1 | `36h` >= 1 | `44h` >= 1 ~ 'UP',
+                                         `24h` > -1 & `24h` < 1 | `36h` > -1 & `36h` < 1 | `44h` > -1 & `44h` < 1 ~ 'STATIC',
+                                         T ~ 'DOWN')) %>%
+  tidyr::pivot_longer(dplyr::matches("\\d"), names_to = 'stage') %>%
+     dplyr::mutate(stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(group,stage) %>%
+     dplyr::summarise(mean = mean(value),
+                      sd = sd(value) ,
+                      n = dplyr::n()) %>%
+  dplyr::group_by(stage) %>%
+  dplyr::mutate(frac = n/sum(n),
+                per = paste0(round(frac*100,1),'%'),
+                title = paste0(group,' n=',n,' (',per,')'),
+                title = factor(title, levels = c('UP n=207 (62%)',
+                                                 'STATIC n=124 (37.1%)',
+                                                 'DOWN n=3 (0.9%)')))
+                                                 
+
+
+plot.df %>%
+  ggplot(aes(stage, mean, group = group)) + 
+  geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd), alpha = 0.4) +
+  geom_line() +
+#  geom_text(data = plot.df, aes(label = paste0('n=',n,' (',per,')'), x = 4, y = 2), size = 6) +
+ # scale_fill_manual(values = c('#d9435e','grey60','#69d943')) +
+  facet_wrap(~title, ncol = 1) + 
+  theme(legend.position = 'none') +
+  NULL
+ggsave('rPlots/4-draft-osaDep-cluster.png', width = 2, height = 4 , dpi = 300)
+
+#plot.df %>%
+#  dplyr::group_by(k,n ) %>%
+#  dplyr::summarise() %>%
+#  dplyr::ungroup() %>%
+#  dplyr::mutate(frac = n / sum(n)) %>%
+#  ggplot(aes('', frac, fill = k)) + 
+#  geom_bar(stat = 'identity', position = 'stack')  +
+#  scale_fill_manual(values = c('#d4536a','grey60')) +
+#  geom_text(aes(label = paste0('n=',n,' (',round(frac*100, digits = 2),'%)'), y = frac), vjust = 2, size = 6) +
+#  theme(axis.title = element_blank(),
+#        axis.text = element_text(size = 12),
+#        axis.ticks.x = element_blank())
+#ggsave('rPlots/4-draft-osaDep-temporal.png', width = 3, height = 6 , dpi = 300)
+
 ```
 ### deseq2 padj plot
 ```{r}
