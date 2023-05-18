@@ -240,7 +240,8 @@ peaks <- purrr::map(peaks, function(x) {
                                               grepl("Downstream", annotation) ~ "Downstream", 
                                               grepl("Exon", annotation) ~ "Exon",
                                               grepl("Intron", annotation) ~ "Intron",
-                                              grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working???
+                                              grepl("Promoter \\(2-3kb\\)", annotation) ~ "Promoter (2-3kb)", #why is this not working??? 
+                                                ## It looks like it's because nothing gets annoated as "Promoter (2-3kb)" maybe because of how promoter region is defined?
                                               grepl("Promoter", annotation) ~ "Promoter"))
 
 #                  flank_gene = stringr::str_split(flank_geneIds, ';'),

@@ -1413,4 +1413,68 @@ ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = lis
 ```
 
 # Fig 4
+# Fig 5
+```{r}
+dl_quant <- read.csv('../delta/code/output.csv') %>%
+  dplyr::mutate(log2 = log2(dl_ratio),
+                sampleID = paste(date, sampleID, sep = '_')) 
+  #dplyr::filter(!sampleID %in% c('230503_lexA_a1', '230503_lexA_b1', '230508_lexA_f1', '230508_lexA_g1'))
+
+osa_dl <- dl_quant[dl_quant$genotype == 'osa',]$dl_ratio
+lexA_dl <- dl_quant[dl_quant$genotype == 'lexA',]$dl_ratio
+
+t.test(osa_dl, lexA_dl, paired = F)
+
+dl_quant %>%
+  ggplot(aes(genotype, dl_ratio)) +
+  geom_boxplot() +
+  geom_point()
+
+
+osa_br <- dl_quant[dl_quant$genotype == 'osa',]$br_ratio
+lexA_br <- dl_quant[dl_quant$genotype == 'lexA',]$br_ratio
+
+t.test(osa_br, lexA_br)
+
+dl_quant %>%
+  ggplot(aes(genotype, br_ratio)) +
+  geom_boxplot() +
+  geom_point(aes(color = sampleID))
+
+
+dl_quant %>% dplyr::filter(genotype == 'osa')
+```
+
+```{r}
+dl_quant2 <- read.csv('../delta/code/quant.csv') %>%
+  dplyr::mutate(sampleID = paste(date,genotype,img,sep='.')) 
+
+dl_quant_ratio <- dl_quant2 %>%
+  dplyr::group_by(sampleID,genotype) %>%
+  dplyr::summarise(ratio = mean[side == 'a']/mean[side == 'p'])
+
+
+osa_dl <- dl_quant_ratio[dl_quant_ratio$genotype == 'osa',]$ratio
+lexA_dl <- dl_quant_ratio[dl_quant_ratio$genotype == 'lexA',]$ratio
+
+t.test(osa_dl, lexA_dl, paired = F)
+
+dl_quant_ratio %>%
+  ggplot(aes(genotype, ratio)) + 
+  geom_boxplot(aes(fill = genotype)) +
+  geom_point(position = position_jitter(width = 0.08)) +
+  scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
+  annotate(geom = 'segment', x = 1, xend = 2, y = 1.5, yend = 1.5) +
+  annotate(geom = 'text', x = 1.5, y = 1.51, label = '***') +
+  ylab('Dl A/P Ratio') +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12))
+ggsave('rPlots/5D.png', width = 3, height = 4, dpi = 300)
+
+dl_quant_ratio %>%
+  dplyr::filter(genotype == 'osa')
+
+```
 
