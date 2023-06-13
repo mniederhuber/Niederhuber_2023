@@ -1551,7 +1551,7 @@ fairePeaks.wt.test %>%
 ## Drafts
 ### intersect with hairless dm6 chip-chip
 ```{r}
-hairless <- read.table('hairless-dm6.bed', sep = '\t') 
+hairless <- read.table('bed/hairless-dm6.bed', sep = '\t') 
 colnames(hairless) <- c('seqnames', 'start', 'end')
 
 GRanges(hairless)
@@ -1562,6 +1562,8 @@ hairless %>%
   dplyr::group_by(osa) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n))
+
+
 ```
 
 ### intersect with smrter chip-chip

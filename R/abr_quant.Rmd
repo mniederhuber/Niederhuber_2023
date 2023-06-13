@@ -1,9 +1,13 @@
 ```{r, setup}
+library(magrittr)
 library(ggplot2)
 ```
 ```{r}
-read.csv('../DATA/Microscopy/aBr-quant-test.csv') %>%
-  dplyr::group_by(id) 
+br <- read.csv('../DATA/Microscopy/aBr-quant-test.csv') %>%
+  dplyr::group_by(id) %>%
   dplyr::summarise(ratio = mean[genotype == 'kd']/mean[genotype == 'wt'])
+
+br %>%
+  ggplot(aes())
 ```
 
