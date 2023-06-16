@@ -89,14 +89,34 @@ faire.osaDeg.union <- faire.osaDeg.byID %>%
   unlist() %>%
   reduce()
 
+### get Rotund peaks
+rn.ss <- read.csv('~/McKay/Rotund-ChIP/sampleSheet.tsv', sep = '\t') 
+
+rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp') 
+
+q <- quantile(rn.peak$qValue, probs = 0.25) #find the 75% qVal
+
+rn.peak.qf <- rn.peak %>%
+  dplyr::mutate(seqnames = paste0('chr',seqnames)) %>%
+  dplyr::filter(qValue >= q & seqnames %in% c('chr2L','chr2R','chr3L','chr3R','chrX')) 
+
+#grp.repShared.1 <- IRanges::subsetByOverlaps(grp.list[[1]], grp.list[[2]]) # get coords in 1st rep that overlap rep 2
+rn.peak.1 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]), 
+                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]))
+
+rn.peak.2 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]), 
+                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]))                                      
+rn.union <- union(rn.peak.1, rn.peak.2)
+
 ##### bind and annotate peak list #####
 
 faire.wt.df <- faire.wt.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'WT FAIRE Wing Timecourse')
 faire.osaDeg.df <- faire.osaDeg.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'osaGFP deGrad Pupal Wing FAIRE')
 cnr.df <- cnr.union %>% data.frame() %>% dplyr::mutate(assay = 'cnr', experiment = 'osaGFP 3LW Wing CUT&RUN')
+rn.df <- rn.union %>% data.frame() %>% dplyr::mutate(assay = 'chip', experiment = 'Rotund 3LW Wing ChIP-seq')
 
 #TODO rename peaks at each step?
-peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df), function(x) {
+peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df, rn.df), function(x) {
   x %>% #dplyr::bind_rows(faire.wt.df, faire.osaDeg.df, cnr.df) %>%
     dplyr::filter(!seqnames %in% c('chr4','chrY','chrM')) %>% #drop regions from potentially problematic chromosomes
     dplyr::arrange(seqnames, start, end) %>%
@@ -106,16 +126,17 @@ peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df), function(x) {
                   WT.24h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.24h, T, F),
                   WT.36h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.36h, T, F),
                   WT.44h = ifelse(GRanges(.) %over% faire.wt.byGrp$wt.44h, T, F),
-                  osaGFP.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
-                  osaGFP.deGrad = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
+                  osaDeg.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
+                  osaDeg = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F),
                   osa.cnr = ifelse(GRanges(.) %over% cnr.byGrp$osaGFP.sup, T, F),
                   yw.cnr = ifelse(GRanges(.) %over% cnr.byGrp$yw.sup, T, F),
                   cnr.peakCat = dplyr::case_when(osa.cnr & yw.cnr ~ 'shared',
                                                  osa.cnr & !yw.cnr ~ 'osa',
                                                  !osa.cnr & yw.cnr ~ 'control',
                                                  T ~ 'other')) %>%
-    dplyr::filter(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h | osaGFP.control | osaGFP.deGrad | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
+  #  dplyr::filter(WT.3LW | WT.6h | WT.18h | WT.24h | WT.36h | WT.44h | osaDeg.control | osaDeg | osa.cnr | yw.cnr) %>% #drop regions that don't have a good quality reproducible peak called
     #get osaGFP deGrad cnr bigwig scores...
+    ## NOTE you still have to filter for each individual experiment, ie. osaDeg.control | osaDeg to just get good peaks from the degrad experiment
     dplyr::mutate(peak = 1:nrow(.),
                   osaGFP.rep1.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep1',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
                   osaGFP.rep2.spikeNorm = get_bw_score(cnr.ss[cnr.ss$baseName == 'osaGFP-3LW-wing-aGFP-CnR-sup-rep2',]$bigwig_allFrags_sacCer3_spikeNorm[1], GRanges(.)),
@@ -135,7 +156,7 @@ peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df), function(x) {
                   faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
 }) %>%
   append(GRanges(dm6.500bp)) %>%
-  setNames(c('faire.wt.df', 'faire.osaDeg.df', 'cnr.df','dm6.500bp'))
+  setNames(c('faire.wt.df', 'faire.osaDeg.df', 'cnr.df','rn.df','dm6.500bp'))
 
 
 
@@ -184,31 +205,84 @@ names(faire.dds.df) <- paste0('faire_3LW_24h.',names(faire.dds.df))
 peaks$faire.wt.df %<>% dplyr::bind_cols(., faire.dds.df)
 # FAIRE - OsaGFP deGrad
 
-faire.deg.Counts <- Rsubread::featureCounts(faire.ss.osaDeg$bam, 
-                                        annot.ext = makeSAF(peaks$faire.osaDeg.df),  #restricting counts to within the osaDeg union peak list - wondering if fully union peaks effects multiple testing correctiono
-                                        #annot.ext = makeSAF(peaks), 
-                                        allowMultiOverlap = T,
-                                        nthreads = 4,
-                                        isPairedEnd = T)
+#TODO annotate all the diffbind steps - cite source
+#### Diff bind
+osaDeg.db_sheet  <- faire.ss.osaDeg %>%
+  dplyr::rename(SampleID = id,
+                Peaks = peaks,
+                bamReads = bam) %>%
+  dplyr::mutate(PeakCaller = "narrow", 
+                Replicate = ifelse(rep == 'Rep1', 1, 2),
+                Condition = ifelse(grepl('control', SampleID), 'control','nubG4'))
 
-colnames(faire.deg.Counts$counts) <- faire.ss.osaDeg$id
+osaDeg.db <- DiffBind::dba(sampleSheet = osaDeg.db_sheet)
+osaDeg.db <- DiffBind::dba.count(osaDeg.db)
 
-faire.deg.dds <- DESeq2::DESeqDataSetFromMatrix(countData = faire.deg.Counts$counts,  colData = faire.ss.osaDeg,  design = ~grp) %>%
-  DESeq2::DESeq(.)
+info <- DiffBind::dba.show(osaDeg.db)
+libsizes <- cbind(LibReads=info$Reads,
+                  FRiP=info$FRiP,
+                  PeakReads=round(info$Reads * info$FRiP))
+rownames(libsizes) <- info$ID 
 
-faire.deg.dds.df <- DESeq2::results(faire.deg.dds, 
-                                    contrast = c('grp','osaGFP.deGrad_control_faire','osaGFP.deGrad_nubG4_faire'),
-                                    alpha = 0.1,
-                                    pAdjustMethod = 'BH') %>% 
-  data.frame() 
+osaDeg.db <- DiffBind::dba.normalize(osaDeg.db, normalize = 'lib') #library size normalization may be more appropriate for non-rnaseq data
+norm <- DiffBind::dba.normalize(osaDeg.db, bRetrieve=T)
+normlibs <- cbind(FullLibSize=norm$lib.sizes,
+                  NormFacs=norm$norm.factors,
+                  NormLibSize=round(norm$lib.sizes/norm$norm.factors))
+rownames(normlibs) <- info$ID
 
-#names(faire.deg.dds.df) <- paste0('faire_osaDeGrad.',names(faire.deg.dds.df))
 
-peaks$faire.osaDeg.df %<>% 
-  dplyr::bind_cols(., faire.deg.dds.df) %>%
-  dplyr::mutate(faireCat.osaDeGrad = dplyr::case_when(log2FoldChange >= 0.4 ~ 'Osa Dependent',
-                                                      log2FoldChange < 0.4 & log2FoldChange > -0.4 ~ 'Osa Independent',
-                                                      log2FoldChange <= -0.4 ~ 'Osa Ectopic', T ~ 'NA')) 
+osaDeg.db <- DiffBind::dba.contrast(osaDeg.db, contrast = c('Condition', 'nubG4','control'))
+
+osaDeg.db <- DiffBind::dba.analyze(osaDeg.db)
+
+dds <- DiffBind::dba.analyze(osaDeg.db, bRetrieveAnalysis =TRUE) #retreive the deseq2 object
+
+dds.results <- DESeq2::results(dds, contrast = c('Condition', 'nubG4', 'control'))
+
+#### 
+osaDeg.db.peaks <- osaDeg.db$peaks %>%
+  data.frame() %>%
+  dplyr::select(seqnames, start, end) %>%
+  dplyr::mutate(peak = 1:nrow(.)) 
+
+dds.peaks <- dds.results %>% data.frame() %>%
+  dplyr::mutate(peak = 1:nrow(.)) %>%
+  dplyr::left_join(osaDeg.db.peaks, ., by = 'peak') 
+
+# final output
+#osaDeg.diffBind <- IRanges::subsetByOverlaps(GRanges(dds.peaks), ) %>%
+#  data.frame() %>%
+#  GRanges() 
+
+## behaves differently than filtering the annotated DF on osaDeg | osaDeg.control - slight difference in peak number
+#osaDeg.qF <- IRanges::subsetByOverlaps(GRanges(dds.peaks), GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osaDeg | osaDeg.control))) 
+osaDeg.qF <- dds.peaks %>%
+  dplyr::mutate(osaDeg.control = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_control_faire, T, F),
+                osaDeg = ifelse(GRanges(.) %over% faire.osaDeg.byGrp$osaGFP.deGrad_nubG4_faire, T, F)) %>%
+  dplyr::filter(osaDeg | osaDeg.control)
+
+#TODO move to plots?
+osaDeg.osaDep <- osaDeg.qF %>%
+  data.frame() %>%
+  dplyr::filter(log2FoldChange <= -1) %>%
+  GRanges()
+
+osaDep.anno <- osaDeg.osaDep %>%
+  data.frame() %>%
+  dplyr::mutate(#group = ifelse(log2FoldChange <= -1, "Osa Dependent", "Independent"),
+                faire.3LW.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_3LW',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                faire.6h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_6h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.18h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_18h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.24h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_24h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.36h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_36h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)),
+                  faire.44h.zScore = get_bw_score(faire.wt.ssPool[faire.wt.ssPool$baseName == 'wt_44h',]$bigwig_rpgcNorm_zNorm[1], GRanges(.)))
+
+# add an osa.dependent annotation to the main osa deg peak set, that way the full FAIRE coordinates can be used for gviz tracks
+peaks$faire.osaDeg.df %<>%
+  dplyr::mutate(osa.dependent = ifelse(GRanges(.) %over% osaDeg.osaDep, T, F))
+  
+######
 
 ##### bind deseq results to main peaks dataframe and annotate faire behavior between 3LW and 24hAPF #####
 
@@ -253,6 +327,11 @@ save(peaks,
      faire.wt.byGrp, 
      faire.osaDeg.byGrp, 
      faire.osaDeg.byID, 
+     osaDeg.db.peaks,
+     dds.peaks,
+     osaDeg.qF, 
+     osaDeg.osaDep, 
+     osaDep.anno,
      cnr.byGrp, 
      cnr.byID, 
      cnr.summits,

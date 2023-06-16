@@ -51,7 +51,10 @@ faire.osaDeGrad.ssPool <-read.csv('sheets/osa-deGrad-sampleSheetPooled.tsv', hea
                 experiment = 'osaGFP deGrad FAIRE', .before = 1)
 
 ### combine sheets
+#TODO does this combined sheet ever get used?
+# yes, but it's not really necessary to combine is it? 
 faire.ss <- dplyr::bind_rows(faire.wt.ss, faire.osaDeGrad.ss)
+
 
 ### save rData
 save(cnr.ss, faire.ss, faire.osaDeGrad.ss, faire.wt.ssPool, faire.osaDeGrad.ssPool, file = 'rData/sheets.rda')

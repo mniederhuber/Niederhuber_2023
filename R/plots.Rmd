@@ -23,6 +23,7 @@ source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to
 
 load('rData/sheets.rda')
 load('rData/peaks.rda')
+load('rData/rnaiScreen.rda')
 
 #TODO move RNAseq data into BAP project
 # TODO this is in progress - mixed across directories
@@ -173,13 +174,19 @@ fairePeaks.wt.full <- peaks$faire.wt.df %>%
 
 
 #DONE - remove the peakCat ? since now using log2fold change for these categories...
-fairePeaks.deg <- peaks$faire.osaDeg.df %>%
-#  dplyr::filter(assay == 'faire' & experiment == 'osaGFP deGrad Pupal Wing FAIRE') %>%
-  dplyr::filter(osaGFP.deGrad | osaGFP.control) %>% # want to only use peaks that are reproducible and of good quality 
+# switched to using osaDeg.qF which is a peak set derived from diffbind, that has been subset using iranges by intersect
+# with quality filtered peak calls in peaks$faire.osaDeg.df
+osaDeg.center <- osaDeg.qF %>%
   GRanges() %>%
   resize(width = 1, fix = "center")
 
+# rotund peaks
+rn.peaks <- peaks$rn.df %>% 
+  GRanges()
 
+rn.distal <- rn.peaks %>%
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  GRanges()
 # genomic 500bp
 
 dm6.500bp <- peaks$dm6.500bp %>%
@@ -277,6 +284,9 @@ peaks$cnr.df %>%
 
 
 ## gviz
+track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+
+cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
 
 mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
 Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
@@ -301,6 +311,15 @@ peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
                                    col = 'transparent', 
                                    background.title = 'white', 
                                    showTitle = F )
+
+osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)), 
+#osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep, 
+                                          genome = 'dm6', 
+                                          fill = '#469ae8', 
+                                          col = 'transparent',
+                                          background.title = 'white', 
+                                          showTitle = F)
+
 hairless_peaks <- read.table('bed/hairless-dm6.bed', col.names = c('seqnames', 'start', 'end')) %>% GRanges()
 
 hTrack <- Gviz::AnnotationTrack(range = hairless_peaks,
@@ -319,12 +338,9 @@ mats <- purrr::map(bws, ~{
 names(mats) <- names(bws)
 ```
 
-
-# Fig 1
-
-## B - brDisc browser shot
-
-```{r, 1A}
+# Fig 1 - brDisc Dynamics
+## C - brDisc browser shot
+```{r, 1C}
 
 #TODO - best way to generate replicate average signal tracks
 #TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
@@ -360,36 +376,334 @@ dev.off()
 
 ```
 
-## C - brD adjacent gene expression
-```{r}
-wing.rnaseq %>%
-  dplyr::select(-log_mean,-mean) %>%
-  tidyr::pivot_longer(!Geneid) %>%
-  dplyr::filter(Geneid %in% c('FBgn0025390','FBgn0283451')) %>%
-  dplyr::group_by(name) %>%
-  dplyr::mutate(name = stringr::str_remove(name,'X'),
-                grp = stringr::str_split_fixed(name,'_',n=2)[[1]],
-                grp = factor(grp, levels = c('L3', '6h','18h','24h','36h','44h')),
-                Gene = dplyr::case_when(Geneid == 'FBgn0025390' ~ 'mur2b',
-                                        Geneid == 'FBgn0283451' ~ 'br')) %>%
-  dplyr::group_by(Gene, grp) %>%
-  dplyr::summarise(mean = mean(value)) %>%
-  dplyr::mutate(fracmax = mean/max(mean)) %>%
-  ggplot(aes(grp, fracmax, color = Gene, group = Gene)) +
-  geom_line(size = 2) +
-  theme(axis.title = element_blank(),
-        axis.text = element_text(size = 20),
-        panel.grid.major = element_line(color = 'grey80'),
-        legend.key.size = unit(1, 'cm'),
-        legend.title = element_text(size = 20),
-        legend.text = element_text(size = 20))
 
-ggsave('rPlots/1C.png', dpi = 300, width = 7, height = 5)
+# Fig 2 - RNAi Screen
+## D - Image Quantification
+``` {r}
+
+rnaiScreen %>%
+  ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
+  geom_vline(xintercept = 1, color = "grey50") +
+#  geom_vline(xintercept = 1.2, color = "grey50", linetype = "longdash") + # somewhat arbitrary cutoff - based on visually confirmed hits 
+  geom_boxplot(aes(fill = bap_hits), outlier.size = 0.5) +
+  scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
+  scale_x_continuous(trans = "log2") + # trying out a log transformation rather than using the log2 FC data
+  xlab("brD KD/WT (log2 trans)") +
+  theme(axis.text.y = element_text(size = 10, ),
+        axis.title.y = element_blank(),
+        panel.background = element_rect(fill = 'white', colour = 'grey10'),
+        panel.grid.major  = element_line(color = 'grey90'),
+        legend.title = element_blank(),
+        legend.position = 'bottom')
+ggsave('rPlots/2D.png', width = 5, height = 8)
 ```
-# Fig 2
-TODO - need to move image analys R code here
 
-# Fig 3
+# Fig 3 - Osa-deGrad FAIRE-seq
+## C - Heatmap
+I've removed any splitting of the heatmap to just show all regions.
+Could add another supplemental showing avg signal plots of "osa-dependent" sites?
+
+6798 regions in plot
+osaDeg.center -- 6798 peaks PREVIOUSLY, now 6877, using osaDeg.qF to make the center ranges
+osaDeg.qF -- 6877
+6877 is too large, and doesn't properly filter out low q score peaks I think
+
+fixing...
+osaDeg.center -- 6826
+osaDeg.qF -- 6826
+
+```{r}
+
+#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
+
+
+cols <- c('black', '#469ae8')
+deg.mats
+# union osa degrad peaks
+deg.mats <- purrr::map(deg.bws, ~{
+  normalizeToMatrix(., 
+                    osaDeg.center, 
+                    value_column = 'score', 
+                    keep = c(0.09,0.99), 
+                    extend = 1000 )
+}) 
+
+names(deg.mats) <- faire.ss %>% 
+  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+                            '.',
+                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+  .$nm 
+
+common_min = min(unlist(deg.mats))
+common_max = max(unlist(deg.mats))
+
+col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+#deg.count <- fairePeaks.deg %>%
+#  data.frame() %>%
+#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
+#  dplyr::tally() %>%
+#  .$n
+
+#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+
+#groups <- fairePeaks.deg$faireCat.osaDeGrad
+
+#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
+
+deg.hms <- purrr::map(names(deg.mats), function(x) {
+  if(grepl('control.Rep1',x)){
+     EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1000, 0, 1000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    name = 'zScore',
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2),
+                                                                                axis_param = list(side = 'left', facing = 'outside'), 
+                                                                                ylim = c(0,6))),
+                    use_raster = F)
+  }else{
+    EnrichedHeatmap(deg.mats[[x]],
+                    axis_name = c(-1000, 0, 1000),
+                    pos_line = F,
+                    column_title = x,
+                    col = col_fun,
+                    show_heatmap_legend = F, 
+                    row_title = NULL,
+                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, 
+                                                                                          lwd = 2), 
+                                                                                ylim = c(0,6), 
+                                                                                axis = F)), 
+                    use_raster = F)
+  }
+})
+
+names(deg.hms) <- names(deg.mats)
+
+hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+
+png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+ComplexHeatmap::draw(hms,
+                    # annotation_legend_list = c(lgd), 
+                    # row_split = groups, 
+                     merge_legend = T, 
+                     heatmap_legend_side = 'right')
+dev.off()
+
+#fairePeaks.deg %>% 
+#  data.frame() %>%
+#  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
+#  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
+#  dplyr::tally() 
+#  dplyr::mutate(fraction = n / sum(n),
+#                change = faireCat.osaDeGrad) %>%
+#  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+#  plot.frac()
+
+
+```
+
+
+
+
+
+## D - Browser shot at brDisc
+```{r}
+
+#TODO - add 36h FAIRE data? better comparison for osa deGrad?
+
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
+
+deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::mutate(color = track.colors)
+
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_44h, 
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
+
+brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 1000)
+
+png('rPlots/3D.png', width = 4, height = 6, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   deg.tracks,
+                   spacer,
+                   spacer, 
+                   brdisc.at), 
+                 chromosome = seqnames(brD) %>% as.character(), 
+                 from = start(brD + 1000),
+                 to = end(brD + 1000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+```
+## E - Diff Bind
+osaDeg.qF -- 6877 peaks
+
+This peak list is slightly more than the peaks$faire.osaDeg.df
+These are ranges from diffbind, which i need for the log2 and pvals. 
+I don't currently have a clean way to annotate the main df with those values.
+
+
+```{r}
+
+osaDeg.qF %>%
+  data.frame() %>%
+  ggplot(aes(log2FoldChange, padj)) +
+  geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 12))
+
+ggsave('rPlots/3E-diffBind.png', width =4, height = 3.5, dpi = 300)  
+
+```
+
+## F - Osa Dependent browser shot
+```{r, 4D}
+
+e74 <- data.frame(seqnames = 'chr3L',
+                  start = 17580414,
+                  end = 17585073) %>%
+  GRanges()
+
+#pk
+pk <- data.frame(seqnames = 'chr2R',
+                    start = 7168262,
+                    end = 7180560) %>%
+  GRanges()
+
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50", 'grey40')
+
+deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' |
+                                        faire.wt.ssPool$grp == 'wt.24h' | 
+                                        faire.wt.ssPool$grp == 'wt.36h' |
+                                        faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::mutate(color = track.colors)
+
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                   peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+
+
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,13))
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_36h, 
+                deg.tracks$wt_44h,
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
+
+axis <- Gviz::GenomeAxisTrack(scale = 2000)
+
+### prickle
+
+png('rPlots/3F-prickle.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   deg.tracks, 
+                   spacer, 
+                   spacer, 
+                   osaDep.peakTrack,
+                   spacer,
+                   spacer, 
+                   genetrack),
+                 chromosome = seqnames(pk) %>%  as.character(), 
+                 from = start(pk-4000),
+                 to = end(pk-4000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+#e74
+png('rPlots/3F-e74.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   deg.tracks, 
+                   spacer, 
+                   spacer, 
+                   osaDep.peakTrack,
+                   spacer,
+                   spacer, 
+                   genetrack), 
+                 chromosome = seqnames(e74) %>% as.character(), 
+                 from = start(e74),
+                 to = end(e74),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+```
+
+## G - Osa Dependent Dynamic Clustering
+```{r}
+
+plot.df <- osaDep.anno %>% #osaDep.anno has the wt faire data added
+  dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+   tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2], ) %>%
+dplyr::group_by(peak)  %>%
+     dplyr::mutate(value = value + 1, 
+                   norm = log2(value/value[stage == '3LW'])) %>%
+  tidyr::pivot_wider(id_cols = peak, names_from = stage, values_from = norm) %>%
+  dplyr::mutate(group = dplyr::case_when(`24h` >= 1 | `36h` >= 1 | `44h` >= 1 ~ 'UP',
+                                         `24h` > -1 & `24h` < 1 & `36h` > -1 & `36h` < 1 & `44h` > -1 & `44h` < 1 ~ 'STATIC',
+                                         T ~ 'DOWN')) %>%
+  tidyr::pivot_longer(dplyr::matches("\\d"), names_to = 'stage') %>%
+     dplyr::mutate(stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(group,stage) %>%
+     dplyr::summarise(mean = mean(value),
+                      sd = sd(value) ,
+                      n = dplyr::n()) %>%
+  dplyr::group_by(stage) %>%
+  dplyr::mutate(frac = n/sum(n),
+                per = paste0(round(frac*100,2),'%'),
+                title = paste0(group,' n=',n,' (',per,')'),
+                group = factor(group, levels = c('UP','STATIC','DOWN')))
+             #   title = factor(title, levels = c('UP n=231 (63.99%)',
+             #                                    'STATIC n=115 (31.86%)',
+             #                                    'DOWN n=15 (4.16%)')))
+ 
+plot.df %>%
+  ggplot(aes(stage, mean, group = group)) + 
+  geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd), alpha = 0.4) +
+  geom_line() +
+#  geom_text(data = plot.df, aes(label = paste0('n=',n,' (',per,')'), x = 4, y = 2), size = 6) +
+ # scale_fill_manual(values = c('#d9435e','grey60','#69d943')) +
+  facet_wrap(~group, ncol = 3) + 
+  theme(legend.position = 'none') +
+  NULL
+ggsave('rPlots/3G.png', width = 6, height = 3 , dpi = 300)
+
+plot.df
+
+```
+## S3
+### A - Osa-deGrad venn
+```{r}
+# manually make plot in illustrator
+ChIPpeakAnno::makeVennDiagram(list(osaDeg.qF %>% dplyr::filter(osaDeg) %>% GRanges(),
+                                   osaDeg.qF %>% dplyr::filter(osaDeg.control) %>% GRanges()))
+
+```
+
+# Fig 5 - Osa-GFP CUT&RUN
 ## A - Osa CUT&RUN Venn
 ```{r}
 # Overlaps for Venn -- draw venn manually in Illustrator
@@ -576,10 +890,7 @@ ggsave('rPlots/S3-annotation-zTest.png', width = 3, height = 5, dpi = 300)
 
 #track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
 #track.colors <- c("#B8E186","#F1B6DA", "#4DAC26","#D01C8B")
-track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
 
-cnr.ss.browser <- cnr.ss %>%
-  dplyr::mutate(color = track.colors)
 k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
                              ylim = c(0,3), 
                              fill = 'black', 
@@ -1022,33 +1333,23 @@ ComplexHeatmap::draw(EnrichedHeatmap::EnrichedHeatmap(k27ac.mat, use_raster = F)
 ```
 
 ## I Overlap with Rn ChIP-seq
+6.13 - tested using a distal annotation of rn peaks
+this dropped the osa overlap from 312 to 295
+which means that 17 distal osa peaks overlap non-distal rn peaks. 
+Could be that they are just slightly closer to promoters?
+Is it more appropriate to use a distal rn annotation?
+All the osa peaks are distal, and the question is just what fraction of those peak coords overlap rn peak coords,
+so it doesn't matter what the rn annotation is as long as there is overlap.
+
 ```{r}
-rn.ss <- read.csv('~/McKay/Rotund-ChIP/sampleSheet.tsv', sep = '\t') 
 
-rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp') 
-
-q <- quantile(rn.peak$qValue, probs = 0.25) #find the 75% qVal
-
-
-rn.peak.qf <- rn.peak %>%
-  dplyr::mutate(seqnames = paste0('chr',seqnames)) %>%
-  dplyr::filter(qValue >= q & seqnames %in% c('chr2L','chr2R','chr3L','chr3R','chrX')) 
-
-      #grp.repShared.1 <- IRanges::subsetByOverlaps(grp.list[[1]], grp.list[[2]]) # get coords in 1st rep that overlap rep 2
-rn.peak.1 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]), 
-                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]))
-
-rn.peak.2 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep2',]), 
-                                       GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]))                                      
-rn.union <- union(rn.peak.1, rn.peak.2)
-
-
-osa.enhancer.shuffle <- ChIPseeker::shuffle(osaPeaks.enhancers.full, dm6.TxDb)
-
+#rn.peaks %>%
+#  dplyr::group_by(anno.new) %>%
+#  dplyr::tally()
 
 test <- osaPeaks.enhancers.full %>%
   data.frame() %>%
-  dplyr::mutate(rn = dplyr::if_else(GRanges(.) %over% rn.union, 'Yes', 'No'),
+  dplyr::mutate(rn = dplyr::if_else(GRanges(.) %over% rn.peaks, 'Yes', 'No'),
                 rn = factor(rn, levels = c('Yes','No'))) %>%
   dplyr::group_by(rn) %>%
   dplyr::tally() %>%
@@ -1074,7 +1375,7 @@ test <- osaPeaks.enhancers.full %>%
 #ztest <- prop.test(c(ol.true,ol.shuffle.true), c(test.sum, shuffle.sum))
 #ztest$p.value
 
-ChIPpeakAnno::makeVennDiagram(list(osaPeaks.enhancers.full, rn.union))
+ChIPpeakAnno::makeVennDiagram(list(osaPeaks.enhancers.full, rn.peaks))
 
 #ztest
 
@@ -1095,9 +1396,12 @@ osaPeaks.enhancers.full.bed <- osaPeaks.enhancers.full %>%
   data.frame() %>%
   dplyr::select(seqnames, start, end)
 
-rn.bed <- rn.union %>%
+rn.bed <- rn.peaks %>%
   data.frame() %>%
   dplyr::select(seqnames, start, end)
+
+
+
 
 write.table(osaPeaks.enhancers.full.bed, 
             'bed/osaPeaks-enhancers-full.bed', 
@@ -1127,16 +1431,35 @@ colnames(hairless) <- c('seqnames', 'start', 'end')
 
 GRanges(hairless)
 
-hairless %>%
+hairless.df <- hairless %>%
 #  data.frame() %>%
-  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks, T, F)) %>%
+  dplyr::mutate(osa = ifelse(GRanges(.) %over% osaPeaks.full, 'Yes', 'No'),
+                osa = factor(osa, levels = c('Yes','No')),
+                osa.sub = dplyr::case_when(GRanges(.) %over% osaPeaks.enhancers.full ~ 'Distal',
+                                       GRanges(.) %over% osaPeaks.full ~ 'Any',
+                                       T ~ 'No')) 
+
+hairless.df %>%
   dplyr::group_by(osa) %>%
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n)) %>%
-  ggplot(aes('', y = frac, fill = osa)) + 
-  geom_bar(stat = 'identity')
+  ggplot(aes('',y = frac, fill = osa)) + 
+  geom_bar(stat = 'identity') + 
+  geom_text(aes(label = n, y = frac), vjust = 3,  size = 6, position = 'stack') +
+  scale_fill_manual(values = c('#2ad4c3','grey60'), name = 'Overlaps\nOsa Peak') +
+  annotate('text', x = 1, y = 1.02, label = '***') +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 12), 
+        axis.ticks.x = element_blank())
+ggsave('rPlots/6E-hairless_overlap.png', dpi = 300, width = 3, height = 4)
 
-enrichtest.hairless <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-full.bed', 
+hairless.df %>%
+  dplyr::group_by(osa.sub) %>%
+  dplyr::tally() %>%
+  dplyr::filter(osa.sub != 'No') %>%
+  dplyr::mutate(nfrac = n/sum(n))
+
+enrichtest.hairless <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-full.bed', 
                               'bed/hairless-dm6.bed',
                               TxDb = dm6.TxDb,
                               nShuffle = 1000)
@@ -1144,7 +1467,7 @@ enrichtest.hairless <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-ful
 enrichtest.hairless
 ```
 
-## Fig S3
+## S5
 ### LFC Violin 
 Drop this? not in text currently
 ```{r}
@@ -1622,137 +1945,9 @@ ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = lis
 
 ```
 
-# Fig 4
 
-## C - Heatmap
-```{r}
-
-#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
-
-cols <- c('black', '#469ae8')
-
-# union osa degrad peaks
-deg.mats <- purrr::map(deg.bws, ~{
-  normalizeToMatrix(., fairePeaks.deg, value_column = 'score', keep = c(0.11,0.99), extend = 1000 )
-}) 
-
-names(deg.mats) <- faire.ss %>% 
-  dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
-  dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
-                            '.',
-                            stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
-  .$nm 
-
-common_min = min(unlist(deg.mats))
-common_max = max(unlist(deg.mats))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-#deg.count <- fairePeaks.deg %>%
-#  data.frame() %>%
-#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
-#  dplyr::tally() %>%
-#  .$n
-
-#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
-
-#groups <- fairePeaks.deg$faireCat.osaDeGrad
-
-#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
-
-deg.hms <- purrr::map(names(deg.mats), function(x) {
-  if(grepl('control.Rep1',x)){
-     EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-1000, 0, 1000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    name = 'zScore',
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2), axis_param = list(side = 'left', facing = 'outside'), ylim = c(0,6))),
-#                    left_annotation = rowAnnotation(textbox = anno_textbox(align_to = groups,
-#                                                                             as.list(deg.count),
-#                                                                             side = 'left',
-#                                                                             background_gp = gpar(fill = NA, col = NA),
-#                                                                             gp = gpar(col = 'black'), 
-#                                                                             padding = unit(0, 'mm')),
-#                                                    groups = anno_block(gp = gpar(fill = 2:4), show_name = F)),
-                    use_raster = F)
-  }else{
-    EnrichedHeatmap(deg.mats[[x]],
-                    axis_name = c(-1000, 0, 1000),
-                    pos_line = F,
-                    column_title = x,
-                    col = col_fun,
-                    show_heatmap_legend = F, 
-                    row_title = NULL,
-                    top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, 
-                                                                                          lwd = 2), 
-                                                                                ylim = c(0,6), 
-                                                                                axis = F)), 
-                    use_raster = F)
-  }
-})
-
-names(deg.hms) <- names(deg.mats)
-
-hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
-
-png('rPlots/4B.png', width = 3, height = 5, units = 'in', res = 300)
-ComplexHeatmap::draw(hms,
-                    # annotation_legend_list = c(lgd), 
-                    # row_split = groups, 
-                     merge_legend = T, 
-                     heatmap_legend_side = 'right')
-dev.off()
-
-fairePeaks.deg %>% 
-  data.frame() %>%
-  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
-  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
-  dplyr::tally() 
-  dplyr::mutate(fraction = n / sum(n),
-                change = faireCat.osaDeGrad) %>%
-  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
-  plot.frac()
-
-
-```
-
-## D - Browser shot at brDisc
-```{r}
-
-#TODO - add 36h FAIRE data? better comparison for osa deGrad?
-
-#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
-track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
-
-deg.ss.browser <- faire.osaDeGrad.ssPool %>%
-  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
-  dplyr::mutate(color = track.colors)
-
-deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
-deg.tracks <- c(deg.tracks$wt_3LW, 
-                deg.tracks$wt_24h, 
-                deg.tracks$wt_44h, 
-                deg.tracks$osaGFP.deGrad_control_faire, 
-                deg.tracks$osaGFP.deGrad_nubG4_faire)
-
-brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
-
-axis <- Gviz::GenomeAxisTrack(scale = 1000)
-
-png('rPlots/4D.png', width = 4, height = 6, res = 300, units = 'in')
-Gviz::plotTracks(c(axis, deg.tracks,spacer,spacer, brdisc.at), chromosome = seqnames(brD) %>% as.character(), 
-                 from = start(brD + 1000),
-                 to = end(brD + 1000),
-                 cex.axis = 0.3,
-                 cex.title = 0.5,
-                 title.width = 1,
-                 innerMargin = 10)
-dev.off()
-```
-# Fig 5
+# Fig 6 - Developmental Consequences of Hyperactivation
+## D - Dl upregulation quantification
 ```{r}
 dl_quant <- read.csv('../delta/code/output.csv') %>%
   dplyr::mutate(log2 = log2(dl_ratio),
@@ -1816,4 +2011,32 @@ dl_quant_ratio %>%
   dplyr::filter(genotype == 'osa')
 
 ```
+## E - Hairless ChIP-chip overlap
 
+# CUT
+## 1 - brD adjacent gene expression
+```{r}
+wing.rnaseq %>%
+  dplyr::select(-log_mean,-mean) %>%
+  tidyr::pivot_longer(!Geneid) %>%
+  dplyr::filter(Geneid %in% c('FBgn0025390','FBgn0283451')) %>%
+  dplyr::group_by(name) %>%
+  dplyr::mutate(name = stringr::str_remove(name,'X'),
+                grp = stringr::str_split_fixed(name,'_',n=2)[[1]],
+                grp = factor(grp, levels = c('L3', '6h','18h','24h','36h','44h')),
+                Gene = dplyr::case_when(Geneid == 'FBgn0025390' ~ 'mur2b',
+                                        Geneid == 'FBgn0283451' ~ 'br')) %>%
+  dplyr::group_by(Gene, grp) %>%
+  dplyr::summarise(mean = mean(value)) %>%
+  dplyr::mutate(fracmax = mean/max(mean)) %>%
+  ggplot(aes(grp, fracmax, color = Gene, group = Gene)) +
+  geom_line(size = 2) +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 20),
+        panel.grid.major = element_line(color = 'grey80'),
+        legend.key.size = unit(1, 'cm'),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20))
+
+ggsave('rPlots/1C.png', dpi = 300, width = 7, height = 5)
+```
