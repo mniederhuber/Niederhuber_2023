@@ -2985,6 +2985,7 @@ what motifs are enriched within osa bound "closed" 3lw sites annotated as distal
 
 sqz and rn have very similar / almost identicle motifs
 ```{r}
+
 osa.enhancer.seq <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
