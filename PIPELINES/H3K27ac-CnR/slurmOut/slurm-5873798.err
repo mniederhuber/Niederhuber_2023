@@ -1,0 +1,25 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 8
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	align
+	1
+
+[Tue Apr 18 11:30:36 2023]
+rule align:
+    input: Bowtie2Index/dm6-sacCer3-droYak2.1.bt2, Bowtie2Index/dm6-sacCer3-droYak2.2.bt2, Bowtie2Index/dm6-sacCer3-droYak2.3.bt2, Bowtie2Index/dm6-sacCer3-droYak2.4.bt2, Bowtie2Index/dm6-sacCer3-droYak2.rev.1.bt2, Bowtie2Index/dm6-sacCer3-droYak2.rev.2.bt2, Fastq/yw-3LW-wing-ak27ac-pel-Rep2_R1_trim.fastq.gz, Fastq/yw-3LW-wing-ak27ac-pel-Rep2_R2_trim.fastq.gz
+    output: Sam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim.sam, Logs/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_bowtie2.txt
+    jobid: 0
+    wildcards: sample=yw-3LW-wing-ak27ac-pel-Rep2, species=dm6-sacCer3-droYak2
+    threads: 8
+
+Activating environment modules: bowtie2/2.3.4.1
+     Genome indexes for use with BOWTIE2 are available
+       in /proj/seq/data .
+     bwa/bowtie/bowtie2 indexes are located in "Sequence" directory
+       under the top level genome directory with name in CAPS, e.g. MM9_UCSC
+[Tue Apr 18 11:52:55 2023]
+Finished job 0.
+1 of 1 steps (100%) done

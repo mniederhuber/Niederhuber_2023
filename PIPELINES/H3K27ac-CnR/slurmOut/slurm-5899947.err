@@ -1,0 +1,62 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	callPeaks
+	1
+
+[Tue Apr 18 12:47:43 2023]
+rule callPeaks:
+    input: Bed/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120.bed
+    output: Peaks/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120_peaks.narrowPeak
+    jobid: 0
+    wildcards: fragType=20to120, sample=yw-3LW-wing-ak27ac-pel-Rep1, REFGENOME=dm6
+
+Activating environment modules: macs/2.1.2
+ERROR:root:code for hash md5 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type md5
+ERROR:root:code for hash sha1 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type sha1
+ERROR:root:code for hash sha224 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type sha224
+ERROR:root:code for hash sha256 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type sha256
+ERROR:root:code for hash sha384 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type sha384
+ERROR:root:code for hash sha512 was not found.
+Traceback (most recent call last):
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 147, in <module>
+    globals()[__func_name] = __get_hash(__func_name)
+  File "/nas/longleaf/apps/python/2.7.12/lib/python2.7/hashlib.py", line 97, in __get_builtin_constructor
+    raise ValueError('unsupported hash type ' + name)
+ValueError: unsupported hash type sha512
+[Tue Apr 18 12:52:27 2023]
+Finished job 0.
+1 of 1 steps (100%) done

@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	convertToBam
+	1
+
+[Tue Apr 18 12:13:15 2023]
+rule convertToBam:
+    input: Sam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim.sam
+    output: Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim.bam
+    jobid: 0
+    wildcards: sample=yw-3LW-wing-ak27ac-pel-Rep2, species=dm6-sacCer3-droYak2
+
+Activating environment modules: samtools/1.17
+[Tue Apr 18 12:18:50 2023]
+Finished job 0.
+1 of 1 steps (100%) done

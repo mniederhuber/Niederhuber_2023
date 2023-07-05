@@ -1,0 +1,19 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	combine_technical_reps
+	1
+
+[Tue Apr 18 11:20:57 2023]
+rule combine_technical_reps:
+    input: /proj/mckaylab/HTSF/191205_UNC41-A00434_0074_AHGW5JDRXX/CMU08_51-yw_3LW_CnR_K27Ac_Pel_Rep2_U51_AACAGGTT-ATACCAAG_S25_L002_R2_001.fastq.gz, /proj/mckaylab/HTSF/191205_UNC41-A00434_0074_AHGW5JDRXX/CMU08_51-yw_3LW_CnR_K27Ac_Pel_Rep2_U51_AACAGGTT-ATACCAAG_S25_L001_R2_001.fastq.gz, /proj/mckaylab/HTSF/191205_UNC41-A00434_0074_AHGW5JDRXX/CMU08_51-yw_3LW_CnR_K27Ac_Pel_Rep2_U51_AACAGGTT-ATACCAAG_S25_L002_R1_001.fastq.gz, /proj/mckaylab/HTSF/191205_UNC41-A00434_0074_AHGW5JDRXX/CMU08_51-yw_3LW_CnR_K27Ac_Pel_Rep2_U51_AACAGGTT-ATACCAAG_S25_L001_R1_001.fastq.gz
+    output: Fastq/yw-3LW-wing-ak27ac-pel-Rep2_R2.fastq.gz, Fastq/yw-3LW-wing-ak27ac-pel-Rep2_R1.fastq.gz
+    jobid: 0
+    wildcards: sample=yw-3LW-wing-ak27ac-pel-Rep2
+
+[Tue Apr 18 11:21:05 2023]
+Finished job 0.
+1 of 1 steps (100%) done

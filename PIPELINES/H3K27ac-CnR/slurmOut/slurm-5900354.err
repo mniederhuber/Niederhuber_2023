@@ -1,0 +1,129 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	3	makeFragmentBedGraphs
+	6	makeSpikeNormFragmentBedGraphs
+	1	splitFragments
+	10
+
+[Tue Apr 18 12:49:43 2023]
+rule splitFragments:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved.bed
+    output: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bed, Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bed, Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bed
+    jobid: 9
+    wildcards: REFGENOME=dm6, sample=yw-3LW-wing-ak27ac-sup-Rep1
+
+[Tue Apr 18 12:49:57 2023]
+Finished job 9.
+1 of 10 steps (10%) done
+
+[Tue Apr 18 12:49:57 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_droYak2_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_droYak2-spikeNorm.bg
+    jobid: 5
+    wildcards: REFGENOME=dm6, spikeGenome=droYak2, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=allFrags
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:50:24 2023]
+Finished job 5.
+2 of 10 steps (20%) done
+
+[Tue Apr 18 12:50:24 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_sacCer3_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bg
+    jobid: 6
+    wildcards: REFGENOME=dm6, spikeGenome=sacCer3, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=allFrags
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:50:48 2023]
+Finished job 6.
+3 of 10 steps (30%) done
+
+[Tue Apr 18 12:50:48 2023]
+rule makeFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bed
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bg, BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bg
+    jobid: 1
+    wildcards: REFGENOME=dm6, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=allFrags
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:51:37 2023]
+Finished job 1.
+4 of 10 steps (40%) done
+
+[Tue Apr 18 12:51:37 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_droYak2_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_droYak2-spikeNorm.bg
+    jobid: 3
+    wildcards: REFGENOME=dm6, spikeGenome=droYak2, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=150to700
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:51:59 2023]
+Finished job 3.
+5 of 10 steps (50%) done
+
+[Tue Apr 18 12:51:59 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_sacCer3_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_sacCer3-spikeNorm.bg
+    jobid: 2
+    wildcards: REFGENOME=dm6, spikeGenome=sacCer3, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=150to700
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:52:19 2023]
+Finished job 2.
+6 of 10 steps (60%) done
+
+[Tue Apr 18 12:52:19 2023]
+rule makeFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bed
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bg, BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm.bg
+    jobid: 7
+    wildcards: REFGENOME=dm6, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=150to700
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:52:58 2023]
+Finished job 7.
+7 of 10 steps (70%) done
+
+[Tue Apr 18 12:52:58 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_droYak2_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_droYak2-spikeNorm.bg
+    jobid: 4
+    wildcards: REFGENOME=dm6, spikeGenome=droYak2, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=20to120
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:53:05 2023]
+Finished job 4.
+8 of 10 steps (80%) done
+
+[Tue Apr 18 12:53:05 2023]
+rule makeSpikeNormFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bed, Bam/yw-3LW-wing-ak27ac-sup-Rep1_sacCer3_trim_q5_dupsRemoved.bam
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_sacCer3-spikeNorm.bg
+    jobid: 0
+    wildcards: REFGENOME=dm6, spikeGenome=sacCer3, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=20to120
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:53:10 2023]
+Finished job 0.
+9 of 10 steps (90%) done
+
+[Tue Apr 18 12:53:10 2023]
+rule makeFragmentBedGraphs:
+    input: Bed/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bed
+    output: BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bg, BigWig/yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm.bg
+    jobid: 8
+    wildcards: REFGENOME=dm6, sample=yw-3LW-wing-ak27ac-sup-Rep1, fragType=20to120
+
+Activating environment modules: bedtools/2.26
+[Tue Apr 18 12:53:19 2023]
+Finished job 8.
+10 of 10 steps (100%) done

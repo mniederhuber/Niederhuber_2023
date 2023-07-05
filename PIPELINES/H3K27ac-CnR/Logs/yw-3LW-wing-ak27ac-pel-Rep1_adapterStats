@@ -1,0 +1,25 @@
+#File	Fastq/yw-3LW-wing-ak27ac-pel-Rep1_R1.fastq.gz	Fastq/yw-3LW-wing-ak27ac-pel-Rep1_R2.fastq.gz
+#Total	20297208
+#Matched	187515	0.92385%
+#Name	Reads	ReadsPct
+TruSeq_Adapter_Index_1_6	109489	0.53943%
+Nextera_LMP_Read2_External_Adapter	34224	0.16861%
+Reverse_adapter	32122	0.15826%
+PhiX_read2_adapter	2742	0.01351%
+PCR_Primers	1871	0.00922%
+pcr_dimer	1803	0.00888%
+I5_Nextera_Transposase_1	981	0.00483%
+PhiX_read1_adapter	730	0.00360%
+I7_Nextera_Transposase_2	528	0.00260%
+TruSeq_Universal_Adapter	470	0.00232%
+I5_Primer_Nextera_XT_and_Nextera_Enrichment_[N/S/E]501	420	0.00207%
+RNA_PCR_Primer_Index_1_(RPI1)_2,9	390	0.00192%
+Nextera_LMP_Read1_External_Adapter	305	0.00150%
+I5_Nextera_Transposase_2	287	0.00141%
+I7_Adapter_Nextera_No_Barcode	277	0.00136%
+I7_Nextera_Transposase_1	257	0.00127%
+I5_Adapter_Nextera	240	0.00118%
+I7_Primer_Nextera_XT_and_Nextera_Enrichment_N701	218	0.00107%
+RNA_PCR_Primer_(RP1)_part_#_15013198	152	0.00075%
+I5_Primer_Nextera_XT_and_Nextera_Enrichment_[N/S/E]505	8	0.00004%
+I7_Primer_Nextera_XT_Index_Kit_v2_N728	1	0.00000%

@@ -1,0 +1,20 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	removeDups
+	1
+
+[Tue Apr 18 12:39:49 2023]
+rule removeDups:
+    input: Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim_q5_dupsMarked.bam
+    output: Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim_q5_dupsRemoved.bam, Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6-sacCer3-droYak2_trim_q5_dupsRemoved.bam.bai
+    jobid: 0
+    wildcards: sample=yw-3LW-wing-ak27ac-pel-Rep2
+
+Activating environment modules: samtools/1.17
+[Tue Apr 18 12:42:16 2023]
+Finished job 0.
+1 of 1 steps (100%) done

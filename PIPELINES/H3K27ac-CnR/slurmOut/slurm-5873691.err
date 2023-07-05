@@ -1,0 +1,40 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	fastQC_trim
+	1
+
+[Tue Apr 18 11:26:29 2023]
+rule fastQC_trim:
+    input: Fastq/yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+    output: FastQC/yw-3LW-wing-ak27ac-sup-Rep1_R1_trim_fastqc.html
+    jobid: 0
+    wildcards: sample=yw-3LW-wing-ak27ac-sup-Rep1
+
+Activating environment modules: fastqc/0.11.7
+Started analysis of yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 5% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 10% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 15% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 20% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 25% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 30% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 35% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 40% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 45% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 50% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 55% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 60% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 65% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 70% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 75% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 80% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 85% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 90% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+Approx 95% complete for yw-3LW-wing-ak27ac-sup-Rep1_R1_trim.fastq.gz
+[Tue Apr 18 11:28:11 2023]
+Finished job 0.
+1 of 1 steps (100%) done

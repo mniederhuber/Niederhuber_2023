@@ -1,0 +1,21 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	nameSortBam
+	1
+
+[Tue Apr 18 12:48:45 2023]
+rule nameSortBam:
+    input: Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_sorted.bam
+    output: Bam/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_nameSorted.bam
+    jobid: 0
+    wildcards: species=dm6, sample=yw-3LW-wing-ak27ac-pel-Rep2
+
+Activating environment modules: samtools/1.17
+[bam_sort_core] merging from 2 files and 1 in-memory blocks...
+[Tue Apr 18 12:51:34 2023]
+Finished job 0.
+1 of 1 steps (100%) done

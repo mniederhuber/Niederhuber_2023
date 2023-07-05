@@ -1,0 +1,23 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job counts:
+	count	jobs
+	1	bowtie2index
+	1
+
+[Tue Apr 18 11:20:57 2023]
+rule bowtie2index:
+    input: /proj/mckaylab/genomeFiles/sacCer3/sacCer3.fa, /proj/mckaylab/genomeFiles/dm6/dm6.fa, /proj/mckaylab/genomeFiles/droYak2/droYak2.fa
+    output: Bowtie2Index/dm6-sacCer3-droYak2.fa, Bowtie2Index/dm6-sacCer3-droYak2.1.bt2, Bowtie2Index/dm6-sacCer3-droYak2.2.bt2, Bowtie2Index/dm6-sacCer3-droYak2.3.bt2, Bowtie2Index/dm6-sacCer3-droYak2.4.bt2, Bowtie2Index/dm6-sacCer3-droYak2.rev.1.bt2, Bowtie2Index/dm6-sacCer3-droYak2.rev.2.bt2
+    jobid: 0
+
+     Genome indexes for use with BOWTIE2 are available
+       in /proj/seq/data .
+     bwa/bowtie/bowtie2 indexes are located in "Sequence" directory
+       under the top level genome directory with name in CAPS, e.g. MM9_UCSC
+Building a SMALL index
+[Tue Apr 18 11:29:34 2023]
+Finished job 0.
+1 of 1 steps (100%) done
