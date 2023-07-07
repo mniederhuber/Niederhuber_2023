@@ -3814,14 +3814,24 @@ plotPCA -in rPlots/multiBamsum.npz \
 ```
 ## multiBWsum
 ```{bash engine.opts='-l'}
-multiBigwigSummary bins -b BigWig/*deGrad*dupsRemoved_rpgcNorm_zNorm.bw -o R/rPlots/multiBWsum.npz
+multiBigwigSummary bins -b BigWig/*deGrad*dupsRemoved_rpgcNorm_zNorm.bw -o rPlots/multiBWsum.npz
 
-plotCorrelation -in rPlots/multiBWsum.npz \
-  --corMethod spearman --skipZeros \
-  --labels control.1 deGrad.1 control.2 deGrad.2  \
-  --whatToPlot heatmap --colorMap RdYlBu --plotNumbers \
-  -o rPlots/multiBWsum-spearman.png
+#plotCorrelation -in rPlots/multiBWsum.npz \
+#  --corMethod spearman --skipZeros \
+#  --labels control.1 deGrad.1 control.2 deGrad.2  \
+#  --whatToPlot heatmap --colorMap RdYlBu --plotNumbers \
+#  -o rPlots/multiBWsum-spearman.png
   
+plotCorrelation -in rPlots/multiBWsum.npz \
+  --corMethod pearson --skipZeros \
+  --labels control.1 control.2 deGrad.1 deGrad.2  \
+  --removeOutliers \
+  --skipZeros \
+  --zMin 0.5 \
+  --whatToPlot heatmap --colorMap RdYlBu --plotNumbers \
+  -o rPlots/multiBWsum-pearson.png 
+  
+  #--labels control.1 deGrad.1 control.2 deGrad.2  \
 plotPCA -in rPlots/multiBWsum.npz \
   --labels control.1 deGrad.1 control.2 deGrad.2  \
   -o rPlots/multiBWsum-PCA.png

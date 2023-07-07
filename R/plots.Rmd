@@ -1,5 +1,4 @@
 # Setup
-
 ```{r setup}
 library(magrittr)
 library(ggplot2)
@@ -101,7 +100,26 @@ espl <- data.frame('seqnames' = 'chr3R',
                   'end' = 26065374) %>%
   GRanges()
 
+# ac/sc
+#chrX:365,344-402,061
+acsc <- data.frame('seqnames' = 'chrX',
+                   'start' = 365344,
+                   'end' = 402061) %>%
+  GRanges()
 
+# serrate
+#chr3R:27,167,731-27,227,610
+ser <- data.frame('seqnames' = 'chr3R',
+                  'start' = 27167731,
+                  'end' = 27227610) %>%
+  GRanges()
+
+# notch
+#chrX:3,093,887-3,206,341
+notch <- data.frame('seqnames' = 'chrX',
+                    'start' = 3093887,
+                    'end' = 3206341) %>%
+  GRanges()
 ### 
 # enhancers
 ### 
@@ -221,9 +239,15 @@ deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE
 #TODO move data to main project directory and fix path
 #TODO merge reps?
 #k27ac.bw <- rtracklayer::import.bw('~/mckay/h3k27ac_cnr/bigwig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw') 
-k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw') 
-k14ac.bw <- rtracklayer::import.bw('~/mckay/Regadas_2021/H3K14ac_log2Input_repsMEAN.bw') 
+#TODO put these notes in better place"
+## K27ac data- yeast spikein norm pel data is generally lower in rep2 than rep1, this is not seen in znorm or drosYak norm data
+## drosYak norm signal is "low" as in the absolute values are usually < 1, but the normalization between samples looks good, and the signal to noise still looks fine, not appreciably better or worse that znorm
+## using pellet because only have 2 reps of pel, only 1 of sup - the sup rep looks really good though I think
+## using large fragments only because all fractions/reps show poor signal in <120 bp frag split
 
+#k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw') 
+k27ac.1.bw <- rtracklayer::import.bw('~/mckay/BAP_Project/R/BigWig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw') 
+k27ac.2.bw <- rtracklayer::import.bw('~/mckay/BAP_Project/R/BigWig/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw') 
 
 ## functions 
 
@@ -365,10 +389,10 @@ brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc',
 axis <- Gviz::GenomeAxisTrack(scale = 10000)
 
 
-png('rPlots/1B.png', width = 14, height = 8, res = 300, units = 'in')
+png('rPlots/1B.png', width = 4, height = 6, res = 300, units = 'in')
 Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(), 
-                 from = start(brD + 20000),
-                 to = end(brD + 20000),
+                 from = start(brD + 10000),
+                 to = end(brD + 10000),
                  cex.axis = 0.3,
                  cex.title = 0.5,
                  title.width = 1,
@@ -381,7 +405,15 @@ dev.off()
 # Fig 2 - RNAi Screen
 ## D - Image Quantification
 ``` {r}
-
+tables1 <- rnaiScreen %>%
+  dplyr::mutate(symbol = stringr::str_to_title(symbol)) %>%
+  dplyr::group_by(symbol, line) %>%
+  dplyr::summarise(m = mean(KDtoWT),
+                   sd = sd(KDtoWT),
+                   n = dplyr::n()) 
+  
+write.csv('rPlots/TableS1-data.csv', x = tables1)
+ 
 rnaiScreen %>%
   ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
   geom_vline(xintercept = 1, color = "grey50") +
@@ -419,13 +451,13 @@ osaDeg.qF -- 6826
 
 
 cols <- c('black', '#469ae8')
-deg.mats
+
 # union osa degrad peaks
 deg.mats <- purrr::map(deg.bws, ~{
   normalizeToMatrix(., 
                     osaDeg.center, 
                     value_column = 'score', 
-                    keep = c(0.09,0.99), 
+                    keep = c(0.01,0.99), 
                     extend = 1000 )
 }) 
 
@@ -991,10 +1023,15 @@ osaPeaks.enhancers <- osaPeaks %>%
 wt.3lw.mat <- normalizeToMatrix(bws$wt_3LW, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
 osa.1.mat <- normalizeToMatrix(bws$osaGFP.rep1, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
 osa.2.mat <- normalizeToMatrix(bws$osaGFP.rep2, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
-k27ac.mat <- normalizeToMatrix(k27ac.bw, osaPeaks.enhancers, 
-                               value_column = 'score', 
-                               keep = c(0.01, 0.99), 
-                               extend = 2000)
+k27ac.1.mat <- normalizeToMatrix(k27ac.1.bw, 
+                                 osaPeaks.enhancers, 
+                                 value_column = 'score', 
+                                 keep = c(0.01, 0.99), 
+                                 extend = 2000)
+k27ac.2.mat <- normalizeToMatrix(k27ac.2.bw, osaPeaks.enhancers, 
+                                 value_column = 'score', 
+                                 keep = c(0.01, 0.99), 
+                                 extend = 2000)
 #k14ac.mat <- normalizeToMatrix(k14ac.bw, osaPeaks.enhancers,
 #                               value_column = 'score',
 #                               keep = c(0.01, 0.99), 
@@ -1003,18 +1040,25 @@ k27ac.mat <- normalizeToMatrix(k27ac.bw, osaPeaks.enhancers,
 fig3d.mats <- list(wt.3lw.mat, 
                    osa.1.mat, 
                    osa.2.mat, 
-                   k27ac.mat)
+                   k27ac.1.mat,
+                   k27ac.2.mat)
                   # k14ac.mat)
 names(fig3d.mats) <- c('WT_3LW', 
                        'Osa Rep1', 
                        'Osa Rep2', 
-                       'K27ac') 
+                       'K27ac Rep1',
+                       'K27ac Rep2') 
                        #'K14ac')
   
 common_min = min(c(osa.1.mat, osa.2.mat))
 common_max = max(c(osa.1.mat, osa.2.mat))
 
 col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+
+common_min.k27 = min(c(k27ac.1.mat, k27ac.2.mat))
+common_max.k27 = max(c(k27ac.1.mat, k27ac.2.mat))
+
+col_fun.k27 = circlize::colorRamp2(seq(common_min.k27, common_max.k27, length.out = 6), viridis.hex)
 
 groups <- ifelse(osaPeaks.enhancers$WT.3LW, "Open", "Closed")
 
@@ -1070,17 +1114,30 @@ fig3d.hms <- EnrichedHeatmap(fig3d.mats$WT_3LW,
                                                                             ylim = c(0,6.8), 
                                                                            # axis_param = list(side = 'right'))),
                                                                             axis = F))) +
-   EnrichedHeatmap(fig3d.mats$K27ac,
+   EnrichedHeatmap(fig3d.mats$`K27ac Rep1`,
                    axis_name = c(-2,0,+2),
                    pos_line = F,
                    column_title = 'K27ac',
-                   #col = col_fun,
-                   col = circlize::colorRamp2(seq(0, 2.5, length.out = 6), viridis.hex),
-                   name = 'H3K27ac zScore',
+                   #col = col_fun.k27,
+                   col = circlize::colorRamp2(seq(0.2, 3, length.out = 6), viridis.hex),
+                   name = 'H3K27ac rep1',
                    #show_heatmap_legend = F, 
                    width = unit(0.5,'in'),
                    top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')),
-                                                                            ylim = c(0,2.2), 
+                                                                            ylim = c(0.2,2.5), 
+                                                                            axis = F,
+                                                                            axis_param = list(side = 'right')))) +
+   EnrichedHeatmap(fig3d.mats$`K27ac Rep2`,
+                   axis_name = c(-2,0,+2),
+                   pos_line = F,
+                   column_title = 'K27ac',
+                   #col = col_fun.k27,
+                   col = circlize::colorRamp2(seq(0.2, 3, length.out = 6), viridis.hex),
+                   name = 'H3K27ac rep2',
+                   show_heatmap_legend = F, 
+                   width = unit(0.5,'in'),
+                   top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')),
+                                                                            ylim = c(0.2,2.5), 
                                                                             axis = F,
                                                                             axis_param = list(side = 'right'))))  
 #    EnrichedHeatmap(fig3d.mats$K14ac,
@@ -1345,16 +1402,7 @@ k_df <- km$cluster %>%
   dplyr::rename(k = ".") %>% 
   tibble::rownames_to_column("id")
 
-png('rPlots/S5-clusters.png', width = 3, height = 4, res = 300, units = 'in')
-ComplexHeatmap::Heatmap(tidymat, 
-                        split = k_df$k, 
-                       #row_km = 8,
-                        cluster_columns = F,
-                        show_row_dend = F,
-                        col = figure_col_fun,
-                        gap = unit(0.5, "lines"),
-                        show_row_names = F)
-dev.off()
+
 
 ####
 # make a dataframe with the cluster info
@@ -1644,31 +1692,153 @@ enrichtest <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-full.bed',
 
 
 ## S5
-### LFC Violin 
-Drop this? not in text currently
+### A - Cluster Heatmap
 ```{r}
-
-peaks$cnr.df %>%
-  dplyr::filter(yw.cnr | osa.cnr) %>%
-  dplyr::mutate(twofold = ifelse(log2FoldChange <= -1 | log2FoldChange >= 1, T, F),
-                cat = dplyr::case_when(osa.cnr & !yw.cnr ~ 'Osa',
-                                       !osa.cnr & yw.cnr ~ 'Control',
-                                       T ~ 'Shared')) %>% 
-  ggplot(aes(x = '',  log2FoldChange, fill = cat)) + 
-#  ggplot(aes(x = '',  cnr.log2FoldChange)) + 
-  geom_violin(position = 'identity', alpha = 0.3, scale = 'count') +
-  scale_alpha_manual(values = c(0,0.2)) +
-#  ylim(c(-2.25,2.25)) +
-  scale_fill_manual(values = c('#C05066','#8AD04E','#608AE3')) +
-  ylab("log2FoldChange(osaGFP / control)") +
-  theme(#legend.position = "none",
-        axis.title.x = element_blank(),
-        axis.text = element_text(size = 12)) 
-
-ggsave('rPlots/S3-LFC_Violin.png', width = 5, height = 5, dpi = 300)
+png('rPlots/S5-clusters.png', width = 5, height = 4, res = 300, units = 'in')
+ComplexHeatmap::Heatmap(tidymat, 
+                        split = k_df$k, 
+                       #row_km = 8,
+                        cluster_columns = F,
+                        show_row_dend = F,
+                        col = figure_col_fun,
+                        gap = unit(0.5, "lines"),
+                        show_row_names = F)
+dev.off()
 ```
 
-### B - shared peaks heatmap Open vs Closed
+### B,C,D - supplemental browser
+```{r}
+
+track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+
+cnr.ss.browser <- cnr.ss %>%
+  dplyr::mutate(color = track.colors)
+
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
+
+
+k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
+                             ylim = c(0,3), 
+                             fill = 'black', 
+                             col = 'transparent')
+
+faire.3lw.track <- get_cnr_track('BigWig/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw',
+                                 ylim = c(0,11),
+                                 fill = 'black',
+                                 col = 'transparent')
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,15))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                   peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+                  
+
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
+
+
+png('rPlots/S5-acsc.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   cnr.tracks, 
+                   k27ac.track,
+                   faire.3lw.track,
+                   spacer,
+                   hTrack,
+                   spacer,
+                   genetrack), 
+                 chromosome = seqnames(acsc) %>% as.character(), 
+                 from = start(acsc),
+                 to = end(acsc),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+#### 
+k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
+                             ylim = c(0,5), 
+                             fill = 'black', 
+                             col = 'transparent')
+
+faire.3lw.track <- get_cnr_track('BigWig/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw',
+                                 ylim = c(0,20),
+                                 fill = 'black',
+                                 col = 'transparent')
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,45))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                   peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+                  
+
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
+
+png('rPlots/S5_ser.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   cnr.tracks, 
+                   k27ac.track,
+                   faire.3lw.track,
+                   spacer,
+                   hTrack,
+                   enhancertrack,
+                   spacer,
+                   genetrack),
+                 chromosome = seqnames(ser) %>% as.character(), 
+                 from = start(ser),
+                 to = end(ser),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+####
+k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
+                             ylim = c(0,5), 
+                             fill = 'black', 
+                             col = 'transparent')
+
+faire.3lw.track <- get_cnr_track('BigWig/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw',
+                                 ylim = c(0,20),
+                                 fill = 'black',
+                                 col = 'transparent')
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                   peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+                  
+
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
+
+png('rPlots/S5_notch.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   cnr.tracks, 
+                   k27ac.track,
+                   faire.3lw.track,
+                   spacer,
+                   hTrack,
+                   enhancertrack,
+                   spacer,
+                   genetrack),
+                 chromosome = seqnames(notch) %>% as.character(), 
+                 from = start(notch),
+                 to = end(notch),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+```
+### OLD - shared peaks heatmap Open vs Closed
 ```{r}
 hm.peaks <- peaks$cnr.df %>%
   data.frame() %>%
@@ -1782,7 +1952,7 @@ dev.off()
 
 
 ```
-### C - control specific peaks
+### OLD - control specific peaks
 ```{r}
 osaPeaks.enhancers <- peaks$cnr.df %>%
   data.frame() %>%
@@ -1874,7 +2044,7 @@ dev.off()
 
 ```
 
-### D - All osa bound - FAIRE heatmaps open vs closed
+### OLD - All osa bound - FAIRE heatmaps open vs closed
 ```{r 3LW-FAIRE-in-OsaPeaks}
 
 osaPeaks.enhancers <- osaPeaks %>%
@@ -1947,8 +2117,8 @@ dev.off()
 
 
 ```
-### E
-### F - frac peak call
+### OLD - frac peak call
+Dropping from fig...
 ```{r}
 plot.df <- cluster.df %>%
     dplyr::distinct(peak, .keep_all = T) %>%
@@ -1981,145 +2151,7 @@ cluster.df %>%
   dplyr::mutate(frac = n/sum(n))
 ```
 
-### peak clusters - are osa peak clustered together?
-```{r}
-osa.shuffle <- ChIPseeker::shuffle(osaPeaks.full, TxDb = dm6.TxDb)
 
-distances <- GenomicRanges::distanceToNearest(osaPeaks.full) %>%
-  data.frame() %>%
-  dplyr::mutate(id = 'osa')
-
-distances.shuffle <- GenomicRanges::distanceToNearest(osa.shuffle) %>%
-  data.frame() %>%
-  dplyr::mutate(id = 'shuffle')
-
-dplyr::bind_rows(distances, distances.shuffle) %>%
-  ggplot(aes(distance, fill = id)) +
-  geom_histogram(aes(y = after_stat(count)), position = 'identity', size = 1, binwidth = 100) +
-  #geom_density(aes(y = after_stat(count), color = id)) +
-  xlab('Distance (kb)') +
-  ylab('Count') +
-  ylim(c(0,110)) +
-  scale_fill_manual(values = c('#D01C8B','grey20')) +
-  scale_x_continuous(limits = c(0,5000), 
-                     breaks = c( 0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000), 
-                     labels = scales::label_number(scale = 1e-3)) +
-  theme(axis.text = element_text(size = 12),
-        axis.title = element_text(size = 12)) 
-
-ggsave('rPlots/S3-peak_to_peak_distance.png', width = 4, height = 3, dpi = 300)
-
-### 
-#stats
-###
-
-
-ztest.df <- dplyr::bind_rows(distances, distances.shuffle) %>%
-  dplyr::mutate(sub1kb = ifelse(distance <= 1000, T, F),
-                sub5kb = ifelse(distance <= 5000, T, F)) %>%
-  dplyr::group_by(id, sub1kb, sub5kb) %>%
-  dplyr::tally() %>%
-  dplyr::group_by(id) %>%
-  dplyr::mutate(sum = sum(n))
-
-sub1kb.test <- prop.test(c(ztest.df[ztest.df$id == 'osa' & ztest.df$sub1kb == T,]$n,
-            ztest.df[ztest.df$id == 'shuffle' & ztest.df$sub1kb == T,]$n),
-          c(ztest.df[ztest.df$id == 'osa' & ztest.df$sub1kb == T,]$sum,
-            ztest.df[ztest.df$id == 'shuffle' & ztest.df$sub1kb == T,]$sum))
-
-sub5kb.test <- prop.test(c(sum(ztest.df[ztest.df$id == 'osa' & ztest.df$sub5kb == T,]$n),
-                           sum(ztest.df[ztest.df$id == 'shuffle' & ztest.df$sub5kb == T,]$n)),
-                         c(sum(ztest.df[ztest.df$id == 'osa' & ztest.df$sub5kb == T,]$sum),
-                           sum(ztest.df[ztest.df$id == 'shuffle' & ztest.df$sub5kb == T,]$sum)))
-sub1kb.test$p.value
-sub5kb.test$p.value
-```
-
-### peak summit k27ac
-```{r}
-osaPeaks.enhancers <- osaPeaks %>%
-  data.frame() %>%
-  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
-  GRanges()
-
-
-#fig3d.mats <- list(mats$wt_3LW, mats$osaGFP.rep1, mats$osaGFP.rep2)
-wt.3lw.mat <- normalizeToMatrix(bws$wt_3LW, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
-osa.1.mat <- normalizeToMatrix(bws$osaGFP.rep1, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
-osa.2.mat <- normalizeToMatrix(bws$osaGFP.rep2, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
-k27ac.mat <- normalizeToMatrix(k27ac.bw, osaPeaks.enhancers, value_column = 'score', keep = c(0.01, 0.99), extend = 5000)
-
-fig3d.mats <- list(wt.3lw.mat, osa.1.mat, osa.2.mat, k27ac.mat)
-names(fig3d.mats) <- c('WT_3LW', 'Osa Rep1', 'Osa Rep2', 'K27ac')
-  
-common_min = min(unlist(fig3d.mats))
-common_max = max(unlist(fig3d.mats))
-
-col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
-
-groups <- ifelse(osaPeaks.enhancers$WT.3LW, "Open", "Closed")
-
-lgd = Legend(at = c("closed", "open"), legend_gp = gpar(fill = c('#fc5d63','#87d674')))
-
-l3.count <- osaPeaks.enhancers %>%
-  data.frame() %>%
-  dplyr::group_by(osa.cnr, WT.3LW) %>%
-  dplyr::count() %>%
-  dplyr::mutate(WT_FAIRE_3LW = ifelse(WT.3LW, 'Open','Closed'),
-                n = as.character(n)) %>%
-  .$n
-
-names(l3.count) = unique(groups)
-
-fig3d.hms <- EnrichedHeatmap(fig3d.mats$WT_3LW,
-                             axis_name = c(-2,0,+2),
-                             pos_line = F,
-                             column_title = '3LW-FAIRE',
-                             col = viridis.hex,
-                             width = unit(1.5, 'in'), 
-                             left_annotation = c(rowAnnotation(textbox = anno_textbox(groups, 
-                                                                                      as.list(l3.count), 
-                                                                                      side = 'left',
-                                                                                      background_gp = gpar(fill = NA, col = NA),
-                                                                                      gp = gpar(col = 'black'), 
-                                                                                      padding = unit(0, 'mm'))),
-                                                 rowAnnotation(groups = anno_block(gp = gpar(fill = c('#fc5d63','#87d674')), show_name = F))), 
-                             top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'left'))),  
-                             row_title = NULL, 
-                             name = 'FAIRE zScore') +
-  EnrichedHeatmap(fig3d.mats$`Osa Rep1`,
-                  axis_name = c(-2,0,+2),
-                  pos_line = F,
-                  column_title = 'Osa.1',
-                  col = col_fun,
-                  name = 'Osa zScore',
-                  width = unit(0.5,'in'),
-                  top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis = F))) +
-  EnrichedHeatmap(fig3d.mats$`Osa Rep2`,
-                   axis_name = c(-2,0,+2),
-                   pos_line = F,
-                   column_title = 'Osa.2',
-                   col = col_fun,
-                   show_heatmap_legend = F, 
-                   width = unit(0.5,'in'),
-                   top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,7), axis_param = list(side = 'right')))) +
-   EnrichedHeatmap(fig3d.mats$K27ac,
-                   axis_name = c(-2,0,+2),
-                   pos_line = F,
-                   column_title = 'Osa.2',
-                   #col = col_fun,
-                   col = circlize::colorRamp2(seq(0, 2.5, length.out = 6), viridis.hex),
-                   #show_heatmap_legend = F, 
-                   width = unit(0.5,'in'),
-                   top_annotation = HeatmapAnnotation(lines = anno_enriched(gp = gpar(col = c('#fc5d63','#87d674')), ylim = c(0,2), axis_param = list(side = 'right'))))
-  
-
-#ComplexHeatmap::draw(fig3d.hms, row_title = NULL, heatmap_legend_side = "bottom", merge_legend = T)
-
-ComplexHeatmap::draw(fig3d.hms, row_split = groups, annotation_legend_list = list(lgd), row_title = NULL, heatmap_legend_side = "bottom", merge_legend = T)
-
-
-```
 
 
 # Fig 6 - Developmental Consequences of Hyperactivation
