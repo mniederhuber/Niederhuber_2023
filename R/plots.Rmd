@@ -405,6 +405,14 @@ dev.off()
 # Fig 2 - RNAi Screen
 ## D - Image Quantification
 ``` {r}
+replicate_sheet <- read.csv('../RNAi_Screen-Image_Quantification/filter.csv') %>%
+  dplyr::mutate(replicate = paste(symbol, line, date, drop, sep = '_'))
+
+rnaiScreen_filtered <- rnaiScreen %>%
+  dplyr::mutate(replicate = paste(symbol, line, date, scene, sep = '_')) %>%
+  dplyr::filter(!replicate %in% replicate_sheet$replicate | sampleID == 'osa_31266_210503') # filter out replicate images, or 31266_210503 -- images of 3LW
+
+
 tables1 <- rnaiScreen %>%
   dplyr::mutate(symbol = stringr::str_to_title(symbol)) %>%
   dplyr::group_by(symbol, line) %>%
@@ -413,7 +421,7 @@ tables1 <- rnaiScreen %>%
                    n = dplyr::n()) 
   
 write.csv('rPlots/TableS1-data.csv', x = tables1)
- 
+
 rnaiScreen %>%
   ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
   geom_vline(xintercept = 1, color = "grey50") +
@@ -1346,7 +1354,7 @@ hairless.df %>%
   ggplot(aes('',y = frac, fill = osa)) + 
   geom_bar(stat = 'identity') + 
   geom_text(aes(label = n, y = frac), vjust = 3,  size = 6, position = 'stack') +
-  scale_fill_manual(values = c('#2ad4c3','grey60'), name = 'Overlaps\nOsa Peak') +
+  scale_fill_manual(values = c('#fcba03','grey60'), name = 'Overlaps\nOsa Peak') +
   annotate('text', x = 1, y = 1.02, label = '***') +
   theme(axis.title = element_blank(),
         axis.text = element_text(size = 12), 
@@ -1371,7 +1379,8 @@ enrichtest.hairless
 ```{r}
 # settings
 cluster.levels = c('4', '7', '8','5','1','3','6','2')
-blues <- colorRampPalette(c("#6be2fa","#0047a3"))(7)
+#blues <- colorRampPalette(c("#6be2fa","#0047a3"))(7)
+blues <- colorRampPalette(c("#6be2fa","#6be2fa"))(7)
 set.seed(1230412)
 
 # make matrix of FAIRE zScore within Osa binding sites by stage
