@@ -11,7 +11,7 @@ library(AnnotationDbi)
 library(EnrichedHeatmap)
 library(ComplexHeatmap)
 
-library(GO.db)
+#library(GO.db)
 
 library(patchwork)
 
@@ -64,7 +64,7 @@ fbgn.validated %<>%
 ###
 
 dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
-dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
 dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
 
 dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100) 
@@ -121,6 +121,13 @@ notch <- data.frame('seqnames' = 'chrX',
                     'end' = 3206341) %>%
   GRanges()
 ### 
+
+# nubbin
+#chr2L:12,542,935-12,696,192
+nub <- data.frame('seqnames' = 'chr2L',
+                    'start' = 12542935,
+                    'end' = 12696192) %>%
+  GRanges()
 # enhancers
 ### 
 
@@ -322,7 +329,7 @@ enhancer.ranges <- GRanges(enhancers)
 
 enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
                                       genome = 'dm6',
-                                      fill = '#e00218',
+                                      fill = '#18c708',
                                       col = 'transparent',
                                       background.title = 'white',
                                       showTitle = F)
@@ -336,6 +343,7 @@ peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
                                    background.title = 'white', 
                                    showTitle = F )
 
+#TODO - is osa.dependent annotation correct? using diffbind?
 osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)), 
 #osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep, 
                                           genome = 'dm6', 
@@ -405,7 +413,7 @@ dev.off()
 # Fig 2 - RNAi Screen
 ## D - Image Quantification
 ``` {r}
-replicate_sheet <- read.csv('../RNAi_Screen-Image_Quantification/filter.csv') %>%
+replicate_sheet <- read.csv('../rnaiScreen_replicate_wings.csv') %>%
   dplyr::mutate(replicate = paste(symbol, line, date, drop, sep = '_'))
 
 rnaiScreen_filtered <- rnaiScreen %>%
@@ -413,7 +421,7 @@ rnaiScreen_filtered <- rnaiScreen %>%
   dplyr::filter(!replicate %in% replicate_sheet$replicate | sampleID == 'osa_31266_210503') # filter out replicate images, or 31266_210503 -- images of 3LW
 
 
-tables1 <- rnaiScreen %>%
+tables1 <- rnaiScreen_filtered %>%
   dplyr::mutate(symbol = stringr::str_to_title(symbol)) %>%
   dplyr::group_by(symbol, line) %>%
   dplyr::summarise(m = mean(KDtoWT),
@@ -422,7 +430,7 @@ tables1 <- rnaiScreen %>%
   
 write.csv('rPlots/TableS1-data.csv', x = tables1)
 
-rnaiScreen %>%
+rnaiScreen_filtered %>%
   ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
   geom_vline(xintercept = 1, color = "grey50") +
 #  geom_vline(xintercept = 1.2, color = "grey50", linetype = "longdash") + # somewhat arbitrary cutoff - based on visually confirmed hits 
@@ -598,6 +606,11 @@ I don't currently have a clean way to annotate the main df with those values.
 
 
 ```{r}
+
+peaks$faire.osaDeg.df %>% 
+  dplyr::filter(osa.dependent) %>%
+  dplyr::select(seqnames, start, end) %>%
+  write.table(file = 'bed/osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
 
 osaDeg.qF %>%
   data.frame() %>%
@@ -775,30 +788,30 @@ plotPCA -in rPlots/multiBWsum.npz \
 brD_quant <- read.csv('../delta/code/output.csv', sep = ',') 
   
 
-brD_quant %>%
-  dplyr::filter(genotype != 'brm') %>%
-  dplyr::group_by(genotype) %>%
-#  dplyr::mutate(mean = mean(br_ratio), 
-#                   sd = sd(br_ratio)) %>%
-  ggplot(aes(genotype, brD_ratio)) +
-  geom_boxplot(aes(fill = genotype), outlier.shape = NA) + 
-  geom_point(position = position_jitter(width = 0.1)) +
-  scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
-  annotate(geom = 'segment', x = 1, xend = 2, y = 2.52, yend = 2.52) +
-  annotate(geom = 'text', x = 1.5, y = 2.53, label = '***') +
-  ylab('brDisc A/P Ratio') +
-  theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.title.y = element_text(size = 12),
-        axis.text.y = element_text(size = 12),
-        axis.ticks.x = element_blank())
-#ggsave('rPlots/4B.png', width = 3, height = 3, dpi = 300)
-
-## stats
-osa_brD <- brD_quant[brD_quant$genotype == 'osa',]$brD_ratio
-lexA_brD <- brD_quant[brD_quant$genotype == 'lexA',]$brD_ratio
-
-t.test(osa_brD, lexA_brD, paired = F)
+#brD_quant %>%
+#  dplyr::filter(genotype != 'brm') %>%
+#  dplyr::group_by(genotype) %>%
+##  dplyr::mutate(mean = mean(br_ratio), 
+##                   sd = sd(br_ratio)) %>%
+#  ggplot(aes(genotype, brD_ratio)) +
+#  geom_boxplot(aes(fill = genotype), outlier.shape = NA) + 
+#  geom_point(position = position_jitter(width = 0.1)) +
+#  scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
+#  annotate(geom = 'segment', x = 1, xend = 2, y = 2.52, yend = 2.52) +
+#  annotate(geom = 'text', x = 1.5, y = 2.53, label = '***') +
+#  ylab('brDisc A/P Ratio') +
+#  theme(axis.title.x = element_blank(),
+#        axis.text.x = element_blank(),
+#        axis.title.y = element_text(size = 12),
+#        axis.text.y = element_text(size = 12),
+#        axis.ticks.x = element_blank())
+##ggsave('rPlots/4B.png', width = 3, height = 3, dpi = 300)
+#
+### stats
+#osa_brD <- brD_quant[brD_quant$genotype == 'osa',]$brD_ratio
+#lexA_brD <- brD_quant[brD_quant$genotype == 'lexA',]$brD_ratio
+#
+#t.test(osa_brD, lexA_brD, paired = F)
 
 
 
@@ -812,11 +825,11 @@ brD_quant_ratio <- brD_quant2 %>%
   dplyr::summarise(ratio = mean[side == 'anterior']/mean[side == 'posterior'])
 
 osa_brD <- brD_quant_ratio[brD_quant_ratio$genotype == 'osa',]$ratio
-brm_brD <- brD_quant_ratio[brD_quant_ratio$genotype == 'brm',]$ratio
+#brm_brD <- brD_quant_ratio[brD_quant_ratio$genotype == 'brm',]$ratio
 lexA_brD <- brD_quant_ratio[brD_quant_ratio$genotype == 'lexA',]$ratio
 
 t.test(osa_brD, lexA_brD, paired = F)
-t.test(brm_brD, lexA_brD, paired = F)
+#t.test(brm_brD, lexA_brD, paired = F)
 
 brD_quant_ratio %>%
   dplyr::filter(genotype != 'brm') %>%
@@ -987,9 +1000,13 @@ ztest <- purrr::map(unique(anno.df$anno.new), function(x) {
   cnr.trial <- df[df$assay=='cnr',]$sum   
   
   ztest <- prop.test(c(bkg.count, cnr.count), c(bkg.trial, cnr.trial), correct = F)
+#  ztest.one <- prop.test(c(bkg.count, cnr.count), c(bkg.trial, cnr.trial), correct = F, alternative = 'two.sided')
+#  binom <- binom.test(c(bkg.count, cnr.count), c(bkg.trial, cnr.trial))
   
   out <- data.frame(anno = x,
                     p = ztest$p.value)
+#                    p.one = ztest.one$p.value,
+#                    p.binom = binom$p.value)
   return(out)
 }) %>%
   dplyr::bind_rows() 
@@ -1348,14 +1365,14 @@ hairless.df <- hairless %>%
                                        T ~ 'No')) 
 
 hairless.df %>%
-  dplyr::group_by(osa) %>%
+  dplyr::group_by(osa) %>% # using any overlap with  osa peaks - not just distal
   dplyr::tally() %>%
   dplyr::mutate(frac = n/sum(n)) %>%
   ggplot(aes('',y = frac, fill = osa)) + 
   geom_bar(stat = 'identity') + 
   geom_text(aes(label = n, y = frac), vjust = 3,  size = 6, position = 'stack') +
   scale_fill_manual(values = c('#fcba03','grey60'), name = 'Overlaps\nOsa Peak') +
-  annotate('text', x = 1, y = 1.02, label = '***') +
+  annotate('text', x = 1, y = 1.02, label = '**') +
   theme(axis.title = element_blank(),
         axis.text = element_text(size = 12), 
         axis.ticks.x = element_blank(),
@@ -1515,9 +1532,151 @@ plot.df %>%
   #panel.spacing.y = unit(1, 'lines')) 
     )
 ggsave('rPlots/5G-2.png', width = 2, height = 6)
+
 ```
+#### Test - all FAIRE
+Is the best way to do this to generate new clusters?  is that the right comparison?
+```{r}
+# settings
+cluster.levels = c('4', '7', '8','5','1','3','6','2')
+#blues <- colorRampPalette(c("#6be2fa","#0047a3"))(7)
+blues <- colorRampPalette(c("#6be2fa","#6be2fa"))(7)
+set.seed(1230412)
+
+# make matrix of FAIRE zScore within Osa binding sites by stage
+#FAIRE zScore are from pooled replicates (samtools merge of bam files)
+
+tidymat <- fairePeaks.wt.full %>%
+#  data.frame() %>%
+#  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+  dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+  tidyr::pivot_longer(!peak) %>%
+  dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2], 
+                stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>%
+  dplyr::group_by(peak) %>%
+  dplyr::mutate(value = value + 1,
+                frac = value/max(value),
+                peak = as.character(peak)) %>%
+  tidyr::pivot_wider(id_cols = peak, names_from = stage, values_from = frac) %>%
+  tibble::column_to_rownames('peak') %>%
+  as.matrix()
+
+# based of nystrom
+# using K = 8 because of previously identified 8 discernible patterns of dynamic accessibility (Nystrom & Niederhuber 2020)
+km <- kmeans(tidymat, 8, nstart = 24, iter.max = 15)
+figure_col_fun <- circlize::colorRamp2(breaks = seq(0,1,by=0.25), colors = viridis::viridis(5))
+
+k_df <- km$cluster %>% 
+  data.frame %>% 
+  dplyr::rename(k = ".") %>% 
+  tibble::rownames_to_column("id")
 
 
+
+####
+# make a dataframe with the cluster info
+cluster.df <- data.frame(km$cluster) %>%
+  tibble::rownames_to_column('peak') %>%
+  dplyr::mutate(peak = as.integer(peak)) %>%
+  dplyr::left_join(data.frame(fairePeaks.wt.full), ., by = 'peak') %>% # join cluster info to the wt FAIRE peak df
+  dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron'))   # filter out to just "distal regulatory"
+
+#format a dataframe to make the final plots
+plot.df <- cluster.df %>%
+    dplyr::distinct(peak, .keep_all = T) %>%
+     dplyr::select(peak, km.cluster, WT.3LW, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     tidyr::pivot_longer(dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
+     dplyr::mutate(stage = stringr::str_split_fixed(name,'\\.', n = 3)[,2],
+                   stage = factor(stage, levels = c('3LW', '6h', '18h','24h','36h','44h'))) %>% 
+    # dplyr::group_by(peak) %>%
+    # dplyr::mutate(frac = value/max(value)) %>%
+     dplyr::group_by(peak, km.cluster)  %>%
+     dplyr::mutate(value = value + 1, 
+                   norm = log2(value/value[stage == '3LW'])) %>%
+  dplyr::group_by(km.cluster, stage) %>%
+     dplyr::summarise(mean = mean(norm),
+                      sd = sd(norm) ,
+                      n = dplyr::n()) %>%
+  dplyr::group_by( stage) %>%
+  dplyr::mutate(per = 100 *(n/sum(n)),
+                km.cluster = factor(km.cluster, levels = rev(c(4,8,1,2,5,7,6,3)))) 
+
+
+## supp plot
+#plot.df %>%
+#     ggplot(aes(stage,'', fill = mean, height = per))+
+#     geom_tile() +
+#  scale_fill_viridis_c() +
+#  theme(axis.text = element_text(size = 15),
+#        axis.title = element_blank(),
+#        legend.title = element_blank(),
+#        legend.key.size = unit(0.5, 'cm'),
+#        strip.background = element_blank(),
+#  strip.text.x = element_blank(),
+#  panel.spacing.y = unit(0, 'lines')) +
+#   facet_wrap(km.cluster~WT.3LW, nrow = 8, ncol = 2)
+#
+## without height adjust
+
+#     ggplot(aes(stage,km.cluster, fill = mean))+
+     #geom_tile() +
+plot.df %>%
+  dplyr::mutate(group = ifelse(km.cluster != 4, 'dynamic', 'static')) %>%
+     ggplot(aes(stage, y = mean, group = km.cluster))+
+  geom_ribbon(aes(ymin = mean - sd, ymax = mean+sd, x = stage, fill = km.cluster), 
+              alpha = 0.5) +
+  geom_line() +
+ # scale_fill_manual(values = c('#46AEDB', 'grey40')) +
+#  scale_color_manual(values = c('#DE4A47', '#9CBD36')) +
+  ylab('mean log2(zScore/zScore[3LW])') +
+  facet_wrap(~km.cluster, ncol = 2, nrow = 4) +
+  theme(legend.position = 'none')
+#ggsave('rPlots/5G_1.png', width = 3, height = 5)
+
+ # scale_fill_viridis_c() +
+ # theme(axis.text = element_text(size = 15),
+ #       axis.title = element_blank(),
+ #       legend.title = element_blank(),
+ #       legend.key.size = unit(1, 'cm'),
+ #       strip.background = element_blank(),
+ # strip.text.x = element_blank(),
+ # panel.spacing.y = unit(1, 'lines'),
+ # legend.position = 'bottom',
+ # legend.direction = "horizontal") +
+ #  facet_wrap(~WT.3LW, ncol = 1)
+
+## fraction barplot
+
+plot.df %>% 
+  dplyr::ungroup() %>%
+  #dplyr::mutate(km.cluster = forcats::fct_rev(km.cluster)) %>%
+  dplyr::select(km.cluster, n, per) %>%
+  dplyr::distinct() %>%
+  dplyr::mutate(group = ifelse(km.cluster == '4', 'Static', 'Dynamic')) %>%
+  #dplyr::group_by(group) 
+  #dplyr::summarise(sum = sum(per),
+  #                 n = n())
+  ggplot(aes('', y = per, fill = km.cluster, group = km.cluster, fill = km.cluster)) +
+  geom_bar(stat = 'identity', position = 'stack', alpha = 0.8, color = 'black') +
+  #coord_polar(theta = 'y') +
+  geom_text(aes(y = per, x = 1.2, vjust = 1.5, label = paste0('(',round(per, digits = 1),'%)')), position = 'stack') +
+  geom_text(aes(y = per,  x = 0.75, vjust = 1.5, label = paste0('n=',n)), position = 'stack') +
+  #scale_fill_manual(values = c(blues, 'grey60')) +
+    theme(#axis.text = element_blank(),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        legend.title = element_blank(),
+        legend.key.size = unit(0.5, 'cm'),
+        #legend.position = 'none',
+        legend.direction = "horizontal", 
+        #strip.background = element_blank(),
+       panel.background = element_blank(),
+  strip.text.x = element_blank(),
+  #panel.spacing.y = unit(1, 'lines')) 
+    )
+#ggsave('rPlots/5G-2.png', width = 2, height = 6)
+
+```
 
 ```{r}
 
@@ -1694,9 +1853,10 @@ write.table(rn.bed,
 enrichtest <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-full.bed', 
                               'bed/rn.bed',
                               TxDb = dm6.TxDb,
+                              pAdjustMethod = "BH",
                               nShuffle = 1000)
 
-                              
+enrichtest                           
 ```
 
 
@@ -1846,6 +2006,50 @@ Gviz::plotTracks(c(axis,
                  title.width = 1,
                  innerMargin = 10)
 dev.off()
+
+
+####
+
+k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
+                             ylim = c(0,5), 
+                             fill = 'black', 
+                             col = 'transparent')
+
+faire.3lw.track <- get_cnr_track('BigWig/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw',
+                                 ylim = c(0,10),
+                                 fill = 'black',
+                                 col = 'transparent')
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,15))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                   peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+                  
+
+names(cnr.tracks) <- c('osaGFP.rep1', 'osaGFP.rep2', 'osaPeaks', 'yw.rep1', 'yw.rep2')
+
+png('rPlots/S5_nub.png', width = 5, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   cnr.tracks, 
+                   k27ac.track,
+                   faire.3lw.track,
+                   spacer,
+                   hTrack,
+                   enhancertrack,
+                   spacer,
+                   genetrack),
+                 chromosome = seqnames(nub) %>% as.character(), 
+                 from = start(nub),
+                 to = end(nub),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+
 ```
 ### OLD - shared peaks heatmap Open vs Closed
 ```{r}
@@ -2166,35 +2370,37 @@ cluster.df %>%
 # Fig 6 - Developmental Consequences of Hyperactivation
 ## D - Dl upregulation quantification
 ```{r}
-dl_quant <- read.csv('../delta/code/output.csv') %>%
-  dplyr::mutate(log2 = log2(dl_ratio),
-                sampleID = paste(date, sampleID, sep = '_')) 
-  #dplyr::filter(!sampleID %in% c('230503_lexA_a1', '230503_lexA_b1', '230508_lexA_f1', '230508_lexA_g1'))
 
-osa_dl <- dl_quant[dl_quant$genotype == 'osa',]$dl_ratio
-lexA_dl <- dl_quant[dl_quant$genotype == 'lexA',]$dl_ratio
-
-t.test(osa_dl, lexA_dl, paired = F)
-
-dl_quant %>%
-  ggplot(aes(genotype, dl_ratio)) +
-  geom_boxplot() +
-  geom_point()
-
-
-osa_br <- dl_quant[dl_quant$genotype == 'osa',]$br_ratio
-lexA_br <- dl_quant[dl_quant$genotype == 'lexA',]$br_ratio
-
-t.test(osa_br, lexA_br)
-
-dl_quant %>%
-  ggplot(aes(genotype, br_ratio)) +
-  geom_boxplot() +
-  geom_point(aes(color = sampleID))
-
-
-dl_quant %>% dplyr::filter(genotype == 'osa')
+#dl_quant <- read.csv('../delta/code/output.csv') %>%
+#  dplyr::mutate(log2 = log2(dl_ratio),
+#                sampleID = paste(date, sampleID, sep = '_')) 
+#  #dplyr::filter(!sampleID %in% c('230503_lexA_a1', '230503_lexA_b1', '230508_lexA_f1', '230508_lexA_g1'))
+#
+#osa_dl <- dl_quant[dl_quant$genotype == 'osa',]$dl_ratio
+#lexA_dl <- dl_quant[dl_quant$genotype == 'lexA',]$dl_ratio
+#
+#t.test(osa_dl, lexA_dl, paired = F)
+#
+#dl_quant %>%
+#  ggplot(aes(genotype, dl_ratio)) +
+#  geom_boxplot() +
+#  geom_point()
+#
+#
+#osa_br <- dl_quant[dl_quant$genotype == 'osa',]$br_ratio
+#lexA_br <- dl_quant[dl_quant$genotype == 'lexA',]$br_ratio
+#
+#t.test(osa_br, lexA_br)
+#
+#dl_quant %>%
+#  ggplot(aes(genotype, br_ratio)) +
+#  geom_boxplot() +
+#  geom_point(aes(color = sampleID))
+#
+#
+#dl_quant %>% dplyr::filter(genotype == 'osa')
 ```
+file 'quant.csv' is a manual measurement done in FIJI
 
 ```{r}
 dl_quant2 <- read.csv('../delta/code/quant.csv') %>%

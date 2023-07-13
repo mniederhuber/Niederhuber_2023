@@ -84,13 +84,10 @@ byFrag.df <- union.byFrag %>%
                 yw.idr.sig.05 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup' & IDR_Score >= 540)) ~ T, 
                                               T ~ F),
                 yw.idr.sig.3 = dplyr::case_when(GRanges(.) %over% GRanges(dplyr::filter(idrPeaks, grp == 'yw.sup' & IDR_Score >= 217)) ~ T, 
-                                              T ~ F),)
-    
-    
+                                              T ~ F),
     fragType = dplyr::case_when(GRanges(.) %over% GRanges(peaks.20to120) ~ '20to120',
-                                           GRanges(.) %over% GRanges(peaks.150to700) ~ '150to700',
-                                           GRanges(.) %over% GRanges(peaks.allFrags) ~ 'allFrags'),
-                yw.peak = ifelse(GRanges(.) %over% peaks.byFrag.byID$)
+                                GRanges(.) %over% GRanges(peaks.150to700) ~ '150to700',
+                                GRanges(.) %over% GRanges(peaks.allFrags) ~ 'allFrags'))
 
 byFrag.df
 ```
