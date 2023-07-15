@@ -1038,6 +1038,7 @@ ztest %>%
 ## D - osa bound enhancers - FAIRE heatmap open vs closed
 ```{r 3LW-FAIRE-in-OsaPeaks}
 
+#TODO -- osaPeaks.enhancers is identical to osaPeaks.enhancers.full - can remove this one and us the .full one
 osaPeaks.enhancers <- osaPeaks %>%
   data.frame() %>%
   dplyr::filter(anno.new %in% c('Distal Intergenic','Intron')) %>%
@@ -2051,6 +2052,26 @@ dev.off()
 
 
 ```
+### TEST fraction later open
+```{r}
+osaPeaks.enhancers.full %>%
+  data.frame() %>%
+  dplyr::filter(!WT.3LW) %>%
+  dplyr::mutate(anyopen = ifelse(WT.6h | WT.18h | WT.24h | WT.36h | WT.44h, T, F)) %>%
+  dplyr::group_by(anyopen) %>%
+  dplyr::tally() %>%
+  dplyr::mutate(frac = n/sum(n)) %>%
+  ggplot(aes('',frac , fill = anyopen)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(label = n, y = frac), vjust = 3,  size = 6, position = 'stack') +
+#  scale_fill_manual(values = c('#fcba03','grey60'), name = 'Overlaps\nOsa Peak') +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 12), 
+        axis.ticks.x = element_blank(),
+        legend.position = 'bottom')
+ggsave('rPlots/S5-fraction-osaBound-3LW_closed-openLate.png', width = 2, height = 4, dpi = 300)
+```
+
 ### OLD - shared peaks heatmap Open vs Closed
 ```{r}
 hm.peaks <- peaks$cnr.df %>%
