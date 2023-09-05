@@ -408,7 +408,48 @@ Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seq
 dev.off()
 
 ```
+#### nubvein
+```{r}
+# chr2L:12,575,166-12,591,435 - locus
+#chr2L 12580391  12581350 - enhancer
+nubv <- data.frame('seqnames' = 'chr2L',
+                   'start' = 12580391,
+                   'end' = 12581350) %>%
+  GRanges()
+faire.wt.ssPool
+#TODO - best way to generate replicate average signal tracks
+#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
 
+#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+
+faire.wt.browser <- faire.wt.ssPool %>%
+  #dplyr::filter(grepl('3LW',time)) %>%
+  dplyr::mutate(color = WTFAIRE.colors)
+
+faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,10))
+faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+                     faire.wt.tracks$wt_6h,
+                     faire.wt.tracks$wt_18h,
+                     faire.wt.tracks$wt_24h,
+                     faire.wt.tracks$wt_36h,
+                     faire.wt.tracks$wt_44h)
+
+nubv.ant <- Gviz::AnnotationTrack(range = nubv, genome = 'dm6', name = 'nubVein', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
+
+
+png('rPlots/nubv.png', width = 6, height = 6, res = 300, units = 'in')
+Gviz::plotTracks(c(axis,faire.wt.tracks, nubv.ant, genetrack), chromosome = seqnames(nubv) %>% as.character(), 
+                 from = start(nubv+5000),
+                 to = end(nubv+10000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+dev.off()
+
+```
 
 # Fig 2 - RNAi Screen
 ## D - Image Quantification
@@ -2448,11 +2489,43 @@ dl_quant_ratio %>%
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
         axis.title.y = element_text(size = 12),
-        axis.text.y = element_text(size = 12))
+        axis.text.y = element_text(size = 12),
+        panel.background = element_rect(fill = "#d5e1e3"))
 ggsave('rPlots/6D.png', width = 3, height = 4, dpi = 300)
 
 dl_quant_ratio %>%
   dplyr::filter(genotype == 'osa')
+
+```
+### dl D
+```{r}
+
+dlD <- read.csv('../../Dl_D/quant.csv') %>%
+  dplyr::mutate(sampleID = paste(rnai,img,sep='.')) 
+
+dlD.ratio <- dlD %>%
+  dplyr::group_by(sampleID,rnai) %>%
+  dplyr::summarise(ratio = mean[side == 'a']/mean[side == 'p'])
+
+osa_dlD <- dlD.ratio[dlD.ratio$rnai == 'osa',]$ratio
+luc_dlD <- dlD.ratio[dlD.ratio$rnai == 'luc',]$ratio
+
+t.test(osa_dlD, luc_dlD, paired = F)
+
+dlD.ratio %>%
+  ggplot(aes(rnai, ratio)) + 
+  geom_boxplot(aes(fill = rnai)) +
+  geom_point(position = position_jitter(width = 0.08)) +
+  scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
+  #annotate(geom = 'segment', x = 1, xend = 2, y = 1.5, yend = 1.5) +
+  #annotate(geom = 'text', x = 1.5, y = 1.51, label = '***') +
+  ylab('Dl-D A/P Ratio') +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        panel.background = element_rect(fill = "#d5e1e3"))
+ggsave('rPlots/dlD.png', width = 3, height = 4, dpi = 300)
 
 ```
 
