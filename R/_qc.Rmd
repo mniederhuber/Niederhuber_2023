@@ -3,32 +3,15 @@
 library(ggplot2)
 library(magrittr)
 
-source('scripts/utils.R')
-
-load('rData/sheets.RDS')
-load('rData/union-df.RData')
-load('rData/osa-idr.RData')
-load('rData/deseq.RDS')
-load('rData/peaksByID.RData')
-
-dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
-dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
-
-brD <- data.frame('seqnames' = 'chrX',
-                  'start' = 1565708,
-                  'end' = 1567401) %>%
-  GenomicRanges::GRanges()
-
-
 ```
 
 
 ```{r multiqc-import}
-multiqc_files <- list.files('multiqc_data', full.names = T, pattern = '*.txt')
+multiqc_files <- list.files('../PIPELINES/osaGFP-CnR/multiqc_data', full.names = T, pattern = '*.txt')
 
 multiqc <- purrr::map(multiqc_files, ~ read.delim(.x, header = T))
 multiqc <- lapply(multiqc_files, read.delim) 
-names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[1],x[4],sep ='.'))
+names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[8],x[9],sep ='.'))
 
 #logs_files <- c(list.files('Logs', full.names = T, pattern = '*.txt'), list.files('Logs', full.names = T, pattern = '*.tsv'))
 #
@@ -40,8 +23,9 @@ names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x
 
 
 ```
-
+# alignment and duplicate filtering stats 
 ```{r}
+
 samtools <- multiqc$multiqc.samtools %>%
   dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
                                   stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
@@ -92,7 +76,7 @@ ggsave('rOut/QC/dups.png', width = 9, height = 5, dpi = 300)
 samtools
 
 ```
-
+# fastqc screen
 ```{r multiqc_pies}
 #multiqc$multiqc.fastq %>% reshape2::melt() %>% dplyr::filter(grepl('percentage',variable))
 mycolors = colorRampPalette(RColorBrewer::brewer.pal(13, 'Spectral'))(13)

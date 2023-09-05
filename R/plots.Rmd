@@ -1,8 +1,15 @@
+```{r}
+dep <- renv::dependencies(
+)
+
+dep %>% dplyr::filter(dep$Package == 'profileplyr')
+```
+
 # Setup
 ```{r setup}
 library(magrittr)
 library(ggplot2)
-library(ggrepel)
+#library(ggrepel)
 library(GenomicRanges)
 
 library(org.Dm.eg.db)
@@ -13,7 +20,7 @@ library(ComplexHeatmap)
 
 #library(GO.db)
 
-library(patchwork)
+#library(patchwork)
 
 source('utils.R')
 source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
