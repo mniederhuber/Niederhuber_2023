@@ -1,0 +1,1090 @@
+0:source("Scripts/FigUtils.R")
+0:source("R_Pipeline/make_gviz_browser_shots.R")
+0:library(cowplot)
+0:#theme_set(theme_gray())
+0:n_threads <- 4
+0:setup_packages(n_threads = n_threads)
+0:library(here)
+0:Sys.setenv(MEME_DIR = "/home/snystrom/meme")
+0:Sys.setenv(TOMTOM_DB = here("Data/fly_factor_survey_id.meme"))
+0:# load pipeline output files
+0:lapply(Sys.glob("R_Pipeline/output_data/*.rda"), load, .GlobalEnv)
+0:times <- c("3LW", "0APF", "6APF", "18APF", "24APF", "36APF", "44APF")
+0:times_nozero <- c("3LW", "6APF", "18APF", "24APF", "36APF", "44APF")
+0:developmental_time_factor <- factor(times, levels = times)
+0:developmental_time_factor_nozero <- factor(times_nozero, levels = times_nozero)
+0:# Additional timepoint information from full WT timecourse
+0:extra_sampleSheet <- readr::read_tsv("Data/allTimes_SampleSheet.tsv") %>%
+0:dplyr::mutate(grp = paste0(Genotype, ".", Time)) %>%
+0:dplyr::mutate(Bigwig = gsub("FAIRE_Data/Data/BigWigs/", "Data/Extra_Bigwigs/", Bigwig)) %>%
+0:dplyr::mutate(BigwigZnorm = gsub("FAIRE_Data/Data/BigWigs/", "Data/Extra_Bigwigs/", BigwigZnorm)) %>%
+0:dplyr::mutate(Bam = gsub("FAIRE_Data/Data/Bam/", "Data/Extra_Bam/", Bam)) %>%
+0:#dplyr::select(-Bam) %>%
+0:data.frame
+0:source("R_Pipeline/pipeline_methods.R")
+0:source("R_Pipeline/pipeline_methods.R")
+0:source("Scripts/importMatrix.R")
+0:source("Scripts/FigUtils.R")
+0:source("R_Pipeline/make_gviz_browser_shots.R")
+0:library(cowplot)
+0:#theme_set(theme_gray())
+0:n_threads <- 4
+0:setup_packages(n_threads = n_threads)
+0:library(here)
+0:Sys.setenv(MEME_DIR = "/home/snystrom/meme")
+0:Sys.setenv(TOMTOM_DB = here("Data/fly_factor_survey_id.meme"))
+0:# load pipeline output files
+0:lapply(Sys.glob("R_Pipeline/output_data/*.rda"), load, .GlobalEnv)
+0:times <- c("3LW", "0APF", "6APF", "18APF", "24APF", "36APF", "44APF")
+0:times_nozero <- c("3LW", "6APF", "18APF", "24APF", "36APF", "44APF")
+0:developmental_time_factor <- factor(times, levels = times)
+0:developmental_time_factor_nozero <- factor(times_nozero, levels = times_nozero)
+0:# Additional timepoint information from full WT timecourse
+0:extra_sampleSheet <- readr::read_tsv("Data/allTimes_SampleSheet.tsv") %>%
+0:dplyr::mutate(grp = paste0(Genotype, ".", Time)) %>%
+0:dplyr::mutate(Bigwig = gsub("FAIRE_Data/Data/BigWigs/", "Data/Extra_Bigwigs/", Bigwig)) %>%
+0:dplyr::mutate(BigwigZnorm = gsub("FAIRE_Data/Data/BigWigs/", "Data/Extra_Bigwigs/", BigwigZnorm)) %>%
+0:dplyr::mutate(Bam = gsub("FAIRE_Data/Data/Bam/", "Data/Extra_Bam/", Bam)) %>%
+0:#dplyr::select(-Bam) %>%
+0:data.frame
+0:# replace 3lw data with correct samples
+0:or.3lw_entry <- peakTable %>%
+0:dplyr::filter(grp == "OR.3LW") %>%
+0:dplyr::select(-Bam, -Peakfile, -Assay, -Sample)
+0:extra_peakTable <- readr::read_tsv("Data/allTimes_PeakTable.tsv") %>%
+0:dplyr::mutate(grp = paste0(Genotype, ".", Time)) %>%
+0:dplyr::mutate(BigwigZnorm = gsub("FAIRE_Data/Data/BigWigs/", "Data/Extra_Bigwigs/", BigwigZnorm)) %>%
+0:dplyr::select(-Peakfile) %>%
+0:dplyr::filter(grp != "OR.3LW") %>%
+0:data.frame %>%
+0:dplyr::bind_rows(., or.3lw_entry)
+0:ptm_sampleSheet <- readr::read_tsv("histone_ptm_samplesheet.tsv") %>%
+0:dplyr::mutate(BigwigZnorm = paste0("Data/", BigwigZnorm)) %>%
+0:dplyr::mutate(Bigwig = paste0("Data/", Bigwig)) %>%
+0:dplyr::mutate(Sample = gsub("-", "\\.", Sample)) %>%
+0:data.frame
+0:#############
+0:# colorscheme for consequences of binding & FAIRE regions
+0:# for WT behavior:
+0:increasing_color = "forestgreen"
+0:decreasing_color = "firebrick"
+0:static_color = "dodgerblue4"
+0:# for behavior in response to precocious E93:
+0:gof_increasing_color = "#0092ff"
+0:gof_decreasing_color = "#ffa700"
+0:gof_static_color = "grey50"
+0:# Generic genome highlight color
+0:genome_highlight_color = "grey75"
+0:behavior_colors <- c("Increasing" = increasing_color, "Decreasing" = decreasing_color, "Static" = static_color)
+0:gof_behavior_colors <- c("Increasing" = gof_increasing_color, "Decreasing" = gof_decreasing_color, "Static" = gof_static_color)
+0:toOrphan <- function(df, col = peak_binding_description){
+0:# For converting peak_binding_description to "orphan" from "orphan_endogenous"
+0:# this is to pay down some tech-debt that I realized too late to change original assignment.
+0:col <- enquo(col)
+0:df %>%
+0:dplyr::mutate(!!col := gsub("_endogenous", "", !!col))
+0:}
+0:## DEVELOPMENT Guidelines:
+0:# fig size max: 180 mm x 210 mm (7.08 in x 8.26 in)
+0:# 8pt arial for all text
+0:# 12pt uppercase for labels
+0:theme_development <- theme(text = element_text(size = 8, family = "Arial"),
+0:axis.text = element_text(size = 8, family = "Arial"),
+0:strip.text = element_text(size = 8, family = "Arial"),
+0:plot.tag = element_text(size = 12, family = "Arial"))
+0:pt_to_mm <- function(pt){
+0:# Convert ggplot2 size from mm to pt
+0:# named this function poorly to start, now too late to change.
+0:pt * 0.352778
+0:}
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:source("R_Pipeline/pipeline_methods.R")
+0:setup_packages(n_threads = n_threads)
+0:chip_peakTableList <- chip_peakTable %>%
+0:split(., .$grp)
+0:theme_set(theme_grey())
+0:set.seed(1892825)
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:chip_repOv <- peak_overlaps_by_condition(chip_allPeaks_by_rep %>% split(mcols(.)$grp))
+0:addGrpToPeaks <- function(x){
+0:peaks <- map(x, "mergedPeaks") %>%
+0:map(., data.frame) %>%
+0:imap(., ~{
+0:name <- .y
+0:df <- .x
+0:df %>%
+0:dplyr::mutate(grp = name)
+0:}) %>%
+0:map(., GRanges)
+0:return(peaks)
+0:}
+0:repOv_peaks <- addGrpToPeaks(chip_repOv)
+0:wt_ov_gof <- ChIPpeakAnno::findOverlapsOfPeaks(repOv_peaks)
+0:ChIPpeakAnno::makeVennDiagram(wt_ov_gof)
+0:allChipPeaks <- annotate_overlap_status(wt_ov_gof, by = "grp") %>%
+0:lapply(., function(peaks){
+0:peaks %>%
+0:data.frame %>%
+0:dplyr::mutate(peak_binding_description = case_when(.$peak_status == "OR.24APF_unique" ~ "orphan_endogenous",
+0:.$peak_status == "E93GOF.3LW_unique" ~ "ectopic",
+0:.$peak_status == "shared" & .$grp == "OR.24APF" ~ "entopic",
+0:.$peak_status == "shared" & .$grp == "E93GOF.3LW" ~ "na"))
+0:}) %>%
+0:dplyr::bind_rows(.)
+0:library(forcats)
+0:plotData <- allChipPeaks %>%
+0:dplyr::filter(grp == "OR.24APF") %>%
+0:dplyr::mutate(peak_binding_description = case_when(.$peak_binding_description == "orphan_endogenous" ~ "Unbound",
+0:.$peak_binding_description == "entopic" ~ "Bound"))
+0:axis_data <- plotData %>%
+0:dplyr::group_by(peak_binding_description) %>%
+0:dplyr::count() %>%
+0:tidyr::spread(peak_binding_description, n) %>%
+0:dplyr::mutate(total = Bound + Unbound)
+0:percentBound <- round((axis_data$Bound / axis_data$total) * 100)
+0:breaks <- c(axis_data$Bound, axis_data$total)
+0:plotData %>%
+0:ggplot(aes(factor("WT E93\nLate binding sites"))) +
+0:geom_bar(aes(fill = fct_rev(peak_binding_description))) +
+0:xlab(NULL) +
+0:ylab(glue::glue("{percentBound}%\nBound")) +
+0:theme_minimal() +
+0:theme(text = element_text(color = "black"),
+0:axis.text = element_text(color = "black", size = 15),
+0:axis.line = element_line(color = "black"),
+0:panel.grid.major = element_blank(),
+0:axis.title.y = element_text(angle = 0,
+0:vjust = percentBound/100 + 0.035,
+0:size = 14)) +
+0:guides(fill = guide_legend(title = "Bound by\nPrecocious E93", title.hjust = 0.5)) +
+0:scale_fill_manual(values  = c("Bound" = "Black", "Unbound" = "Grey")) +
+0:scale_y_continuous(breaks = breaks, expand = c(0,0))
+0:unionChip <- allChipPeaks %>%
+0:GRanges %>%
+0:GenomicRanges::reduce(.)
+0:endogenous <- allChipPeaks %>%
+0:dplyr::filter(peak_binding_description == "entopic") %>%
+0:GRanges
+0:ectopic <- allChipPeaks %>%
+0:dplyr::filter(peak_binding_description == "ectopic") %>%
+0:GRanges
+0:orphan_endogenous <- allChipPeaks %>%
+0:dplyr::filter(peak_binding_description == "orphan_endogenous") %>%
+0:GRanges
+0:unionChip %<>%
+0:data.frame %>%
+0:dplyr::mutate(id = glue::glue("peak_{num}", num = seq(1:nrow(.))) %>% as.character(.)) %>%
+0:dplyr::mutate(peak_binding_description = case_when(GRanges(.) %over% endogenous ~ "entopic",
+0:GRanges(.) %over% ectopic ~ "ectopic",
+0:GRanges(.) %over% orphan_endogenous ~ "orphan_endogenous")) %>%
+0:GRanges
+0:unionChip %>%
+0:data.frame %>%
+0:dplyr::count(peak_binding_description)
+0:makeAnno <- function(grange) {
+0:annoDF <- grange %>%
+0:data.frame() %>%
+0:dplyr::select(id, seqnames, start, end, strand)
+0:colnames(annoDF) <- c("GeneID", "Chr", "Start", "End", "Strand")
+0:return(annoDF)
+0:}
+0:# this function is no longer in the rsubread package!
+0:#chip_anno <- Rsubread::createAnnotationFile(unionChip)
+0:chip_anno <- makeAnno(unionChip)
+0:chip_counts <- Rsubread::featureCounts(chip_sampleSheet$Bam,
+0:annot.ext = chip_anno,
+0:allowMultiOverlap = T,
+0:nthreads = n_threads)
+0:faire_counts_in_chipPeaks <- Rsubread::featureCounts(sampleSheet$Bam,
+0:annot.ext = chip_anno,
+0:allowMultiOverlap = T,
+0:nthreads = n_threads)
+0:colnames(chip_counts$counts) <- chip_sampleSheet$Sample
+0:colnames(faire_counts_in_chipPeaks$counts) <- sampleSheet$Sample
+0:chip_res <- results(chip_dds)
+0:library(DESeq2)
+0:chip_dds <- DESeqDataSetFromMatrix(countData = chip_counts$counts, colData = chip_sampleSheet, design = ~grp) %>%
+0:DESeq(.)
+0:faire_chip_dds <- DESeqDataSetFromMatrix(countData = faire_counts_in_chipPeaks$counts, colData = sampleSheet, design = ~grp) %>%
+0:DESeq(.)
+0:chip_res <- results(chip_dds)
+0:summary(chip_res)
+0:chip_cpm <- fpm(chip_dds)
+0:chip_faire_cpm <- fpm(faire_chip_dds)
+0:mean_cpm <- function(cpm, prefix = "", suffix = "_cpm", idCol = "id",
+0:sample_regex = ".+\\..+\\..+\\.",
+0:rep_regex = "\\.Rep\\d"){
+0:# requires colnames to be of form <genotype>.<time>.<tissue>.<Rep#>
+0:mean_cpm <- cpm %>%
+0:data.frame %>%
+0:tibble::rownames_to_column(idCol) %>%
+0:reshape2::melt(variable.name = "Sample_Rep", value.name = "cpm") %>%
+0:dplyr::mutate(grp = gsub(rep_regex, "", Sample_Rep)) %>%
+0:dplyr::mutate(Rep = gsub(sample_regex, "", Sample_Rep)) %>%
+0:dplyr::group_by(id, grp) %>%
+0:dplyr::summarise(cpm = mean(cpm)) %>%
+0:dplyr::mutate(grp = paste0(prefix, grp, suffix)) %>%
+0:tidyr::spread(key = grp, value = cpm) %>%
+0:data.frame
+0:return(mean_cpm)
+0:}
+0:chip_mean_cpm <- mean_cpm(chip_cpm, prefix = "chip_cpm_", suffix = "")
+0:chip_faire_mean_cpm <- mean_cpm(chip_faire_cpm, prefix = "faire_cpm_", suffix = "")
+0:unionChip %<>%
+0:data.frame %>%
+0:dplyr::left_join(., chip_mean_cpm, by = "id") %>%
+0:dplyr::left_join(., chip_faire_mean_cpm, by = "id")
+0:peakTable_split <- peakTable %>% split(.$Sample)
+0:chip_peakTable_split <- chip_peakTable %>% split(.$Sample)
+0:chip_allRes <- generate_DESeq2_contrast_strings(chip_sampleSheet) %>%
+0:generate_DESeq2_contrasts(chip_dds, ., lfcCutoff = 1, padjCutoff = 0.05, format = "DataFrame")
+0:chip_faire_allRes <- generate_DESeq2_contrast_strings(sampleSheet) %>%
+0:generate_DESeq2_contrasts(faire_chip_dds, ., lfcCutoff = 1, padjCutoff = 0.05, format = "DataFrame")
+0:dm3.txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene::TxDb.Dmelanogaster.UCSC.dm3.ensGene
+0:BiocManager::install('TxDb.Dmelanogaster.UCSC.dm3.ensGene')
+0:dm3.txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene::TxDb.Dmelanogaster.UCSC.dm3.ensGene
+0:unionChip_anno <- unionChip %>%
+0:dplyr::mutate(e93_dependent = case_when((chip_faire_allRes$OR.3LWvsE93mut.3LW$behavior_type %in% c("Increasing", "Decreasing")) ~ "dependent",
+0:(chip_faire_allRes$OR.24APFvsE93mut.24APF$behavior_type %in% c("Increasing", "Decreasing")) ~ "dependent",
+0:T ~ "independent")) %>%
+0:dplyr::mutate(e93_sensitive = case_when((chip_faire_allRes$OR.3LWvsE93GOF.3LW$behavior_type %in% c("Increasing", "Decreasing")) ~ "sensitive",
+0:T ~ "insensitive")) %>%
+0:dplyr::mutate(e93_response_category = paste0(e93_dependent, "_", e93_sensitive)) %>%
+0:dplyr::mutate(e93_sensitive_behavior = chip_faire_allRes$OR.3LWvsE93GOF.3LW$behavior_type) %>%
+0:dplyr::mutate(wt_l3_24_dynamic_behavior = chip_faire_allRes$OR.3LWvsOR.24APF$behavior_type) %>%
+0:GRanges(.) %>%
+0:ChIPseeker::annotatePeak(., tssRegion = c(-500,500), TxDb = dm3.txdb, level = "gene") %>%
+0:ChIPseeker::as.GRanges(.) %>%
+0:data.frame %>%
+0:dplyr::mutate(anno_simple = gsub(" \\(.+$", "", annotation))
+0:unionChip_anno %>%
+0:dplyr::summarize(dep = sum(e93_dependent == "dependent"),
+0:sens = sum(e93_sensitive == "sensitive"),
+0:all = sum(e93_dependent %in% c("dependent", "independent")),
+0:both = sum(e93_response_category == "dependent_sensitive")) %>%
+0:dplyr::summarise(dep_frac = both/dep, sens_frac = both/sens, dep_all = dep/all, sens_all = sens/all)
+0:dm3.txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene::TxDb.Dmelanogaster.UCSC.dm3.ensGene
+0:unionChip_anno <- unionChip %>%
+0:dplyr::mutate(e93_dependent = case_when((chip_faire_allRes$OR.3LWvsE93mut.3LW$behavior_type %in% c("Increasing", "Decreasing")) ~ "dependent",
+0:(chip_faire_allRes$OR.24APFvsE93mut.24APF$behavior_type %in% c("Increasing", "Decreasing")) ~ "dependent",
+0:T ~ "independent")) %>%
+0:dplyr::mutate(e93_sensitive = case_when((chip_faire_allRes$OR.3LWvsE93GOF.3LW$behavior_type %in% c("Increasing", "Decreasing")) ~ "sensitive",
+0:T ~ "insensitive")) %>%
+0:dplyr::mutate(e93_response_category = paste0(e93_dependent, "_", e93_sensitive)) %>%
+0:dplyr::mutate(e93_sensitive_behavior = chip_faire_allRes$OR.3LWvsE93GOF.3LW$behavior_type) %>%
+0:dplyr::mutate(wt_l3_24_dynamic_behavior = chip_faire_allRes$OR.3LWvsOR.24APF$behavior_type) %>%
+0:GRanges(.) %>%
+0:ChIPseeker::annotatePeak(., tssRegion = c(-500,500), TxDb = dm3.txdb, level = "gene") %>%
+0:ChIPseeker::as.GRanges(.) %>%
+0:data.frame %>%
+0:dplyr::mutate(anno_simple = gsub(" \\(.+$", "", annotation))
+0:unionChip_anno %>%
+0:dplyr::summarize(dep = sum(e93_dependent == "dependent"),
+0:sens = sum(e93_sensitive == "sensitive"),
+0:all = sum(e93_dependent %in% c("dependent", "independent")),
+0:both = sum(e93_response_category == "dependent_sensitive")) %>%
+0:dplyr::summarise(dep_frac = both/dep, sens_frac = both/sens, dep_all = dep/all, sens_all = sens/all)
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::group_by(precocious_bound, e93_response_category) %>%
+0:dplyr::tally() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(peak_binding_description, precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:#dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(e93_dependent, peak_binding_description, precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only entopic peaks
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:dplyr::filter(e93_dependent == 'dependent' & peak_binding_description == 'entopic') %>%
+0:dplyr::group_by(precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:# now only with E93 WT bound...
+0:# 20% of E93 WT bound, dependent sites are precocious bound and sensitive
+0:unionChip_anno %>%
+0:dplyr::mutate(precocious_bound = ifelse(grepl('ectopic|entopic', peak_binding_description), T,F)) %>%
+0:#dplyr::filter(e93_dependent == 'dependent' & peak_binding_description != 'ectopic') %>%
+0:dplyr::group_by(e93_dependent, peak_binding_description, precocious_bound, e93_sensitive) %>%
+0:dplyr::tally() %>%
+0:dplyr::ungroup() %>%
+0:dplyr::mutate(per = n/sum(n))
+0:renv::status
+0:renv::status()
+0:renv::status()
+0:renv::snapshot()
+0:renv::dependencies()
+0:renv::dependencies(
+0:)
+0:dep <- renv::dependencies(
+0:)
+0:dplyr::filter(dep$Package == 'profileplyr')
+0:dep %>% dplyr::filter(dep$Package == 'profileplyr')
+0:library(magrittr)
+0:dep %>% dplyr::filter(dep$Package == 'profileplyr')
+0:library(ggplot2)
+0:library(magrittr)
+0:source('scripts/utils.R')
+0:library(ggplot2)
+0:library(magrittr)
+0:source('utils.R')
+0:load('rData/sheets.RDS')
+0:multiqc_files <- list.files('multiqc_data', full.names = T, pattern = '*.txt')
+0:multiqc <- purrr::map(multiqc_files, ~ read.delim(.x, header = T))
+0:multiqc <- lapply(multiqc_files, read.delim)
+0:names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[1],x[4],sep ='.'))
+0:#logs_files <- c(list.files('Logs', full.names = T, pattern = '*.txt'), list.files('Logs', full.names = T, pattern = '*.tsv'))
+0:#
+0:#
+0:#logs <- purrr::maplogs_filess, ~ read.delim(.x, header =TT)
+0:#multiqc <- lapply(multiqc_data, read.delim)
+0:##names(multiqc) <- sapply(stringr::str_split(multiqc_data,'/|_|\\.'), function(x) paste(x[1],x[4],sep ='.'))
+0:samtools <- multiqc$multiqc.samtools %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "."),
+0:filter = stringr::str_split_fixed(Sample, "_", n = 3)[,3], .before = 1)
+0:multiqc
+0:multiqc_files
+0:multiqc_files <- list.files('../PIPELINES/osaGFP-CnR/multiqc_data', full.names = T, pattern = '*.txt')
+0:multiqc <- purrr::map(multiqc_files, ~ read.delim(.x, header = T))
+0:multiqc <- lapply(multiqc_files, read.delim)
+0:names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[1],x[4],sep ='.'))
+0:#logs_files <- c(list.files('Logs', full.names = T, pattern = '*.txt'), list.files('Logs', full.names = T, pattern = '*.tsv'))
+0:#
+0:#
+0:#logs <- purrr::maplogs_filess, ~ read.delim(.x, header =TT)
+0:#multiqc <- lapply(multiqc_data, read.delim)
+0:##names(multiqc) <- sapply(stringr::str_split(multiqc_data,'/|_|\\.'), function(x) paste(x[1],x[4],sep ='.'))
+0:samtools <- multiqc$multiqc.samtools %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "."),
+0:filter = stringr::str_split_fixed(Sample, "_", n = 3)[,3], .before = 1)
+0:multiqc
+0:multiqc_files
+0:multiqc
+0:multiqc_files
+0:names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[7],x[10],sep ='.'))
+0:multiqc
+0:names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[8],x[10],sep ='.'))
+0:multiqc
+0:names(multiqc) <- sapply(stringr::str_split(multiqc_files,'/|_|\\.'), function(x) paste(x[8],x[9],sep ='.'))
+0:multiqc
+0:multiqc
+0:samtools <- multiqc$multiqc.samtools %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "."),
+0:filter = stringr::str_split_fixed(Sample, "_", n = 3)[,3], .before = 1)
+0:bowtie <- multiqc$multiqc.bowtie2 %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "."),
+0:filter = stringr::str_split_fixed(Sample, "_", n = 3)[,3], .before = 1)
+0:picard <- multiqc$multiqc.picard %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "."))
+0:bowtie %>%
+0:reshape2::melt() %>%
+0:dplyr::filter(variable != 'total_reads' & variable != 'overall_alignment_rate' & variable != 'paired_total') %>%
+0:dplyr::mutate(variable = factor(variable, levels = c('paired_total', 'paired_aligned_one', 'paired_aligned_multi','paired_aligned_none'))) %>%
+0:ggplot(aes(sample.id, value, fill = variable)) +
+0:geom_bar(stat = 'identity') +
+0:geom_text(aes(label = round(value/1000000,2)), position = position_stack(vjust = 0.5)) +
+0:scale_fill_manual(values = c('#78c4ff','#4873e8','#8c8c8c')) +
+0:ylab('read pairs (millions)') +
+0:theme(axis.text.y = element_blank(),
+0:axis.title.x = element_blank(),
+0:legend.title = element_blank())
+0:ggsave('rOut/QC/bowtie.png', width = 9, height = 5, dpi = 300)
+0:dplyr::inner_join(bowtie, samtools, by = 'sample.id')
+0:samtools %>%
+0:reshape2::melt() %>%
+0:dplyr::filter(variable == 'mapped_passed') %>%
+0:ggplot(aes(sample.id, value, fill = filter)) +
+0:geom_bar(stat = 'identity', position = position_dodge()) +
+0:geom_text(aes(label = round(value/1000000/2, 2)), position = position_dodge(0.9), vjust = -0.5) +
+0:scale_fill_manual(values = c('#036ffc','#519bfc','#96c4ff')) +
+0:ylab('read pairs (millions)') +
+0:theme(axis.text.y = element_blank(),
+0:axis.title.x = element_blank(),
+0:legend.title = element_blank())
+0:ggsave('rOut/QC/dups.png', width = 9, height = 5, dpi = 300)
+0:samtools
+0:#multiqc$multiqc.fastq %>% reshape2::melt() %>% dplyr::filter(grepl('percentage',variable))
+0:mycolors = colorRampPalette(RColorBrewer::brewer.pal(13, 'Spectral'))(13)
+0:mycolors
+0:multiqc.fastq.melt <- multiqc$multiqc.fastq %>%
+0:reshape2::melt() %>%
+0:dplyr::filter(grepl('percentage', variable)) %>%
+0:dplyr::mutate(sample.id = paste(stringr::str_split_fixed(Sample, "-|_", n = 8)[,1],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,6],
+0:stringr::str_split_fixed(Sample, "-|_", n = 8)[,7], sep = "_"))
+0:#unique(multiqc.fastq.melt$sample.id)
+0:pie_fun <- function(sampleid, df) {
+0:df %>%
+0:dplyr::filter(sample.id == sampleid) %>%
+0:ggplot(aes(sample.id, value, fill = variable)) +
+0:geom_bar(stat = 'identity', width = 1) +
+0:coord_polar(theta = 'y') +
+0:scale_fill_manual(values = mycolors)
+0:ggsave(paste0('rOut/QC/',sampleid,'-multiqc.png'), width = 7, height = 4, dpi = 300)
+0:}
+0:lapply(unique(multiqc.fastq.melt$sample.id), function(x) pie_fun(sampleid = x, df = multiqc.fastq.melt))
+0:dep <- renv::dependencies(
+0:)
+0:renv::status()
+0:?renv::status
+0:?renv::status()
+0:renv::snapshot()
+0:renv::clean()
+0:renv::status()
+0:renv::snapshot()
+0:renv::status()
+0:version
+0:renv::status()
+0:renv::status()
+0:renv::snapshot()
+0:renv::status()
+0:renv::clean()
+0:renv::diagnostics()
+0:renv::diagnostics() %>%
+0:dplyr::filter(Dependency == 'direct')
+0:renv::diagnostics()
+0:renv::diagnostics() %>%
+0:dplyr::filter(Dependency == 'direct')
+0:test <- renv::diagnostics()
+0:test %>%
+0:data.frame()
+0:test
+0:test <- renv::diagnostics()  %>% data.frame()
+0:test
+1694444251855:gc()
+1694565428420:library(magrittr)
+1694565428483:library(ggplot2)
+1694565429271:#library(ggrepel)
+1694565429282:library(GenomicRanges)
+1694565429627:library(org.Dm.eg.db)
+1694565430136:library(AnnotationDbi)
+1694565430152:library(EnrichedHeatmap)
+1694565430247:library(ComplexHeatmap)
+1694565430263:#library(GO.db)
+1694565430279:#library(patchwork)
+1694565430295:source('utils.R')
+1694565430312:source('~/NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1694565430459:## load data
+1694565430491:load('rData/sheets.rda')
+1694565430627:load('rData/peaks.rda')
+1694565436078:load('rData/rnaiScreen.rda')
+1694565437804:#TODO move RNAseq data into BAP project
+1694565437814:# TODO this is in progress - mixed across directories
+1694565437925:load('rData/wing-rnaseq-GeTMM.RData')  # GeTMM normalized RNAseq
+1694565437998:#loads 'wing.rnaseq'
+1694565438015:#load('rData/wing-rnaseq-DDS.RData')  # loads dds.results
+1694565438026:## TODO -- no id validation yet need to fix
+1694565438035:#rna.dds <- dds.results %>%
+1694565438045:#  dplyr::filter(baseMean_6h > 0) %>%
+1694565438054:#  tibble::rownames_to_column(var = 'Geneid')
+1694565438070:ON.genes <- wing.rnaseq %>%
+1694565438080:dplyr::filter(mean >= 2) %>%
+1694565438090:dplyr::select(Geneid)
+1694565438176:ON.genes %>% write.table('on-rnaseq.txt', sep = '\n', row.names = F, col.names = F, quote = F)
+1694565438206:#TODO clean this up - had to write out the on list and use the flybase id validator tool...
+1694565438215:ON.genes.validated <- read.table('~/McKay/Wing-RNAseq/on-genes-IDvalidation.txt', header = T) %>%
+1694565438225:dplyr::rename(Geneid = submitted_item,
+1694565438235:Validated = validated_id,
+1694565438245:Symbol = current_symbol)
+1694566835702:library(magrittr)
+1694566836312:library(ggplot2)
+1694566836327:#library(ggrepel)
+1694566836337:library(GenomicRanges)
+1694566836354:library(org.Dm.eg.db)
+1694566836364:library(AnnotationDbi)
+1694566836381:library(EnrichedHeatmap)
+1694566836391:library(ComplexHeatmap)
+1694566836408:#library(GO.db)
+1694566836424:#library(patchwork)
+1694566836441:source('utils.R')
+1694566836460:source('NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1694566836520:## load data
+1694566836537:load('rData/sheets.rda')
+1694566836621:load('rData/peaks.rda')
+1694566841385:load('rData/rnaiScreen.rda')
+1694566841465:#TODO move RNAseq data into BAP project
+1694566841475:# TODO this is in progress - mixed across directories
+1694566841486:load('rData/wing-rnaseq-GeTMM.RData')  # GeTMM normalized RNAseq
+1694566841581:#loads 'wing.rnaseq'
+1694566841637:#load('rData/wing-rnaseq-DDS.RData')  # loads dds.results
+1694566841647:## TODO -- no id validation yet need to fix
+1694566841657:#rna.dds <- dds.results %>%
+1694566841667:#  dplyr::filter(baseMean_6h > 0) %>%
+1694566841676:#  tibble::rownames_to_column(var = 'Geneid')
+1694566841693:ON.genes <- wing.rnaseq %>%
+1694566841704:dplyr::filter(mean >= 2) %>%
+1694566841714:dplyr::select(Geneid)
+1694566841748:ON.genes %>% write.table('on-rnaseq.txt', sep = '\n', row.names = F, col.names = F, quote = F)
+1694566841778:#TODO clean this up - had to write out the on list and use the flybase id validator tool...
+1694566841788:ON.genes.validated <- read.table('Wing-RNAseq/on-genes-IDvalidation.txt', header = T) %>%
+1694566841798:dplyr::rename(Geneid = submitted_item,
+1694566841808:Validated = validated_id,
+1694566841817:Symbol = current_symbol)
+1694566841865:#TODO move flyfactor database to BAP - code to download to repo?
+1694566841877:## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
+1694566841894:## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+1694566841906:# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+1694566841918:# FBgn0050420 -- is only Atf-2 in flyfactor db
+1694566841928:fbgn.validated <- read.table('fbgn_validated.txt', header = F, sep = '\t')
+1694566841948:colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+1694566841961:fbgn.validated %<>%
+1694566841970:dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1694566841980:dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+1694566842006:## global variables
+1694566842016:###
+1694566842025:# assign global variables
+1694566842034:###
+1694566842051:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1694566842097:#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+1694566842108:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1694566842231:dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100)
+1694566843287:dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+1694566843933:brD <- data.frame('seqnames' = 'chrX',
+1694566843942:'start' = 1565708,
+1694566843952:'end' = 1567401) %>%
+1694566843962:GenomicRanges::GRanges()
+1694566844030:shn <- data.frame('seqnames' = 'chr2R',
+1694566844040:'start' = 11159086,
+1694566844051:'end' = 11217394) %>%
+1694566844060:GRanges()
+1694566844121:sbb <- data.frame('seqnames' = 'chr2R',
+1694566844131:'start' = 18278198,
+1694566844142:'end' = 18357296) %>%
+1694566844152:GRanges()
+1694566844214:# Dl
+1694566844225:#chr3R:19,265,389-19,350,508
+1694566844236:Dl <- data.frame('seqnames' = 'chr3R',
+1694566844245:'start' = 19265389,
+1694566844256:'end' = 19350508) %>%
+1694566844265:GRanges()
+1694566844333:# E(spl)-c
+1694566844342:#chr3R:25,980,255-26,065,374
+1694566844353:espl <- data.frame('seqnames' = 'chr3R',
+1694566844363:'start' = 25980255,
+1694566844372:'end' = 26065374) %>%
+1694566844381:GRanges()
+1694566844441:# ac/sc
+1694566844452:#chrX:365,344-402,061
+1694566844462:acsc <- data.frame('seqnames' = 'chrX',
+1694566844472:'start' = 365344,
+1694566844482:'end' = 402061) %>%
+1694566844492:GRanges()
+1694566844550:# serrate
+1694566844561:#chr3R:27,167,731-27,227,610
+1694566844572:ser <- data.frame('seqnames' = 'chr3R',
+1694566844582:'start' = 27167731,
+1694566844592:'end' = 27227610) %>%
+1694566844601:GRanges()
+1694566844660:# notch
+1694566844672:#chrX:3,093,887-3,206,341
+1694566844683:notch <- data.frame('seqnames' = 'chrX',
+1694566844694:'start' = 3093887,
+1694566844705:'end' = 3206341) %>%
+1694566844716:GRanges()
+1694566844768:###
+1694566844785:# nubbin
+1694566844795:#chr2L:12,542,935-12,696,192
+1694566844851:nub <- data.frame('seqnames' = 'chr2L',
+1694566844862:'start' = 12542935,
+1694566844876:'end' = 12696192) %>%
+1694566844887:GRanges()
+1694566844940:# enhancers
+1694566844950:###
+1694566844967:redFly_enhancers <- read.table('bed/all_Dmel_CRM-sorted-merged.bed', sep = '\t')
+1694566845016:colnames(redFly_enhancers) <- c('seqnames', 'start','end')
+1694566845035:redFly_enhancers.ranges <- GRanges(redFly_enhancers)
+1694566845121:## memes setup
+1694566845131:###
+1694566845141:# meme db
+1694566845151:###
+1694566845162:#TODO - so clunky...
+1694566845172:# loading in the fly factor database, drop out a couple of problematic fbgn
+1694566845182:# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+1694566845192:# then filter on the on gene list -- which has to go through a similar process of id validation
+1694566845201:# gross
+1694566845211:meme_db <- universalmotif::read_meme('~/McKay/Motif_databases/FLY/fly_factor_survey.meme') %>%
+1694566845222:universalmotif::to_df() %>%
+1694566845231:dplyr::group_by(name) %>%
+1694566845241:dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1694566845271:dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+1694566845282:fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated)
+1694567328964:library(magrittr)
+1694567328981:library(ggplot2)
+1694567328995:#library(ggrepel)
+1694567329010:library(GenomicRanges)
+1694567329066:library(org.Dm.eg.db)
+1694567329080:library(AnnotationDbi)
+1694567329103:library(EnrichedHeatmap)
+1694567329714:library(ComplexHeatmap)
+1694567329739:#library(GO.db)
+1694567329761:#library(patchwork)
+1694567329780:source('utils.R')
+1694567329802:source('NystLib/R/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1694567329835:## load data
+1694567329856:load('rData/sheets.rda')
+1694567329946:load('rData/peaks.rda')
+1694567333063:load('rData/rnaiScreen.rda')
+1694567333153:#TODO move RNAseq data into BAP project
+1694567333166:# TODO this is in progress - mixed across directories
+1694567333179:load('rData/wing-rnaseq-GeTMM.RData')  # GeTMM normalized RNAseq
+1694567333364:#loads 'wing.rnaseq'
+1694567333385:#load('rData/wing-rnaseq-DDS.RData')  # loads dds.results
+1694567333399:## TODO -- no id validation yet need to fix
+1694567333414:#rna.dds <- dds.results %>%
+1694567333427:#  dplyr::filter(baseMean_6h > 0) %>%
+1694567333439:#  tibble::rownames_to_column(var = 'Geneid')
+1694567333457:ON.genes <- wing.rnaseq %>%
+1694567333469:dplyr::filter(mean >= 2) %>%
+1694567333480:dplyr::select(Geneid)
+1694567333506:ON.genes %>% write.table('on-rnaseq.txt', sep = '\n', row.names = F, col.names = F, quote = F)
+1694567333536:#TODO clean this up - had to write out the on list and use the flybase id validator tool...
+1694567333548:ON.genes.validated <- read.table('Wing-RNAseq/on-genes-IDvalidation.txt', header = T) %>%
+1694567333560:dplyr::rename(Geneid = submitted_item,
+1694567333572:Validated = validated_id,
+1694567333585:Symbol = current_symbol)
+1694567333672:#TODO move flyfactor database to BAP - code to download to repo?
+1694567333686:## load in a flyfacotr fbgn validated .txt - generated with Flybase id validator
+1694567333706:## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+1694567333718:# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+1694567333731:# FBgn0050420 -- is only Atf-2 in flyfactor db
+1694567333743:fbgn.validated <- read.table('fbgn_validated.txt', header = F, sep = '\t')
+1694567333762:colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+1694567333780:fbgn.validated %<>%
+1694567333793:dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1694567333807:dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+1694567333833:## global variables
+1694567333845:###
+1694567333857:# assign global variables
+1694567333870:###
+1694567333890:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1694567333903:#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+1694567333916:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1694567333936:dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100)
+1694567333989:dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+1694567334573:brD <- data.frame('seqnames' = 'chrX',
+1694567334587:'start' = 1565708,
+1694567334600:'end' = 1567401) %>%
+1694567334613:GenomicRanges::GRanges()
+1694567334684:shn <- data.frame('seqnames' = 'chr2R',
+1694567334698:'start' = 11159086,
+1694567334713:'end' = 11217394) %>%
+1694567334726:GRanges()
+1694567334792:sbb <- data.frame('seqnames' = 'chr2R',
+1694567334806:'start' = 18278198,
+1694567334820:'end' = 18357296) %>%
+1694567334834:GRanges()
+1694567334900:# Dl
+1694567334913:#chr3R:19,265,389-19,350,508
+1694567334927:Dl <- data.frame('seqnames' = 'chr3R',
+1694567334962:'start' = 19265389,
+1694567334978:'end' = 19350508) %>%
+1694567334993:GRanges()
+1694567335069:# E(spl)-c
+1694567335081:#chr3R:25,980,255-26,065,374
+1694567335094:espl <- data.frame('seqnames' = 'chr3R',
+1694567335108:'start' = 25980255,
+1694567335121:'end' = 26065374) %>%
+1694567335135:GRanges()
+1694567335204:# ac/sc
+1694567335216:#chrX:365,344-402,061
+1694567335228:acsc <- data.frame('seqnames' = 'chrX',
+1694567335240:'start' = 365344,
+1694567335254:'end' = 402061) %>%
+1694567335268:GRanges()
+1694567335336:# serrate
+1694567335349:#chr3R:27,167,731-27,227,610
+1694567335362:ser <- data.frame('seqnames' = 'chr3R',
+1694567335375:'start' = 27167731,
+1694567335388:'end' = 27227610) %>%
+1694567335401:GRanges()
+1694567335464:# notch
+1694567335477:#chrX:3,093,887-3,206,341
+1694567335488:notch <- data.frame('seqnames' = 'chrX',
+1694567335502:'start' = 3093887,
+1694567335514:'end' = 3206341) %>%
+1694567335527:GRanges()
+1694567335589:###
+1694567335609:# nubbin
+1694567335623:#chr2L:12,542,935-12,696,192
+1694567335639:nub <- data.frame('seqnames' = 'chr2L',
+1694567335654:'start' = 12542935,
+1694567335669:'end' = 12696192) %>%
+1694567335683:GRanges()
+1694567335740:# enhancers
+1694567335752:###
+1694567335772:redFly_enhancers <- read.table('bed/all_Dmel_CRM-sorted-merged.bed', sep = '\t')
+1694567335811:colnames(redFly_enhancers) <- c('seqnames', 'start','end')
+1694567335830:redFly_enhancers.ranges <- GRanges(redFly_enhancers)
+1694567335932:## memes setup
+1694567335950:###
+1694567335963:# meme db
+1694567335975:###
+1694567335988:#TODO - so clunky...
+1694567336000:# loading in the fly factor database, drop out a couple of problematic fbgn
+1694567336012:# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+1694567336025:# then filter on the on gene list -- which has to go through a similar process of id validation
+1694567336037:# gross
+1694567336049:meme_db <- universalmotif::read_meme('fly_factor_survey.meme') %>%
+1694567336061:universalmotif::to_df() %>%
+1694567336072:dplyr::group_by(name) %>%
+1694567336084:dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1694567336097:dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+1694567336110:fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated)
+1694567338395:meme_db_on <- meme_db %>%
+1694567338408:dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
+1694567338477:options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
+1694567338539:## colors
+1694567338555:viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+1694567338569:cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+1694567338584:cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
+1694567338600:cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
+1694567338620:## browser
+1694567338632:WTFAIRE.colors <- c("grey10","grey20","grey30","grey40","grey50","grey60")
+1694567338653:## peak subsets
+1694567338666:osaPeaks <- peaks$cnr.df %>%
+1694567338679:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1694567338692:GRanges() %>%
+1694567338704:resize(width = 1, fix = "center")
+1694567338808:osaPeaks.full <- peaks$cnr.df %>%
+1694567338820:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1694567338833:GRanges(seqlengths = seqlengths(dm6))
+1694567338922:osaPeaks.enhancers.full <- osaPeaks.full %>%
+1694567338935:data.frame() %>%
+1694567338948:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1694567338976:GRanges()
+1694567339155:# uses rep1 summit coordinates
+1694567339168:osaPeaks.summits <- subsetByOverlaps(cnr.summits, osaPeaks.full)
+1694567339295:osaPeaks.faire.summits <- subsetByOverlaps(faire.wt.3LW.summits, osaPeaks.full)
+1694567339376:fairePeaks.wt <- peaks$faire.wt.df %>%
+1694567339388:#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+1694567339399:GRanges() %>%
+1694567339412:resize(width = 1, fix = "center")
+1694567339605:#redundant... but used in a couple chunks for motif analysis
+1694567339618:fairePeaks.wt.full <- peaks$faire.wt.df %>%
+1694567340638:dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
+1694567341323:#DONE - remove the peakCat ? since now using log2fold change for these categories...
+1694567341336:# switched to using osaDeg.qF which is a peak set derived from diffbind, that has been subset using iranges by intersect
+1694567341349:# with quality filtered peak calls in peaks$faire.osaDeg.df
+1694567341362:osaDeg.center <- osaDeg.qF %>%
+1694567341377:GRanges() %>%
+1694567341391:resize(width = 1, fix = "center")
+1694567341618:# rotund peaks
+1694567341630:rn.peaks <- peaks$rn.df %>%
+1694567341646:GRanges()
+1694567341707:rn.distal <- rn.peaks %>%
+1694567341744:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1694567341758:GRanges()
+1694567342246:# genomic 500bp
+1694567342287:dm6.500bp <- peaks$dm6.500bp %>%
+1694567342302:GRanges() %>%
+1694567342315:resize(width = 1, fix = 'center')
+1694567344679:#fairePeaks.osaDependent <- fairePeaks.deg %>%
+1694567344691:#  data.frame() %>%
+1694567344704:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+1694567344717:#  GRanges()
+1694567344729:#
+1694567344742:#fairePeaks.osaIndependent <- fairePeaks.deg %>%
+1694567344755:#  data.frame() %>%
+1694567344767:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+1694567344779:#  GRanges()
+1694567344792:#
+1694567344804:#fairePeaks.osaEctopic <- fairePeaks.deg %>%
+1694567344816:#  data.frame() %>%
+1694567344828:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+1694567344842:#  GRanges()
+1694567344877:## load bws
+1694567344905:#TODO - cleanup - move matrices?
+1694567344923:bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id')
+1694567371458:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+1694567376334:#TODO move data to main project directory and fix path
+1694567376346:#TODO merge reps?
+1694567376358:#k27ac.bw <- rtracklayer::import.bw('~/mckay/h3k27ac_cnr/bigwig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+1694567376370:#TODO put these notes in better place"
+1694567376381:## K27ac data- yeast spikein norm pel data is generally lower in rep2 than rep1, this is not seen in znorm or drosYak norm data
+1694567376393:## drosYak norm signal is "low" as in the absolute values are usually < 1, but the normalization between samples looks good, and the signal to noise still looks fine, not appreciably better or worse that znorm
+1694567376405:## using pellet because only have 2 reps of pel, only 1 of sup - the sup rep looks really good though I think
+1694567376417:## using large fragments only because all fractions/reps show poor signal in <120 bp frag split
+1694567376435:#k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1694567376447:k27ac.1.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1694567377002:k27ac.2.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1694567377813:## functions
+1694567377833:plot.frac <- function(x) {
+1694567377846:lapply(unique(x$change), function(i) {
+1694567377860:x %>%
+1694567377873:dplyr::filter(change == i) %>%
+1694567377886:ggplot(aes(fraction, change, fill = Osa.Bound)) +
+1694567377900:geom_bar(stat = 'identity', width = 1) +
+1694567377914:geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
+1694567377928:#geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
+1694567377941:scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
+1694567377954:scale_y_discrete(position = 'right', ) +
+1694567377967:xlab('Percent Bound by Osa') +
+1694567377980:theme(legend.position = 'top',
+1694567377993:legend.key.size = unit(1, 'cm'),
+1694567378006:legend.text = element_text(size = 15),
+1694567378020:legend.title = element_text(size = 20),
+1694567378033:panel.background = element_blank(),
+1694567378049:axis.text = element_blank(),
+1694567378062:axis.title = element_blank(),
+1694567378074:axis.ticks = element_blank(),
+1694567378086:#           axis.text.y = element_text(size = 12),
+1694567378098:panel.grid = element_blank()) +
+1694567378111:NULL
+1694567378124:fn = paste0('rPlots/3E_',i,'.png')
+1694567378136:ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
+1694567378148:})
+1694567378160:}
+1694567378179:## .bed out
+1694567378191:osaPeaks %>%
+1694567378204:data.frame() %>%
+1694567378216:dplyr::select(seqnames, start, end) %>%
+1694567378227:write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1694567378379:osaPeaks.full %>%
+1694567378393:data.frame() %>%
+1694567378406:dplyr::select(seqnames, start, end) %>%
+1694567378418:write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1694567378511:peaks$cnr.df %>%
+1694567378523:data.frame() %>%
+1694567378537:dplyr::filter(yw.cnr) %>%
+1694567378555:dplyr::select(seqnames, start, end) %>%
+1694567378568:write.table('controlPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1694567378603:#fairePeaks.osaDependent %>%
+1694567378616:#  data.frame() %>%
+1694567378629:#  dplyr::select(seqnames, start, end) %>%
+1694567378642:#  write.table('osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1694567378654:#
+1694567378666:#fairePeaks.osaEctopic %>%
+1694567378679:#  data.frame() %>%
+1694567378691:#  dplyr::select(seqnames, start, end) %>%
+1694567378704:#  write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1694567378758:#
+1694567378788:## gviz
+1694567378801:track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+1694567378822:cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
+1694567378876:mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
+1694567378898:Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
+1694567378923:espl_enhancers <- read.table('bed/espl_enhancers-merge.bed', sep = '\t')
+1694567378955:enhancers <- dplyr::bind_rows(Delta_enhancers, espl_enhancers)
+1694567378975:colnames(enhancers) <- c('seqnames', 'start','end','name')
+1694567378993:enhancer.ranges <- GRanges(enhancers)
+1694567379248:enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
+1694567379261:genome = 'dm6',
+1694567379274:fill = '#18c708',
+1694567379287:col = 'transparent',
+1694567379301:background.title = 'white',
+1694567379314:showTitle = F)
+1694567379690:genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
+1694567384280:peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
+1694567384293:genome = 'dm6',
+1694567384307:fill = '#D01C8B',
+1694567384320:col = 'transparent',
+1694567384334:background.title = 'white',
+1694567384347:showTitle = F )
+1694567384784:#TODO - is osa.dependent annotation correct? using diffbind?
+1694567384797:osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)),
+1694567384811:#osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep,
+1694567384822:genome = 'dm6',
+1694567384834:fill = '#469ae8',
+1694567384846:col = 'transparent',
+1694567384857:background.title = 'white',
+1694567384869:showTitle = F)
+1694567385155:hairless_peaks <- read.table('bed/hairless-dm6.bed', col.names = c('seqnames', 'start', 'end')) %>% GRanges()
+1694567385226:hTrack <- Gviz::AnnotationTrack(range = hairless_peaks,
+1694567385239:genome = 'dm6',
+1694567385252:fill = '#2ad4c3',
+1694567385264:col = 'transparent',
+1694567385277:background.title = 'white',
+1694567385290:showTitle = F)
+1694567385455:spacer <- Gviz::AnnotationTrack(background.title = 'white')
+1694567385927:## matrices for heatmaps
+1694567385946:mats <- purrr::map(bws, ~{
+1694567385959:normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+1694567385970:})
+1694567474271:names(mats) <- names(bws)
+1694567490109:#TODO - best way to generate replicate average signal tracks
+1694567490122:#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+1694567490142:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1694567490161:faire.wt.browser <- faire.wt.ssPool %>%
+1694567490172:#dplyr::filter(grepl('3LW',time)) %>%
+1694567490185:dplyr::mutate(color = WTFAIRE.colors)
+1694567490233:faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,15))
+1694567490610:faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+1694567490624:faire.wt.tracks$wt_6h,
+1694567490648:faire.wt.tracks$wt_18h,
+1694567490676:faire.wt.tracks$wt_24h,
+1694567490692:faire.wt.tracks$wt_36h,
+1694567490705:faire.wt.tracks$wt_44h)
+1694567490725:brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+1694567490878:axis <- Gviz::GenomeAxisTrack(scale = 10000)
+1694567490977:png('rPlots/1B.png', width = 4, height = 6, res = 300, units = 'in')
+1694567491077:Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(),
+1694567491091:from = start(brD + 10000),
+1694567491105:to = end(brD + 10000),
+1694567491118:cex.axis = 0.3,
+1694567491131:cex.title = 0.5,
+1694567491147:title.width = 1,
+1694567491193:innerMargin = 10)
+1694567500095:dev.off()
+1694567522452:Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(),
+1694567522464:from = start(brD + 10000),
+1694567522475:to = end(brD + 10000),
+1694567522485:cex.axis = 0.3,
+1694567522496:cex.title = 0.5,
+1694567522506:title.width = 1,
+1694567522516:innerMargin = 10)
+1694567599870:fig1b <- Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(),
+1694567599881:from = start(brD + 10000),
+1694567599891:to = end(brD + 10000),
+1694567599903:cex.axis = 0.3,
+1694567599913:cex.title = 0.5,
+1694567599924:title.width = 1,
+1694567599935:innerMargin = 10)
+1694567609619:#TODO - best way to generate replicate average signal tracks
+1694567609634:#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+1694567609653:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1694567609671:faire.wt.browser <- faire.wt.ssPool %>%
+1694567609684:#dplyr::filter(grepl('3LW',time)) %>%
+1694567609697:dplyr::mutate(color = WTFAIRE.colors)
+1694567609728:faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,15))
+1694567609869:faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+1694567609881:faire.wt.tracks$wt_6h,
+1694567609894:faire.wt.tracks$wt_18h,
+1694567609906:faire.wt.tracks$wt_24h,
+1694567609919:faire.wt.tracks$wt_36h,
+1694567609932:faire.wt.tracks$wt_44h)
+1694567609953:brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+1694567610117:axis <- Gviz::GenomeAxisTrack(scale = 10000)
+1694567610199:fig1b <- Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(),
+1694567610290:from = start(brD + 10000),
+1694567610303:to = end(brD + 10000),
+1694567610316:cex.axis = 0.3,
+1694567610329:cex.title = 0.5,
+1694567610341:title.width = 1,
+1694567610354:innerMargin = 10)
+1694567613605:png('rPlots/1B.png', width = 4, height = 6, res = 300, units = 'in')
+1694567613621:fig1b
+1694567613879:dev.off()
+1694567639461:png('rPlots/1B.png', width = 4, height = 6, res = 300, units = 'in')
+1694567639473:fig1b
+1694567639773:dev.off()
+1694567661466:fig1b
+1694567668841:fig1b
+1694567764199:plot(fig1b)
+1694567795937:fig1b
+1694567814316:Gviz::plotTracks(fig1b)
+1694567872158:#TODO - best way to generate replicate average signal tracks
+1694567872172:#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+1694567872192:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1694567872211:faire.wt.browser <- faire.wt.ssPool %>%
+1694567872224:#dplyr::filter(grepl('3LW',time)) %>%
+1694567872236:dplyr::mutate(color = WTFAIRE.colors)
+1694567872265:faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,15))
+1694567872401:faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+1694567872414:faire.wt.tracks$wt_6h,
+1694567872426:faire.wt.tracks$wt_18h,
+1694567872439:faire.wt.tracks$wt_24h,
+1694567872452:faire.wt.tracks$wt_36h,
+1694567872464:faire.wt.tracks$wt_44h)
+1694567872484:brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+1694567872644:axis <- Gviz::GenomeAxisTrack(scale = 10000)
+1694567872739:png('rPlots/1B.png', width = 4, height = 6, res = 300, units = 'in')
+1694567872753:Gviz::plotTracks(c(axis,faire.wt.tracks, brdisc.at, genetrack), chromosome = seqnames(brD) %>% as.character(),
+1694567872765:from = start(brD + 10000),
+1694567872778:to = end(brD + 10000),
+1694567872790:cex.axis = 0.3,
+1694567872803:cex.title = 0.5,
+1694567872815:title.width = 1,
+1694567872831:innerMargin = 10)
+1694567875505:dev.off()
+1694567883113:# chr2L:12,575,166-12,591,435 - locus
+1694567883126:#chr2L 12580391  12581350 - enhancer
+1694567883139:nubv <- data.frame('seqnames' = 'chr2L',
+1694567883159:'start' = 12580391,
+1694567883174:'end' = 12581350) %>%
+1694567883194:GRanges()
+1694567883251:faire.wt.ssPool
+1694567883290:#TODO - best way to generate replicate average signal tracks
+1694567883314:#TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
+1694567883333:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1694567883355:faire.wt.browser <- faire.wt.ssPool %>%
+1694567883368:#dplyr::filter(grepl('3LW',time)) %>%
+1694567883381:dplyr::mutate(color = WTFAIRE.colors)
+1694567883414:faire.wt.tracks <- get_cnr_tracks(faire.wt.browser, ylim = c(0,10))
+1694567883551:faire.wt.tracks <- c(faire.wt.tracks$wt_3LW,
+1694567883564:faire.wt.tracks$wt_6h,
+1694567883578:faire.wt.tracks$wt_18h,
+1694567883728:faire.wt.tracks$wt_24h,
+1694567883786:faire.wt.tracks$wt_36h,
+1694567883799:faire.wt.tracks$wt_44h)
+1694567883820:nubv.ant <- Gviz::AnnotationTrack(range = nubv, genome = 'dm6', name = 'nubVein', fill = '#e858a5', col = 'transparent', background.title = 'white', showTitle = F )
+1694567884601:axis <- Gviz::GenomeAxisTrack(scale = 10000)
+1694567884832:png('rPlots/nubv.png', width = 6, height = 6, res = 300, units = 'in')
+1694567884847:Gviz::plotTracks(c(axis,faire.wt.tracks, nubv.ant, genetrack), chromosome = seqnames(nubv) %>% as.character(),
+1694567884860:from = start(nubv+5000),
+1694567884873:to = end(nubv+10000),
+1694567884885:cex.axis = 0.3,
+1694567884897:cex.title = 0.5,
+1694567884909:title.width = 1,
+1694567884928:innerMargin = 10)
+1694567887350:dev.off()
+1694567892479:replicate_sheet <- read.csv('../rnaiScreen_replicate_wings.csv') %>%
+1694567892493:dplyr::mutate(replicate = paste(symbol, line, date, drop, sep = '_'))

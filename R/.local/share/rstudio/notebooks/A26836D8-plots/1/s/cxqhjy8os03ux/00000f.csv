@@ -1,0 +1,7 @@
+"0","# chr2L:12,575,166-12,591,435 - locus"
+"0","#chr2L 12580391  12581350 - enhancer"
+"0","nubv <- data.frame('seqnames' = 'chr2L',"
+"0","                   'start' = 12580391,"
+"0","                   'end' = 12581350) %>%"
+"0","  GRanges()"
+"0","faire.wt.ssPool"
