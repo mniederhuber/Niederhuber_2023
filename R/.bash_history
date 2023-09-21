@@ -12,3 +12,6 @@ cd home
 ls
 ls Bam/osaGFP_deGrad*
 Rscript peaks.R
+pwd
+ls
+ls BigWig

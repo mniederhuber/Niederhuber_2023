@@ -1,0 +1,20 @@
+"0","bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id') 
+"
+"2","Warning: Couldn't open BigWig/yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw"
+"1","[1m[33mError[39m in `purrr::map()` at ]8;line = 98:col = 2;file:///home/rstudio/scripts/utils.R../scripts/utils.R:98:2]8;;:[22m
+[38;5;232m[36mℹ[38;5;232m In index: 1.[39m
+[1mCaused by error in `seqinfo()`:[22m
+[33m![39m UCSC library operation failed
+Backtrace:
+[90m  1. [39m[1mglobal[22m get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), ""id"")
+[90m  2. [39m[1m[94mpurrr::map([39m[22m...[1m[94m)[39m[22m
+[90m       at ]8;line = 98:col = 2;file:///home/rstudio/scripts/utils.R../scripts/utils.R:98:2]8;;[39m
+[90m  3. [39mpurrr:::map_(""list"", .x, .f, ..., .progress = .progress)
+[90m       at ]8;line = 129:col = 2;file:///tmp/RtmpS8Ta0S/R.INSTALL530972dfefb3/purrr/R/map.Rpurrr/R/map.R:129:2]8;;[39m
+     ...
+[90m 14. [39mrtracklayer (local) .local(con, format, text, ...)
+[90m 17. [39mrtracklayer::BigWigSelection(which, ...)
+[90m       at ]8;line = 221:col = 12;file:///tmp/RtmpFf6ddQ/R.INSTALL4a03498a8030/rtracklayer/R/bigWig.Rrtracklayer/R/bigWig.R:221:12]8;;[39m
+[90m 19. [39mrtracklayer::seqinfo(ranges)
+[90m       at ]8;line = 215:col = 22;file:///tmp/RtmpW4AbM9/R.INSTALL32da4cfd098f/GenomeInfoDb/R/seqinfo.RGenomeInfoDb/R/seqinfo.R:215:22]8;;[39m
+"
