@@ -15,3 +15,4 @@ Rscript peaks.R
 pwd
 ls
 ls BigWig
+Rscript peaks.R 

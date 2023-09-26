@@ -4,6 +4,7 @@ library(ggplot2)
 library(GenomicRanges)
 library(org.Dm.eg.db)
 library(AnnotationDbi)
+message('sourcing utilities...')
 source('scripts/GRanges_methods.R')
 source('scripts/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
 source('scripts/utils.R')
@@ -26,7 +27,7 @@ dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
 }) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '500bp background')
 
 ##### load peaks #####
-
+message('loading peak lists...')
 ### get CUT&RUN peaks
 #TODO - error here with getPeakData when running from command line?
 cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
@@ -108,6 +109,8 @@ rn.peak.2 <- IRanges::subsetByOverlaps(GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep
                                        GRanges(rn.peak.qf[rn.peak.qf$rep == 'rep1',]))                                      
 rn.union <- union(rn.peak.1, rn.peak.2)
 
+
+message('annotating peak lists...')
 ##### bind and annotate peak list #####
 
 faire.wt.df <- faire.wt.union %>% data.frame() %>% dplyr::mutate(assay = 'faire', experiment = 'WT FAIRE Wing Timecourse')
@@ -164,7 +167,7 @@ peaks <- purrr::map(list(faire.wt.df, faire.osaDeg.df, cnr.df, rn.df), function(
 # - deseq annotation
 # - closing vs opening
 
-
+message('running CUT&RUN deSeq2...')
 ##### Run deSeq2 #####
 
 # CnR
@@ -184,7 +187,6 @@ cnr.dds.df <- DESeq2::results(cnr.dds, contrast = c('grp','osaGFP.sup','yw.sup')
 #names(cnr.dds.df) <- paste0('cnr.',names(cnr.dds.df))
 
 peaks$cnr.df %<>% dplyr::bind_cols(., cnr.dds.df)
-message("completed cut&run deseq")
 # FAIRE 
 
 #faire.Counts <- Rsubread::featureCounts(faire.ss.WT$bam, #just use Bam from WT timecourse - single-end data
@@ -206,6 +208,7 @@ message("completed cut&run deseq")
 ## FAIRE - OsaGFP deGrad
 #message("completed faireseq deseq")
 #TODO annotate all the diffbind steps - cite source
+message('running Osa GFP deGrad FAIRE-seq diffbind')
 #### Diff bind
 osaDeg.db_sheet  <- faire.ss.osaDeg %>%
   dplyr::rename(SampleID = id,
@@ -303,6 +306,7 @@ peaks$faire.osaDeg.df %<>%
   #dplyr::bind_rows(., dm6.500bp) # testing binding in the 1kb windowed background intervals at this step -- don't have any annotation
                                # that way these regions will also get annotations
 
+message('annotate peaks with dm6.TxDb...')
 #### 
 # annotate peaks with dm6.TxDb 
 ####
@@ -328,7 +332,7 @@ peaks <- purrr::map(peaks, function(x) {
 #                  flank_distance = stringr::str_split(flank_gene_distances, ';')) 
 })
 
-message('Saving output...')
+message('Done, saving output...')
 save(peaks, 
      faire.wt.byGrp, 
      faire.osaDeg.byGrp, 

@@ -1,3 +1,3 @@
 sample	rep	grp	peakFile
-rn-chip-rep1	rep1	Peaks/SRR19251486_GSM6164765_RnGFP_wing_ChIP_rep1_Drosophila_melanogaster_ChIP-Seq.filtered.BAM_peaks.narrowPeak
-rn-chip-rep2	rep2	Peaks/SRR19251485_GSM6164766_RnGFP_wing_ChIP_rep2_Drosophila_melanogaster_ChIP-Seq.filtered.BAM_peaks.narrowPeak
+rn-chip-rep1	rep1	rn-chip	Peaks/SRR19251486_GSM6164765_RnGFP_wing_ChIP_rep1_Drosophila_melanogaster_ChIP-Seq.filtered.BAM_peaks.narrowPeak
+rn-chip-rep2	rep2	rn-chip	Peaks/SRR19251485_GSM6164766_RnGFP_wing_ChIP_rep2_Drosophila_melanogaster_ChIP-Seq.filtered.BAM_peaks.narrowPeak

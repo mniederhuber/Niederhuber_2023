@@ -3360,3 +3360,80 @@
 1695744862673:temp %>%
 1695744862704:dplyr::group_by(seqnames) %>%
 1695744862720:dplyr::tally()
+1695746653881:library(magrittr)
+1695746653900:library(ggplot2)
+1695746653910:library(GenomicRanges)
+1695746653918:library(org.Dm.eg.db)
+1695746653927:library(AnnotationDbi)
+1695746653936:message('sourcing utilities...')
+1695746653965:source('scripts/GRanges_methods.R')
+1695746654022:source('scripts/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1695746654064:source('scripts/utils.R')
+1695746654285:load('rData/sheets.rda')
+1695746660812:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1695746662401:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1695746663837:#make 1kb bin whole genomic granges
+1695746663845:dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
+1695746663853:if(x %in% c('chr2L', 'chr2R', 'chr3L', 'chr3R', 'chrX')){
+1695746663860:lng <- length(dm6[[x]])
+1695746663867:seqnames <- rep_len(x, lng/500)
+1695746663875:start <- seq(0, lng-500, by = 500)
+1695746663881:end <- seq(499, lng, by = 500)
+1695746663889:df <- data.frame(seqnames, start, end)
+1695746663895:}
+1695746663904:}) %>% dplyr::bind_rows() %>% dplyr::mutate(assay = '500bp background')
+1695746670677:##### load peaks #####
+1695746670685:message('loading peak lists...')
+1695746673202:### get CUT&RUN peaks
+1695746673211:#TODO - error here with getPeakData when running from command line?
+1695746673220:cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
+1695747350832:cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
+1695747356846:cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
+1695747359488:# just using rep 1 coordinates for now
+1695747359498:cnr.summits.1 <- read.table('Peaks/osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_summits.bed', sep = '\t') %>%
+1695747359506:.[,1:3]
+1695747360931:colnames(cnr.summits.1) <- c('seqnames', 'start','end')
+1695747362832:cnr.summits <- GRanges(cnr.summits.1)
+1695747365985:#filter cnr peaks by q val >= 10 and called in each replicate
+1695747365995:#TODO - decide on filter cutoff -- 75% was pretty strict, only ~1000 osa specific peaks vs previous approach with no filtering that resulting in ~2700 specific peaks
+1695747366004:cnr.byGrp <- lapply(cnr.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps'))
+1695747367959:#make union cnr peak list
+1695747367966:cnr.union <- cnr.byID %>%
+1695747367974:unlist() %>%
+1695747367982:reduce()
+1695747373470:### get FAIRE peaks
+1695747373477:faire.ss.WT <- faire.ss[faire.ss$experiment == 'WT FAIRE Wing Timecourse',]
+1695747375579:faire.ss.osaDeg <- faire.ss[faire.ss$experiment == 'osaGFP deGrad FAIRE',]
+1695747377504:faire.wt.peaks <- getPeakData(faire.ss.WT, by = 'id', narrowPeak_colname = 'peaks')
+1695747397975:faire.wt.byID <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
+1695747399691:faire.wt.byGrp <- faire.wt.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
+1695747457421:faire.osaDeg.peaks <- getPeakData(faire.ss.osaDeg, by = 'id', narrowPeak_colname = 'peaks')
+1695747460378:faire.osaDeg.byID <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$id) #split by replicates
+1695747569185:faire.osaDeg.byGrp <- faire.osaDeg.peaks %>% GRanges() %>% split(., mcols(.)$grp) #split by pooled replicates
+1695747571845:#filter by replicate specific qValue and only peaks that intersect between replicates
+1695747571852:faire.wt.byGrp <- lapply(faire.wt.byGrp, function(x) grp_qFilter(x, quantile = 0.75, operation = 'subsetByOverlaps', with_reduce = T))
+1695747582773:faire.osaDeg.byGrp <- lapply(faire.osaDeg.byGrp, function(x) grp_qFilter(x, quantile = 0.5, operation = 'subsetByOverlaps', with_reduce = T))
+1695747584324:faire.wt.3LW.summits <- read.table('Peaks/wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_summits.bed', sep = '\t') %>%
+1695747584331:.[,1:3]
+1695747585212:colnames(faire.wt.3LW.summits) <- c('seqnames', 'start', 'end')
+1695747587060:faire.wt.3LW.summits <- subsetByOverlaps(GRanges(faire.wt.3LW.summits), faire.wt.byGrp$wt.3LW)
+1695747588257:#make union FAIRE peak list - includes any/all peak calls for all wt reps
+1695747588265:faire.wt.union <- faire.wt.byID %>%
+1695747588272:unlist() %>%
+1695747588280:reduce()
+1695747590495:faire.osaDeg.union <- faire.osaDeg.byID %>%
+1695747590502:unlist() %>%
+1695747590508:reduce()
+1695747592344:### get Rotund peaks
+1695747592352:rn.ss <- read.csv('sheets/Rotund-sampleSheet.tsv', sep = '\t')
+1695747593820:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
+1695747621471:rn.ss
+1695747972217:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
+1695747976539:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
+1695747982481:### get Rotund peaks
+1695747982490:rn.ss <- read.csv('sheets/Rotund-sampleSheet.tsv', sep = '\t')
+1695747983755:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
+1695748031530:### get Rotund peaks
+1695748031537:rn.ss <- read.csv('sheets/Rotund-sampleSheet.tsv', sep = '\t')
+1695748032475:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
+1695748036474:rn.peak
