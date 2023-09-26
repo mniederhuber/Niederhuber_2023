@@ -1,4 +1,4 @@
-## Code repository for Niederhuber MJ *et al.,* 2023.
+## Code repository for Niederhuber *et al.,* 2023.
 
 see: https://www.biorxiv.org/content/10.1101/2023.07.17.549384v1
 
