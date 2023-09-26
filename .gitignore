@@ -1,6 +1,12 @@
+delta/
+MAN/
+FIGS/
 RNAi_Screen-Image_Quantification/
 R/rPlots-OLD/
 R/work
+R/Rotund-ChIP
+R/Wing-RNAseq
+
 /images
 /FIGS
 /DATA/Microscopy
@@ -12,9 +18,4 @@ R/bed
 .Rproj.user
 dm6.ensGene.gtf
 featureCounts/
-delta/fig
-delta/code/lif
-delta/code/*.lif
-delta/code/output
-delta/code/tiff
-MAN
+geo-submission/

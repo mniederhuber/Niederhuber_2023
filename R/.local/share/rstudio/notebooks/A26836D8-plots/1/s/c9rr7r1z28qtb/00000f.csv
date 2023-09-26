@@ -1,5 +1,0 @@
-"0","replicate_sheet <- read.csv('../rnaiScreen_replicate_wings.csv') %>%"
-"0","  dplyr::mutate(replicate = paste(symbol, line, date, drop, sep = '_'))"
-"2","Warning: cannot open file '../rnaiScreen_replicate_wings.csv': No such file or directory"
-"2","Error in file(file, ""rt"") : cannot open the connection
-"

@@ -306,7 +306,16 @@ track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
 
 cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
 
-mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
+mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t') 
+colnames(mckay_enhancers) <- c('seqnames', 'start','end','name')
+mckay_enhancers %<>% GRanges()
+mckay_enhancertrack <- Gviz::AnnotationTrack(range = mckay_enhancers,
+                                             genome = 'dm6',
+                                             fill = 'black',
+                                             col = 'transparent',
+                                             background.title = 'white',
+                                             showTitle = F)
+
 Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
 espl_enhancers <- read.table('bed/espl_enhancers-merge.bed', sep = '\t')
 
@@ -320,6 +329,7 @@ enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
                                       col = 'transparent',
                                       background.title = 'white',
                                       showTitle = F)
+
 
 dlpouch.track <- Gviz::AnnotationTrack(range = dlpouch,
                                        genome = 'dm6',
@@ -1896,7 +1906,7 @@ enrichtest
 ```
 
 
-## S5
+## S5.1
 ### A - Cluster Heatmap
 ```{r}
 png('rPlots/S5-clusters.png', width = 5, height = 4, res = 300, units = 'in')
@@ -2421,6 +2431,64 @@ cluster.df %>%
 ```
 
 
+## S5.2
+## 
+```{r}
+
+track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50", 'grey40')
+
+deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+  dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' |
+                                        faire.wt.ssPool$grp == 'wt.24h' | 
+                                        faire.wt.ssPool$grp == 'wt.36h' |
+                                        faire.wt.ssPool$grp == 'wt.44h',]) %>%
+  dplyr::mutate(color = track.colors)
+
+
+cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
+cnr.tracks <- list(cnr.tracks$osaGFP.rep1, 
+                   cnr.tracks$osaGFP.rep2, 
+                  # peakTrack, 
+                   cnr.tracks$yw.rep1, 
+                   cnr.tracks$yw.rep2)
+
+
+deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,13))
+deg.tracks <- c(deg.tracks$wt_3LW, 
+                deg.tracks$wt_24h, 
+                deg.tracks$wt_36h, 
+                deg.tracks$wt_44h,
+                spacer,
+                deg.tracks$osaGFP.deGrad_control_faire, 
+                deg.tracks$osaGFP.deGrad_nubG4_faire)
+
+axis <- Gviz::GenomeAxisTrack(scale = 10000)
+
+#e74
+#png('rPlots/3F-e74.png', width = 4, height = 4, res = 300, units = 'in')
+Gviz::plotTracks(c(axis, 
+                   deg.tracks, 
+                   spacer, 
+                   spacer, 
+                   cnr.tracks,
+                   spacer,
+                   spacer,
+                   osaDep.peakTrack,
+                   peakTrack,
+                   mckay_enhancertrack,
+                   spacer,
+                   spacer,
+                   genetrack), 
+                 chromosome = seqnames(e74) %>% as.character(), 
+                 from = start(e74+20000),
+                 to = end(e74+5000),
+                 cex.axis = 0.3,
+                 cex.title = 0.5,
+                 title.width = 1,
+                 innerMargin = 10)
+#dev.off()
+
+```
 
 
 # Fig 6 - Developmental Consequences of Hyperactivation

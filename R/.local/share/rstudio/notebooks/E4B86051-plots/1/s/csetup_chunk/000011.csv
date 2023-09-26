@@ -1,0 +1,10 @@
+"0","mckay_enhancertrack <- Gviz::AnnotationTrack(range = mckay_enhancers,
+                                             genome = 'dm6',
+                                             fill = 'black',
+                                             col = 'transparent',
+                                             background.title = 'white',
+                                             showTitle = F)
+"
+"2","Error in .fillWithDefaults(range, defaults[missing], args[missing], len = nrow(range)) : 
+  The mandatory argument 'NA' is missing with no default
+"
