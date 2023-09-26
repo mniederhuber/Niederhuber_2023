@@ -3,7 +3,7 @@
     "path": "~/plots.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "0",
+    "hash": "2628740678",
     "contents": "",
     "dirty": false,
     "created": 1695314925932.0,
@@ -12,19 +12,19 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "9,0",
-        "scrollLine": "0",
+        "cursorPosition": "2509,2",
+        "scrollLine": "2488",
         "last_setup_crc32": "da99bcb964c6d572",
         "docOutlineVisible": "1",
         "docOutlineSize": "266",
-        "marks": "<:2466,0\n>:2469,0"
+        "marks": "<:2506,4\n>:2506,4"
     },
     "folds": "",
-    "lastKnownWriteTime": 1695406470,
+    "lastKnownWriteTime": 1695745660,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1695673695576,
+    "last_content_update": 1695745660635,
     "read_only": false,
     "read_only_alternatives": []
 }

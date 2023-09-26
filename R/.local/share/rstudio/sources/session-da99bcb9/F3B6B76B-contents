@@ -2489,6 +2489,37 @@ dev.off()
 
 ```
 
+### cnr and faire intersect
+What fraction of "osa-dependent" late sites are bound by osa in discs?
+```{r}
+
+temp <- osaDeg.qF %>%
+  dplyr::mutate(osaPeak = ifelse(GRanges(.) %over% osaPeaks.full, T, F)) %>%
+  data.frame()
+  
+temp %>% 
+  ggplot(aes(log2FoldChange, padj)) +
+  geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+  geom_point(color = ifelse(temp$osaPeak, 'green',NA)) +
+  theme(axis.title = element_text(size = 12),
+        axis.text = element_text(size = 12))
+
+temp %>%
+  dplyr::group_by(seqnames) %>%
+  dplyr::tally()
+  ggplot(aes())
+  
+
+temp %>% 
+  dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+  dplyr::group_by(dep, osaPeak) %>%
+  dplyr::tally() %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(fract = n / sum(n))
+  ggplot(aes())
+
+
+```
 
 # Fig 6 - Developmental Consequences of Hyperactivation
 ## B - Dl locus browser

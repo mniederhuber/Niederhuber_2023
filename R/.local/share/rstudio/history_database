@@ -3240,3 +3240,123 @@
 1695673787151:normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
 1695673787166:})
 1695673888609:names(mats) <- names(bws)
+1695742715604:faire.osaDeg.byGrp
+1695742736351:osaDep.anno
+1695742878337:osaPeaks.enhancers.full.bed
+1695742928475:osaDep.anno %>%
+1695742928487:dplyr::mutate(osaPeak = ifelse(GRanges(.) %over% osaPeaks.full, T, F))
+1695743004494:osaDeg.qF %>%
+1695743004506:data.frame() %>%
+1695743004517:ggplot(aes(log2FoldChange, padj)) +
+1695743004527:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743004538:theme(axis.title = element_text(size = 12),
+1695743004550:axis.text = element_text(size = 12))
+1695743095911:osaDeg.qF %>%
+1695743095924:dplyr::mutate(osaPeak = ifelse(. %over% osaPeaks.full, T, F)) %>%
+1695743097265:data.frame() %>%
+1695743097286:ggplot(aes(log2FoldChange, padj)) +
+1695743097297:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743097309:geom_point(color = ifelse(.$osaPeak, 'blue','black')) +
+1695743097320:theme(axis.title = element_text(size = 12),
+1695743097332:axis.text = element_text(size = 12))
+1695743122611:osaDeg.qF %>%
+1695743122623:dplyr::mutate(osaPeak = ifelse(GRanges(.) %over% osaPeaks.full, T, F)) %>%
+1695743122635:data.frame() %>%
+1695743122646:ggplot(aes(log2FoldChange, padj)) +
+1695743122658:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743122671:geom_point(color = ifelse(.$osaPeak, 'blue','black')) +
+1695743122684:theme(axis.title = element_text(size = 12),
+1695743122695:axis.text = element_text(size = 12))
+1695743163415:temp <- osaDeg.qF %>%
+1695743163428:dplyr::mutate(osaPeak = ifelse(GRanges(.) %over% osaPeaks.full, T, F)) %>%
+1695743163439:data.frame()
+1695743171754:temp %>%
+1695743171767:ggplot(aes(log2FoldChange, padj)) +
+1695743171779:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743171791:geom_point(color = ifelse(.$osaPeak, 'blue','black')) +
+1695743171803:theme(axis.title = element_text(size = 12),
+1695743171815:axis.text = element_text(size = 12))
+1695743177001:temp %>%
+1695743177013:ggplot(aes(log2FoldChange, padj)) +
+1695743177024:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743177036:geom_point(color = ifelse(temp$osaPeak, 'blue','black')) +
+1695743177047:theme(axis.title = element_text(size = 12),
+1695743177059:axis.text = element_text(size = 12))
+1695743195071:temp %>%
+1695743195082:ggplot(aes(log2FoldChange, padj)) +
+1695743195094:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743195105:geom_point(color = ifelse(temp$osaPeak, 'red','black')) +
+1695743195118:theme(axis.title = element_text(size = 12),
+1695743195130:axis.text = element_text(size = 12))
+1695743221539:temp %>%
+1695743221553:ggplot(aes(log2FoldChange, padj)) +
+1695743221564:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743221599:geom_point(color = ifelse(temp$osaPeak, 'red',NA)) +
+1695743221614:theme(axis.title = element_text(size = 12),
+1695743221625:axis.text = element_text(size = 12))
+1695743233156:temp %>%
+1695743233169:ggplot(aes(log2FoldChange, padj)) +
+1695743233181:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695743233193:geom_point(color = ifelse(temp$osaPeak, 'green',NA)) +
+1695743233204:theme(axis.title = element_text(size = 12),
+1695743233214:axis.text = element_text(size = 12))
+1695743274025:temp
+1695743411646:temp %>%
+1695743411660:dplyr::select(osaDeg.control, osaDeg, osaPeak)
+1695743419960:temp %>%
+1695743419974:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743419987:dplyr::tally()
+1695743431085:temp %>%
+1695743431100:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743431111:dplyr::group_by(osaPeak) %>%
+1695743431122:dplyr::tally()
+1695743444165:temp %>%
+1695743444177:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743444189:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743444201:dplyr::tally()
+1695743467899:temp %>%
+1695743467912:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743467923:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743467934:dplyr::tally() %>%
+1695743467947:dplyr::mutate(fract = n / sum(n))
+1695743484215:temp %>%
+1695743484227:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743484239:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743484250:dplyr::tally() %>%
+1695743484261:dplyr::summarise(fract = n / sum(n))
+1695743493993:temp %>%
+1695743494005:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743494017:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743494029:#  dplyr::tally() %>%
+1695743494042:dplyr::summarise(fract = n / sum(n))
+1695743507174:temp %>%
+1695743507186:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743507199:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743507210:dplyr::tally() %>%
+1695743507221:dplyr::mutate(fract = n / sum(n))
+1695743523286:temp %>%
+1695743523297:dplyr::select(osaDeg.control, osaDeg, osaPeak) %>%
+1695743523309:dplyr::group_by(osaPeak, osaDeg.control, osaDeg) %>%
+1695743523320:dplyr::tally() %>%
+1695743523332:dplyr::ungroup() %>%
+1695743523344:dplyr::mutate(fract = n / sum(n))
+1695744440945:temp
+1695744650396:temp %>%
+1695744650412:dplyr::mutate(dep = ifelse(log2FoldChange <= -1), 'Osa-Dependent', 'Osa-Independent') %>%
+1695744650425:dplyr::group_by(dep, osaPeak) %>%
+1695744650439:dplyr::tally() %>%
+1695744650453:dplyr::ungroup() %>%
+1695744650489:dplyr::mutate(fract = n / sum(n))
+1695744682808:temp %>%
+1695744682821:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695744682834:dplyr::group_by(dep, osaPeak) %>%
+1695744682846:dplyr::tally() %>%
+1695744682857:dplyr::ungroup() %>%
+1695744682869:dplyr::mutate(fract = n / sum(n))
+1695744779651:temp$log2FoldChange %>%
+1695744779663:dplyr::filter(is.na())
+1695744796611:temp %>%
+1695744796624:dplyr::filter(is.na(log2FoldChange))
+1695744862673:temp %>%
+1695744862704:dplyr::group_by(seqnames) %>%
+1695744862720:dplyr::tally()
