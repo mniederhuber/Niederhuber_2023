@@ -1875,3 +1875,5 @@ Registered S3 methods overwritten by 'treeio':
 'select()' returned 1:many mapping between keys and columns
 >> assigning chromosome lengths			 2023-09-26 06:37:02 PM 
 >> done...					 2023-09-26 06:37:02 PM 
+[?25hDone, saving output...
+[?25h[?25h[?25h]0;/home/rstudio[?2004hrstudio@fe5ae22e27eb:~$ 

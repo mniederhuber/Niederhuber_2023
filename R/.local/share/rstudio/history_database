@@ -3437,3 +3437,1639 @@
 1695748031537:rn.ss <- read.csv('sheets/Rotund-sampleSheet.tsv', sep = '\t')
 1695748032475:rn.peak <- getPeakData(rn.ss, narrowPeak_colname = 'peakFile', by = 'grp')
 1695748036474:rn.peak
+1695754723708:library(magrittr)
+1695754733668:library(ggplot2)
+1695754734501:#library(ggrepel)
+1695754734532:library(GenomicRanges)
+1695754735774:library(org.Dm.eg.db)
+1695754739948:library(AnnotationDbi)
+1695754739968:library(EnrichedHeatmap)
+1695754740140:library(ComplexHeatmap)
+1695754740159:#library(GO.db)
+1695754740177:#library(patchwork)
+1695754740197:source('scripts/utils.R')
+1695754740267:source('scripts/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1695754740758:## load data
+1695754740778:load('rData/sheets.rda')
+1695754741182:load('rData/peaks.rda')
+1695754783443:load('rData/rnaiScreen.rda')
+1695754783639:ON.genes.validated <- read.table('Data/on-genes-IDvalidation.txt', header = T) %>%
+1695754783650:dplyr::rename(Geneid = submitted_item,
+1695754783661:Validated = validated_id,
+1695754783671:Symbol = current_symbol)
+1695754783858:## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+1695754783870:# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+1695754783881:# FBgn0050420 -- is only Atf-2 in flyfactor db
+1695754783894:fbgn.validated <- read.table('Data/fbgn_validated.txt', header = F, sep = '\t')
+1695754783914:colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+1695754783929:fbgn.validated %<>%
+1695754783941:dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695754783952:dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+1695754784129:## global variables
+1695754784140:###
+1695754784150:# assign global variables
+1695754784159:###
+1695754784177:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1695754784264:#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+1695754784275:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1695754784458:dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100)
+1695754786733:dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+1695754787853:brD <- data.frame('seqnames' = 'chrX',
+1695754787865:'start' = 1565708,
+1695754787876:'end' = 1567401) %>%
+1695754787886:GenomicRanges::GRanges()
+1695754787979:shn <- data.frame('seqnames' = 'chr2R',
+1695754787991:'start' = 11159086,
+1695754788002:'end' = 11217394) %>%
+1695754788015:GRanges()
+1695754788094:sbb <- data.frame('seqnames' = 'chr2R',
+1695754788106:'start' = 18278198,
+1695754788118:'end' = 18357296) %>%
+1695754788130:GRanges()
+1695754788207:# Dl
+1695754788219:#chr3R:19,265,389-19,350,508
+1695754788230:Dl <- data.frame('seqnames' = 'chr3R',
+1695754788242:'start' = 19265389,
+1695754788253:'end' = 19350508) %>%
+1695754788264:GRanges()
+1695754788347:# Dl pouch
+1695754788360:#chr3R	19310086	19311243	Delta_D-gal4
+1695754788372:dlpouch <- data.frame('seqnames' = 'chr3R',
+1695754788384:'start' = 19310086,
+1695754788395:'end' = 19311243) %>%
+1695754788406:GRanges()
+1695754788508:# E(spl)-c
+1695754788522:#chr3R:25,980,255-26,065,374
+1695754788536:espl <- data.frame('seqnames' = 'chr3R',
+1695754788548:'start' = 25980255,
+1695754788560:'end' = 26065374) %>%
+1695754788572:GRanges()
+1695754788735:# ac/sc
+1695754788748:#chrX:365,344-402,061
+1695754788760:acsc <- data.frame('seqnames' = 'chrX',
+1695754788771:'start' = 365344,
+1695754788783:'end' = 402061) %>%
+1695754788795:GRanges()
+1695754788875:# serrate
+1695754788888:#chr3R:27,167,731-27,227,610
+1695754788900:ser <- data.frame('seqnames' = 'chr3R',
+1695754788915:'start' = 27167731,
+1695754788927:'end' = 27227610) %>%
+1695754788938:GRanges()
+1695754789017:# notch
+1695754789029:#chrX:3,093,887-3,206,341
+1695754789043:notch <- data.frame('seqnames' = 'chrX',
+1695754789058:'start' = 3093887,
+1695754789070:'end' = 3206341) %>%
+1695754789082:GRanges()
+1695754789175:###
+1695754789198:# nubbin
+1695754789211:#chr2L:12,542,935-12,696,192
+1695754789224:nub <- data.frame('seqnames' = 'chr2L',
+1695754789236:'start' = 12542935,
+1695754789250:'end' = 12696192) %>%
+1695754789265:GRanges()
+1695754789344:# enhancers
+1695754789358:###
+1695754789379:redFly_enhancers <- read.table('bed/all_Dmel_CRM-sorted-merged.bed', sep = '\t')
+1695754789522:colnames(redFly_enhancers) <- c('seqnames', 'start','end')
+1695754791181:redFly_enhancers.ranges <- GRanges(redFly_enhancers)
+1695754791297:## memes setup
+1695754791315:###
+1695754791336:# meme db
+1695754791350:###
+1695754791364:#TODO - so clunky...
+1695754791377:# loading in the fly factor database, drop out a couple of problematic fbgn
+1695754791393:# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+1695754791406:# then filter on the on gene list -- which has to go through a similar process of id validation
+1695754791423:# gross
+1695754791437:meme_db <- universalmotif::read_meme('Data/fly_factor_survey.meme') %>%
+1695754791452:universalmotif::to_df() %>%
+1695754791470:dplyr::group_by(name) %>%
+1695754791485:dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695754791502:dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+1695754791517:fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated)
+1695754792524:meme_db_on <- meme_db %>%
+1695754792537:dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
+1695754792608:options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
+1695754792686:## colors
+1695754792701:viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+1695754792720:cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+1695754792738:cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
+1695754792755:cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
+1695754792783:## browser
+1695754792798:WTFAIRE.colors <- c("grey10","grey20","grey30","grey40","grey50","grey60")
+1695754792823:## peak subsets
+1695754792838:osaPeaks <- peaks$cnr.df %>%
+1695754792850:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695754792864:GRanges() %>%
+1695754792877:resize(width = 1, fix = "center")
+1695754793012:osaPeaks.full <- peaks$cnr.df %>%
+1695754793025:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695754793043:GRanges(seqlengths = seqlengths(dm6))
+1695754793870:osaPeaks.enhancers.full <- osaPeaks.full %>%
+1695754793885:data.frame() %>%
+1695754793902:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695754793921:GRanges()
+1695754794968:# uses rep1 summit coordinates
+1695754794984:osaPeaks.summits <- subsetByOverlaps(cnr.summits, osaPeaks.full)
+1695754795565:osaPeaks.faire.summits <- subsetByOverlaps(faire.wt.3LW.summits, osaPeaks.full)
+1695754795918:fairePeaks.wt <- peaks$faire.wt.df %>%
+1695754795932:#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+1695754795946:GRanges() %>%
+1695754795961:resize(width = 1, fix = "center")
+1695754796938:#redundant... but used in a couple chunks for motif analysis
+1695754796965:fairePeaks.wt.full <- peaks$faire.wt.df %>%
+1695754796978:dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
+1695754799705:#DONE - remove the peakCat ? since now using log2fold change for these categories...
+1695754799718:# switched to using osaDeg.qF which is a peak set derived from diffbind, that has been subset using iranges by intersect
+1695754799733:# with quality filtered peak calls in peaks$faire.osaDeg.df
+1695754799750:osaDeg.center <- osaDeg.qF %>%
+1695754799766:GRanges() %>%
+1695754799782:resize(width = 1, fix = "center")
+1695754800041:# rotund peaks
+1695754800063:rn.peaks <- peaks$rn.df %>%
+1695754800077:GRanges()
+1695754800130:rn.distal <- rn.peaks %>%
+1695754800144:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695754800158:GRanges()
+1695754800371:# genomic 500bp
+1695754800394:dm6.500bp <- peaks$dm6.500bp %>%
+1695754800410:GRanges() %>%
+1695754800425:resize(width = 1, fix = 'center')
+1695754801759:#fairePeaks.osaDependent <- fairePeaks.deg %>%
+1695754801775:#  data.frame() %>%
+1695754801792:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+1695754801806:#  GRanges()
+1695754801820:#
+1695754801831:#fairePeaks.osaIndependent <- fairePeaks.deg %>%
+1695754801845:#  data.frame() %>%
+1695754801858:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+1695754801871:#  GRanges()
+1695754801884:#
+1695754801897:#fairePeaks.osaEctopic <- fairePeaks.deg %>%
+1695754801912:#  data.frame() %>%
+1695754801925:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+1695754801937:#  GRanges()
+1695754801982:## load bws
+1695754802017:#TODO - cleanup - move matrices?
+1695754802039:bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id')
+1695754834664:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+1695754841066:#TODO move data to main project directory and fix path
+1695754841081:#TODO merge reps?
+1695754841096:#k27ac.bw <- rtracklayer::import.bw('~/mckay/h3k27ac_cnr/bigwig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+1695754841110:#TODO put these notes in better place"
+1695754841126:## K27ac data- yeast spikein norm pel data is generally lower in rep2 than rep1, this is not seen in znorm or drosYak norm data
+1695754841154:## drosYak norm signal is "low" as in the absolute values are usually < 1, but the normalization between samples looks good, and the signal to noise still looks fine, not appreciably better or worse that znorm
+1695754841168:## using pellet because only have 2 reps of pel, only 1 of sup - the sup rep looks really good though I think
+1695754841183:## using large fragments only because all fractions/reps show poor signal in <120 bp frag split
+1695754841204:#k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695754841219:k27ac.1.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695754841892:k27ac.2.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695754842868:## functions
+1695754842889:plot.frac <- function(x) {
+1695754842903:lapply(unique(x$change), function(i) {
+1695754842917:x %>%
+1695754842929:dplyr::filter(change == i) %>%
+1695754842944:ggplot(aes(fraction, change, fill = Osa.Bound)) +
+1695754842957:geom_bar(stat = 'identity', width = 1) +
+1695754842971:geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
+1695754842984:#geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
+1695754842996:scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
+1695754843008:scale_y_discrete(position = 'right', ) +
+1695754843022:xlab('Percent Bound by Osa') +
+1695754843035:theme(legend.position = 'top',
+1695754843048:legend.key.size = unit(1, 'cm'),
+1695754843061:legend.text = element_text(size = 15),
+1695754843074:legend.title = element_text(size = 20),
+1695754843088:panel.background = element_blank(),
+1695754843101:axis.text = element_blank(),
+1695754843113:axis.title = element_blank(),
+1695754843127:axis.ticks = element_blank(),
+1695754843139:#           axis.text.y = element_text(size = 12),
+1695754843152:panel.grid = element_blank()) +
+1695754843164:NULL
+1695754843175:fn = paste0('rPlots/3E_',i,'.png')
+1695754843189:ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
+1695754843203:})
+1695754843217:}
+1695754843238:## .bed out
+1695754843250:osaPeaks %>%
+1695754843263:data.frame() %>%
+1695754843276:dplyr::select(seqnames, start, end) %>%
+1695754843289:write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695754843388:osaPeaks.full %>%
+1695754843402:data.frame() %>%
+1695754843417:dplyr::select(seqnames, start, end) %>%
+1695754843429:write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695754843522:peaks$cnr.df %>%
+1695754843536:data.frame() %>%
+1695754843550:dplyr::filter(yw.cnr) %>%
+1695754843563:dplyr::select(seqnames, start, end) %>%
+1695754843575:write.table('controlPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695754843608:#fairePeaks.osaDependent %>%
+1695754843622:#  data.frame() %>%
+1695754843635:#  dplyr::select(seqnames, start, end) %>%
+1695754843647:#  write.table('osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695754843661:#
+1695754843673:#fairePeaks.osaEctopic %>%
+1695754843685:#  data.frame() %>%
+1695754843697:#  dplyr::select(seqnames, start, end) %>%
+1695754843710:#  write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695754843724:#
+1695754843761:## gviz
+1695754843774:track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+1695754843797:cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
+1695754843849:mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
+1695754843874:colnames(mckay_enhancers) <- c('seqnames', 'start','end','name')
+1695754843892:mckay_enhancers %<>% GRanges()
+1695754843950:mckay_enhancertrack <- Gviz::AnnotationTrack(range = mckay_enhancers,
+1695754843964:genome = 'dm6',
+1695754843977:fill = 'black',
+1695754843990:col = 'transparent',
+1695754844003:background.title = 'white',
+1695754844016:showTitle = F)
+1695754844428:Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
+1695754844453:espl_enhancers <- read.table('bed/espl_enhancers-merge.bed', sep = '\t')
+1695754844482:enhancers <- dplyr::bind_rows(Delta_enhancers, espl_enhancers)
+1695754844499:colnames(enhancers) <- c('seqnames', 'start','end','name')
+1695754844517:enhancer.ranges <- GRanges(enhancers)
+1695754844577:enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
+1695754844591:genome = 'dm6',
+1695754844605:fill = '#18c708',
+1695754844618:col = 'transparent',
+1695754844631:background.title = 'white',
+1695754844644:showTitle = F)
+1695754844879:dlpouch.track <- Gviz::AnnotationTrack(range = dlpouch,
+1695754844894:genome = 'dm6',
+1695754844907:fill = '#18c708',
+1695754844921:col = 'transparent',
+1695754844935:background.title = 'white',
+1695754844949:showTitle = F)
+1695754845871:genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
+1695754851003:peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
+1695754851046:genome = 'dm6',
+1695754851061:fill = '#D01C8B',
+1695754851076:col = 'transparent',
+1695754851091:background.title = 'white',
+1695754851115:showTitle = F )
+1695754851775:#TODO - is osa.dependent annotation correct? using diffbind?
+1695754851789:osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)),
+1695754851803:#osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep,
+1695754851816:genome = 'dm6',
+1695754851831:fill = '#469ae8',
+1695754851846:col = 'transparent',
+1695754851860:background.title = 'white',
+1695754851874:showTitle = F)
+1695754852147:hairless_peaks <- read.table('bed/hairless-dm6.bed', col.names = c('seqnames', 'start', 'end')) %>% GRanges()
+1695754852214:hTrack <- Gviz::AnnotationTrack(range = hairless_peaks,
+1695754852227:genome = 'dm6',
+1695754852241:fill = '#2ad4c3',
+1695754852255:col = 'transparent',
+1695754852269:background.title = 'white',
+1695754852282:showTitle = F)
+1695754852453:spacer <- Gviz::AnnotationTrack(background.title = 'white')
+1695754852899:## matrices for heatmaps
+1695754852918:mats <- purrr::map(bws, ~{
+1695754852931:normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+1695754852944:})
+1695755990598:names(mats) <- names(bws)
+1695756028333:library(magrittr)
+1695756028350:library(ggplot2)
+1695756028363:#library(ggrepel)
+1695756028377:library(GenomicRanges)
+1695756028398:library(org.Dm.eg.db)
+1695756028412:library(AnnotationDbi)
+1695756028432:library(EnrichedHeatmap)
+1695756028445:library(ComplexHeatmap)
+1695756028466:#library(GO.db)
+1695756028486:#library(patchwork)
+1695756028506:source('scripts/utils.R')
+1695756028527:source('scripts/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1695756028558:## load data
+1695756028577:load('rData/sheets.rda')
+1695756028652:load('rData/peaks.rda')
+1695756032041:load('rData/rnaiScreen.rda')
+1695756032137:ON.genes.validated <- read.table('Data/on-genes-IDvalidation.txt', header = T) %>%
+1695756032153:dplyr::rename(Geneid = submitted_item,
+1695756032167:Validated = validated_id,
+1695756032181:Symbol = current_symbol)
+1695756032223:## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+1695756032237:# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+1695756032251:# FBgn0050420 -- is only Atf-2 in flyfactor db
+1695756032265:fbgn.validated <- read.table('Data/fbgn_validated.txt', header = F, sep = '\t')
+1695756032285:colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+1695756032303:fbgn.validated %<>%
+1695756032317:dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695756032331:dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+1695756032360:## global variables
+1695756032374:###
+1695756032388:# assign global variables
+1695756032402:###
+1695756032423:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1695756032437:#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+1695756032451:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1695756032471:dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100)
+1695756032527:dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+1695756033088:brD <- data.frame('seqnames' = 'chrX',
+1695756033123:'start' = 1565708,
+1695756033136:'end' = 1567401) %>%
+1695756033152:GenomicRanges::GRanges()
+1695756033222:shn <- data.frame('seqnames' = 'chr2R',
+1695756033239:'start' = 11159086,
+1695756033254:'end' = 11217394) %>%
+1695756033268:GRanges()
+1695756033345:sbb <- data.frame('seqnames' = 'chr2R',
+1695756033365:'start' = 18278198,
+1695756033383:'end' = 18357296) %>%
+1695756033398:GRanges()
+1695756033462:# Dl
+1695756033475:#chr3R:19,265,389-19,350,508
+1695756033490:Dl <- data.frame('seqnames' = 'chr3R',
+1695756033504:'start' = 19265389,
+1695756033519:'end' = 19350508) %>%
+1695756033701:GRanges()
+1695756033770:# Dl pouch
+1695756033785:#chr3R	19310086	19311243	Delta_D-gal4
+1695756033798:dlpouch <- data.frame('seqnames' = 'chr3R',
+1695756033812:'start' = 19310086,
+1695756033827:'end' = 19311243) %>%
+1695756033840:GRanges()
+1695756033906:# E(spl)-c
+1695756033922:#chr3R:25,980,255-26,065,374
+1695756033936:espl <- data.frame('seqnames' = 'chr3R',
+1695756033951:'start' = 25980255,
+1695756033964:'end' = 26065374) %>%
+1695756033978:GRanges()
+1695756034045:# ac/sc
+1695756034059:#chrX:365,344-402,061
+1695756034075:acsc <- data.frame('seqnames' = 'chrX',
+1695756034090:'start' = 365344,
+1695756034103:'end' = 402061) %>%
+1695756034116:GRanges()
+1695756034183:# serrate
+1695756034198:#chr3R:27,167,731-27,227,610
+1695756034213:ser <- data.frame('seqnames' = 'chr3R',
+1695756034227:'start' = 27167731,
+1695756034241:'end' = 27227610) %>%
+1695756034256:GRanges()
+1695756034322:# notch
+1695756034335:#chrX:3,093,887-3,206,341
+1695756034350:notch <- data.frame('seqnames' = 'chrX',
+1695756034363:'start' = 3093887,
+1695756034377:'end' = 3206341) %>%
+1695756034391:GRanges()
+1695756034452:###
+1695756034473:# nubbin
+1695756034488:#chr2L:12,542,935-12,696,192
+1695756034502:nub <- data.frame('seqnames' = 'chr2L',
+1695756034517:'start' = 12542935,
+1695756034531:'end' = 12696192) %>%
+1695756034546:GRanges()
+1695756034612:# enhancers
+1695756034626:###
+1695756034659:redFly_enhancers <- read.table('bed/all_Dmel_CRM-sorted-merged.bed', sep = '\t')
+1695756034704:colnames(redFly_enhancers) <- c('seqnames', 'start','end')
+1695756034723:redFly_enhancers.ranges <- GRanges(redFly_enhancers)
+1695756035582:## memes setup
+1695756035598:###
+1695756035613:# meme db
+1695756035627:###
+1695756035641:#TODO - so clunky...
+1695756035655:# loading in the fly factor database, drop out a couple of problematic fbgn
+1695756035669:# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+1695756035684:# then filter on the on gene list -- which has to go through a similar process of id validation
+1695756035698:# gross
+1695756035712:meme_db <- universalmotif::read_meme('Data/fly_factor_survey.meme') %>%
+1695756035727:universalmotif::to_df() %>%
+1695756035742:dplyr::group_by(name) %>%
+1695756035756:dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695756035772:dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+1695756035786:fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated)
+1695756036487:meme_db_on <- meme_db %>%
+1695756036502:dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
+1695756036574:options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
+1695756036641:## colors
+1695756036657:viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+1695756036673:cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+1695756036693:cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
+1695756036711:cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
+1695756036737:## browser
+1695756036752:WTFAIRE.colors <- c("grey10","grey20","grey30","grey40","grey50","grey60")
+1695756036776:## peak subsets
+1695756036790:osaPeaks <- peaks$cnr.df %>%
+1695756036804:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695756036818:GRanges() %>%
+1695756036832:resize(width = 1, fix = "center")
+1695756036947:osaPeaks.full <- peaks$cnr.df %>%
+1695756036961:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695756036976:GRanges(seqlengths = seqlengths(dm6))
+1695756037068:osaPeaks.enhancers.full <- osaPeaks.full %>%
+1695756037082:data.frame() %>%
+1695756037097:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695756037111:GRanges()
+1695756037981:# uses rep1 summit coordinates
+1695756038015:osaPeaks.summits <- subsetByOverlaps(cnr.summits, osaPeaks.full)
+1695756038112:osaPeaks.faire.summits <- subsetByOverlaps(faire.wt.3LW.summits, osaPeaks.full)
+1695756038255:fairePeaks.wt <- peaks$faire.wt.df %>%
+1695756038272:#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+1695756038287:GRanges() %>%
+1695756038301:resize(width = 1, fix = "center")
+1695756038459:#redundant... but used in a couple chunks for motif analysis
+1695756038473:fairePeaks.wt.full <- peaks$faire.wt.df %>%
+1695756038486:dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
+1695756038965:#DONE - remove the peakCat ? since now using log2fold change for these categories...
+1695756038978:# switched to using osaDeg.qF which is a peak set derived from diffbind, that has been subset using iranges by intersect
+1695756038992:# with quality filtered peak calls in peaks$faire.osaDeg.df
+1695756039004:osaDeg.center <- osaDeg.qF %>%
+1695756039018:GRanges() %>%
+1695756039031:resize(width = 1, fix = "center")
+1695756039122:# rotund peaks
+1695756039137:rn.peaks <- peaks$rn.df %>%
+1695756039151:GRanges()
+1695756039199:rn.distal <- rn.peaks %>%
+1695756039214:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695756039228:GRanges()
+1695756039392:# genomic 500bp
+1695756039416:dm6.500bp <- peaks$dm6.500bp %>%
+1695756039431:GRanges() %>%
+1695756039446:resize(width = 1, fix = 'center')
+1695756039963:#fairePeaks.osaDependent <- fairePeaks.deg %>%
+1695756039977:#  data.frame() %>%
+1695756039991:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+1695756040010:#  GRanges()
+1695756040679:#
+1695756040692:#fairePeaks.osaIndependent <- fairePeaks.deg %>%
+1695756040705:#  data.frame() %>%
+1695756040808:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+1695756040823:#  GRanges()
+1695756040836:#
+1695756040849:#fairePeaks.osaEctopic <- fairePeaks.deg %>%
+1695756040863:#  data.frame() %>%
+1695756040877:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+1695756040891:#  GRanges()
+1695756040930:## load bws
+1695756040964:#TODO - cleanup - move matrices?
+1695756040983:bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id')
+1695756068347:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+1695756072310:#TODO move data to main project directory and fix path
+1695756072324:#TODO merge reps?
+1695756072337:#k27ac.bw <- rtracklayer::import.bw('~/mckay/h3k27ac_cnr/bigwig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+1695756072352:#TODO put these notes in better place"
+1695756072366:## K27ac data- yeast spikein norm pel data is generally lower in rep2 than rep1, this is not seen in znorm or drosYak norm data
+1695756072379:## drosYak norm signal is "low" as in the absolute values are usually < 1, but the normalization between samples looks good, and the signal to noise still looks fine, not appreciably better or worse that znorm
+1695756072392:## using pellet because only have 2 reps of pel, only 1 of sup - the sup rep looks really good though I think
+1695756072406:## using large fragments only because all fractions/reps show poor signal in <120 bp frag split
+1695756072428:#k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695756072442:k27ac.1.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695756073060:k27ac.2.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695756073876:## functions
+1695756073897:plot.frac <- function(x) {
+1695756073911:lapply(unique(x$change), function(i) {
+1695756073924:x %>%
+1695756073937:dplyr::filter(change == i) %>%
+1695756073951:ggplot(aes(fraction, change, fill = Osa.Bound)) +
+1695756073964:geom_bar(stat = 'identity', width = 1) +
+1695756073978:geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
+1695756073990:#geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
+1695756074004:scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
+1695756074018:scale_y_discrete(position = 'right', ) +
+1695756074031:xlab('Percent Bound by Osa') +
+1695756074045:theme(legend.position = 'top',
+1695756074059:legend.key.size = unit(1, 'cm'),
+1695756074072:legend.text = element_text(size = 15),
+1695756074086:legend.title = element_text(size = 20),
+1695756074100:panel.background = element_blank(),
+1695756074116:axis.text = element_blank(),
+1695756074130:axis.title = element_blank(),
+1695756074144:axis.ticks = element_blank(),
+1695756074158:#           axis.text.y = element_text(size = 12),
+1695756074178:panel.grid = element_blank()) +
+1695756074192:NULL
+1695756074208:fn = paste0('rPlots/3E_',i,'.png')
+1695756074222:ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
+1695756074236:})
+1695756074250:}
+1695756074271:## .bed out
+1695756074284:osaPeaks %>%
+1695756074298:data.frame() %>%
+1695756074311:dplyr::select(seqnames, start, end) %>%
+1695756074325:write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695756074424:osaPeaks.full %>%
+1695756074438:data.frame() %>%
+1695756074450:dplyr::select(seqnames, start, end) %>%
+1695756074463:write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695756074561:peaks$cnr.df %>%
+1695756074575:data.frame() %>%
+1695756074590:dplyr::filter(yw.cnr) %>%
+1695756074603:dplyr::select(seqnames, start, end) %>%
+1695756074615:write.table('controlPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695756075653:#fairePeaks.osaDependent %>%
+1695756075667:#  data.frame() %>%
+1695756075681:#  dplyr::select(seqnames, start, end) %>%
+1695756075693:#  write.table('osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695756075708:#
+1695756075721:#fairePeaks.osaEctopic %>%
+1695756075733:#  data.frame() %>%
+1695756075753:#  dplyr::select(seqnames, start, end) %>%
+1695756075767:#  write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695756075780:#
+1695756075812:## gviz
+1695756075825:track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+1695756075846:cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
+1695756075894:mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
+1695756075913:colnames(mckay_enhancers) <- c('seqnames', 'start','end','name')
+1695756075929:mckay_enhancers %<>% GRanges()
+1695756075984:mckay_enhancertrack <- Gviz::AnnotationTrack(range = mckay_enhancers,
+1695756075997:genome = 'dm6',
+1695756076012:fill = 'black',
+1695756076025:col = 'transparent',
+1695756076038:background.title = 'white',
+1695756076053:showTitle = F)
+1695756076207:Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
+1695756076228:espl_enhancers <- read.table('bed/espl_enhancers-merge.bed', sep = '\t')
+1695756076253:enhancers <- dplyr::bind_rows(Delta_enhancers, espl_enhancers)
+1695756076270:colnames(enhancers) <- c('seqnames', 'start','end','name')
+1695756076287:enhancer.ranges <- GRanges(enhancers)
+1695756076348:enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
+1695756076361:genome = 'dm6',
+1695756076374:fill = '#18c708',
+1695756076387:col = 'transparent',
+1695756076403:background.title = 'white',
+1695756076417:showTitle = F)
+1695756076597:dlpouch.track <- Gviz::AnnotationTrack(range = dlpouch,
+1695756076610:genome = 'dm6',
+1695756076623:fill = '#18c708',
+1695756076638:col = 'transparent',
+1695756076652:background.title = 'white',
+1695756076663:showTitle = F)
+1695756076819:genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
+1695756081321:peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
+1695756081336:genome = 'dm6',
+1695756081351:fill = '#D01C8B',
+1695756081366:col = 'transparent',
+1695756081381:background.title = 'white',
+1695756081423:showTitle = F )
+1695756082545:#TODO - is osa.dependent annotation correct? using diffbind?
+1695756082559:osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)),
+1695756082576:#osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep,
+1695756082599:genome = 'dm6',
+1695756082624:fill = '#469ae8',
+1695756082648:col = 'transparent',
+1695756082668:background.title = 'white',
+1695756082683:showTitle = F)
+1695756083061:hairless_peaks <- read.table('bed/hairless-dm6.bed', col.names = c('seqnames', 'start', 'end')) %>% GRanges()
+1695756083147:hTrack <- Gviz::AnnotationTrack(range = hairless_peaks,
+1695756083161:genome = 'dm6',
+1695756083176:fill = '#2ad4c3',
+1695756083189:col = 'transparent',
+1695756083205:background.title = 'white',
+1695756083218:showTitle = F)
+1695756083398:spacer <- Gviz::AnnotationTrack(background.title = 'white')
+1695756083609:## matrices for heatmaps
+1695756083632:mats <- purrr::map(bws, ~{
+1695756083651:normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+1695756083666:})
+1695756178288:names(mats) <- names(bws)
+1695756178367:#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
+1695756178400:cols <- c('black', '#469ae8')
+1695756178424:# union osa degrad peaks
+1695756178437:deg.mats <- purrr::map(deg.bws, ~{
+1695756178450:normalizeToMatrix(.,
+1695756178462:osaDeg.center,
+1695756178475:value_column = 'score',
+1695756178487:keep = c(0.01,0.99),
+1695756178498:extend = 1000 )
+1695756178511:})
+1695756283929:names(deg.mats) <- faire.ss %>%
+1695756283944:dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+1695756283957:dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+1695756283969:'.',
+1695756283983:stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+1695756283996:.$nm
+1695756284022:common_min = min(unlist(deg.mats))
+1695756287958:common_max = max(unlist(deg.mats))
+1695756290276:col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+1695756290336:#deg.count <- fairePeaks.deg %>%
+1695756290349:#  data.frame() %>%
+1695756290366:#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
+1695756290380:#  dplyr::tally() %>%
+1695756290396:#  .$n
+1695756290417:#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+1695756290440:#groups <- fairePeaks.deg$faireCat.osaDeGrad
+1695756290463:#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
+1695756290484:deg.hms <- purrr::map(names(deg.mats), function(x) {
+1695756290497:if(grepl('control.Rep1',x)){
+1695756290511:EnrichedHeatmap(deg.mats[[x]],
+1695756290527:axis_name = c(-1000, 0, 1000),
+1695756290541:pos_line = F,
+1695756290555:column_title = x,
+1695756290569:col = col_fun,
+1695756290584:name = 'zScore',
+1695756290598:row_title = NULL,
+1695756290611:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2),
+1695756290626:axis_param = list(side = 'left', facing = 'outside'),
+1695756290641:ylim = c(0,6))),
+1695756290655:use_raster = F)
+1695756290667:}else{
+1695756290681:EnrichedHeatmap(deg.mats[[x]],
+1695756290696:axis_name = c(-1000, 0, 1000),
+1695756290712:pos_line = F,
+1695756290725:column_title = x,
+1695756290740:col = col_fun,
+1695756290755:show_heatmap_legend = F,
+1695756290769:row_title = NULL,
+1695756290784:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols,
+1695756290798:lwd = 2),
+1695756290812:ylim = c(0,6),
+1695756290827:axis = F)),
+1695756290842:use_raster = F)
+1695756290856:}
+1695756290872:})
+1695756295335:names(deg.hms) <- names(deg.mats)
+1695756295362:hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+1695756295464:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+1695756295639:ComplexHeatmap::draw(hms,
+1695756295654:# annotation_legend_list = c(lgd),
+1695756295668:# row_split = groups,
+1695756295683:merge_legend = T,
+1695756295698:heatmap_legend_side = 'right')
+1695756329970:dev.off()
+1695756330397:#fairePeaks.deg %>%
+1695756330413:#  data.frame() %>%
+1695756330428:#  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
+1695756330442:#  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
+1695756330457:#  dplyr::tally()
+1695756330471:#  dplyr::mutate(fraction = n / sum(n),
+1695756330486:#                change = faireCat.osaDeGrad) %>%
+1695756330501:#  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+1695756330516:#  plot.frac()
+1695762361701:#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
+1695762361748:cols <- c('black', '#469ae8')
+1695762361842:# union osa degrad peaks
+1695762361861:deg.mats <- purrr::map(deg.bws, ~{
+1695762361900:normalizeToMatrix(.,
+1695762361918:osaDeg.center,
+1695762361934:value_column = 'score',
+1695762361954:keep = c(0.01,0.99),
+1695762361971:extend = 1000 )
+1695762361993:})
+1695762491018:names(deg.mats) <- faire.ss %>%
+1695762491033:dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+1695762491045:dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+1695762491058:'.',
+1695762491072:stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+1695762491086:.$nm
+1695762491120:common_min = min(unlist(deg.mats))
+1695762493492:common_max = max(unlist(deg.mats))
+1695762495570:col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+1695762495599:#deg.count <- fairePeaks.deg %>%
+1695762495612:#  data.frame() %>%
+1695762495626:#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
+1695762495639:#  dplyr::tally() %>%
+1695762495652:#  .$n
+1695762495672:#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+1695762495692:#groups <- fairePeaks.deg$faireCat.osaDeGrad
+1695762495712:#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
+1695762495736:deg.hms <- purrr::map(names(deg.mats), function(x) {
+1695762495750:if(grepl('control.Rep1',x)){
+1695762495766:EnrichedHeatmap(deg.mats[[x]],
+1695762495779:axis_name = c(-1000, 0, 1000),
+1695762495794:pos_line = F,
+1695762495808:column_title = x,
+1695762495824:col = col_fun,
+1695762495837:name = 'zScore',
+1695762495850:row_title = NULL,
+1695762495864:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2),
+1695762495879:axis_param = list(side = 'left', facing = 'outside'),
+1695762495894:ylim = c(0,6))),
+1695762495907:use_raster = F)
+1695762495922:}else{
+1695762495935:EnrichedHeatmap(deg.mats[[x]],
+1695762495949:axis_name = c(-1000, 0, 1000),
+1695762495963:pos_line = F,
+1695762495977:column_title = x,
+1695762495990:col = col_fun,
+1695762496004:show_heatmap_legend = F,
+1695762496016:row_title = NULL,
+1695762496029:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols,
+1695762496042:lwd = 2),
+1695762496056:ylim = c(0,6),
+1695762496070:axis = F)),
+1695762496083:use_raster = F)
+1695762496098:}
+1695762496112:})
+1695762498537:names(deg.hms) <- names(deg.mats)
+1695762498563:hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+1695762498590:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+1695762498610:ComplexHeatmap::draw(hms,
+1695762498623:# annotation_legend_list = c(lgd),
+1695762498637:# row_split = groups,
+1695762498649:merge_legend = T,
+1695762498663:heatmap_legend_side = 'right')
+1695762517366:dev.off()
+1695762517717:#fairePeaks.deg %>%
+1695762517730:#  data.frame() %>%
+1695762517743:#  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
+1695762517757:#  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
+1695762517775:#  dplyr::tally()
+1695762517790:#  dplyr::mutate(fraction = n / sum(n),
+1695762517804:#                change = faireCat.osaDeGrad) %>%
+1695762517820:#  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+1695762517835:#  plot.frac()
+1695762609322:n(osaDeg.center)
+1695762616305:nrow(osaDeg.center)
+1695762624198:osaDeg.center
+1695762895770:#TODO - add 36h FAIRE data? better comparison for osa deGrad?
+1695762895828:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1695762895849:track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
+1695762895903:deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+1695762895919:dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+1695762895936:dplyr::mutate(color = track.colors)
+1695762896208:deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
+1695762898936:deg.tracks <- c(deg.tracks$wt_3LW,
+1695762898953:deg.tracks$wt_24h,
+1695762898969:deg.tracks$wt_44h,
+1695762898984:deg.tracks$osaGFP.deGrad_control_faire,
+1695762898999:deg.tracks$osaGFP.deGrad_nubG4_faire)
+1695762899025:brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+1695762899384:axis <- Gviz::GenomeAxisTrack(scale = 1000)
+1695762899630:png('rPlots/3D.png', width = 4, height = 6, res = 300, units = 'in')
+1695762899652:Gviz::plotTracks(c(axis,
+1695762899667:deg.tracks,
+1695762899681:spacer,
+1695762899696:spacer,
+1695762899713:brdisc.at),
+1695762899728:chromosome = seqnames(brD) %>% as.character(),
+1695762899744:from = start(brD + 1000),
+1695762899758:to = end(brD + 1000),
+1695762899774:cex.axis = 0.3,
+1695762899789:cex.title = 0.5,
+1695762899803:title.width = 1,
+1695762899818:innerMargin = 10)
+1695762911623:dev.off()
+1695772341577:#TODO - add 36h FAIRE data? better comparison for osa deGrad?
+1695772341599:#track.colors <- RColorBrewer::brewer.pal(n = 4, "PiYG")
+1695772341613:track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50")
+1695772341637:deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+1695772341651:dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' | faire.wt.ssPool$grp == 'wt.24h' | faire.wt.ssPool$grp == 'wt.44h',]) %>%
+1695772341666:dplyr::mutate(color = track.colors)
+1695772342518:deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,15))
+1695772343291:deg.tracks <- c(deg.tracks$wt_3LW,
+1695772343305:deg.tracks$wt_24h,
+1695772343319:deg.tracks$wt_44h,
+1695772343333:deg.tracks$osaGFP.deGrad_control_faire,
+1695772343349:deg.tracks$osaGFP.deGrad_nubG4_faire)
+1695772343378:brdisc.at <- Gviz::AnnotationTrack(range = brD, genome = 'dm6', name = 'brDisc', fill = 'grey', col = 'transparent', background.title = 'white', showTitle = F )
+1695772344234:axis <- Gviz::GenomeAxisTrack(scale = 1000)
+1695772344552:png('rPlots/3D.png', width = 4, height = 6, res = 300, units = 'in')
+1695772344654:Gviz::plotTracks(c(axis,
+1695772344670:deg.tracks,
+1695772344687:spacer,
+1695772344706:spacer,
+1695772344723:brdisc.at),
+1695772344739:chromosome = seqnames(brD) %>% as.character(),
+1695772344756:from = start(brD + 1000),
+1695772344771:to = end(brD + 1000),
+1695772344786:cex.axis = 0.3,
+1695772344799:cex.title = 0.5,
+1695772344815:title.width = 1,
+1695772344829:innerMargin = 10)
+1695772350363:dev.off()
+1695772668055:peaks$faire.osaDeg.df %>%
+1695772668068:dplyr::filter(osa.dependent) %>%
+1695772668080:dplyr::select(seqnames, start, end) %>%
+1695772668093:write.table(file = 'bed/osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695772668415:osaDeg.qF %>%
+1695772668428:data.frame() %>%
+1695772668441:ggplot(aes(log2FoldChange, padj)) +
+1695772668454:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695772668467:theme(axis.title = element_text(size = 12),
+1695772668481:axis.text = element_text(size = 12))
+1695772669695:ggsave('rPlots/3E-diffBind.png', width =4, height = 3.5, dpi = 300)
+1695772927843:osaDeg.center
+1695772958762:deg.bws
+1695773407303:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id') %>%
+1695773407316:.[!seqnames(.) %in% c('chrM','chrY','chr4')]
+1695773471747:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id') %>%
+1695773471761:.[!(seqnames(.) %in% c('chrM','chrY','chr4'))]
+1695773536733:deg.bws
+1695773565481:deg.bws[!(seqnames(deg.bws) %in% c('chrM','chrY','chr4'))]
+1695773606541:seqnames(deg.bws)
+1695773623428:GenomicRanges::seqnames(deg.bws)
+1695773632891:deg.bws
+1695773836469:deg.bws %<>% purrr::map(., function(x){
+1695773836502:x[!(seqnames(x) %in% c('chrM','chrY','chr4'))]
+1695773836514:})
+1695773842606:deg.bws
+1695773931883:library(magrittr)
+1695773931906:library(ggplot2)
+1695773931919:#library(ggrepel)
+1695773931933:library(GenomicRanges)
+1695773931952:library(org.Dm.eg.db)
+1695773931965:library(AnnotationDbi)
+1695773931989:library(EnrichedHeatmap)
+1695773932011:library(ComplexHeatmap)
+1695773932034:#library(GO.db)
+1695773932055:#library(patchwork)
+1695773932076:source('scripts/utils.R')
+1695773932113:source('scripts/peakUtils.R') #TODO move/rewrite getPeakData from NystLib to utils.R
+1695773932155:## load data
+1695773932176:load('rData/sheets.rda')
+1695773932352:load('rData/peaks.rda')
+1695773936874:load('rData/rnaiScreen.rda')
+1695773937027:ON.genes.validated <- read.table('Data/on-genes-IDvalidation.txt', header = T) %>%
+1695773937043:dplyr::rename(Geneid = submitted_item,
+1695773937059:Validated = validated_id,
+1695773937072:Symbol = current_symbol)
+1695773937145:## there are 2 'FlyFactor' FBgn codes that are updated two more than 1 unique 'Validated' FBgns in `fbgn.validated`
+1695773937159:# FBgn0051782 -- CG31782 in flyfactor - old annotation? no present in Flybase, maybe split into three differen pseudogene annos now
+1695773937173:# FBgn0050420 -- is only Atf-2 in flyfactor db
+1695773937187:fbgn.validated <- read.table('Data/fbgn_validated.txt', header = F, sep = '\t')
+1695773937210:colnames(fbgn.validated) <- c('FlyFactor', 'Validated', 'Symbol')
+1695773937228:fbgn.validated %<>%
+1695773937244:dplyr::filter(FlyFactor != 'FBgn0051782') %>% #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695773937257:dplyr::filter(Validated != 'FBgn0265182') # drop this Validated FBgn, which is an incorrectly updated from FBgn0050420
+1695773937291:## global variables
+1695773937303:###
+1695773937317:# assign global variables
+1695773937329:###
+1695773937349:dm6 <- BSgenome.Dmelanogaster.UCSC.dm6::BSgenome.Dmelanogaster.UCSC.dm6
+1695773937363:#dm3 <- BSgenome.Dmelanogaster.UCSC.dm3::BSgenome.Dmelanogaster.UCSC.dm3
+1695773937376:dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ensGene
+1695773937396:dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100)
+1695773937639:dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
+1695773939501:brD <- data.frame('seqnames' = 'chrX',
+1695773939515:'start' = 1565708,
+1695773939528:'end' = 1567401) %>%
+1695773939543:GenomicRanges::GRanges()
+1695773939671:shn <- data.frame('seqnames' = 'chr2R',
+1695773939683:'start' = 11159086,
+1695773939697:'end' = 11217394) %>%
+1695773939711:GRanges()
+1695773939818:sbb <- data.frame('seqnames' = 'chr2R',
+1695773939833:'start' = 18278198,
+1695773939847:'end' = 18357296) %>%
+1695773939861:GRanges()
+1695773939988:# Dl
+1695773940004:#chr3R:19,265,389-19,350,508
+1695773940019:Dl <- data.frame('seqnames' = 'chr3R',
+1695773940033:'start' = 19265389,
+1695773940047:'end' = 19350508) %>%
+1695773940063:GRanges()
+1695773940153:# Dl pouch
+1695773940166:#chr3R	19310086	19311243	Delta_D-gal4
+1695773940180:dlpouch <- data.frame('seqnames' = 'chr3R',
+1695773940193:'start' = 19310086,
+1695773940207:'end' = 19311243) %>%
+1695773940221:GRanges()
+1695773940336:# E(spl)-c
+1695773940350:#chr3R:25,980,255-26,065,374
+1695773940364:espl <- data.frame('seqnames' = 'chr3R',
+1695773940377:'start' = 25980255,
+1695773940391:'end' = 26065374) %>%
+1695773940404:GRanges()
+1695773940510:# ac/sc
+1695773940523:#chrX:365,344-402,061
+1695773940536:acsc <- data.frame('seqnames' = 'chrX',
+1695773940549:'start' = 365344,
+1695773940562:'end' = 402061) %>%
+1695773940575:GRanges()
+1695773940661:# serrate
+1695773940674:#chr3R:27,167,731-27,227,610
+1695773940689:ser <- data.frame('seqnames' = 'chr3R',
+1695773940702:'start' = 27167731,
+1695773940715:'end' = 27227610) %>%
+1695773940728:GRanges()
+1695773940867:# notch
+1695773940880:#chrX:3,093,887-3,206,341
+1695773940892:notch <- data.frame('seqnames' = 'chrX',
+1695773940905:'start' = 3093887,
+1695773940920:'end' = 3206341) %>%
+1695773940933:GRanges()
+1695773941061:###
+1695773941083:# nubbin
+1695773941144:#chr2L:12,542,935-12,696,192
+1695773941157:nub <- data.frame('seqnames' = 'chr2L',
+1695773941170:'start' = 12542935,
+1695773941184:'end' = 12696192) %>%
+1695773941197:GRanges()
+1695773941305:# enhancers
+1695773941318:###
+1695773941339:redFly_enhancers <- read.table('bed/all_Dmel_CRM-sorted-merged.bed', sep = '\t')
+1695773941442:colnames(redFly_enhancers) <- c('seqnames', 'start','end')
+1695773941463:redFly_enhancers.ranges <- GRanges(redFly_enhancers)
+1695773941595:## memes setup
+1695773941609:###
+1695773941623:# meme db
+1695773941637:###
+1695773941654:#TODO - so clunky...
+1695773941667:# loading in the fly factor database, drop out a couple of problematic fbgn
+1695773941681:# then use the fbgn.validated lookup table for fly factor to update all the old ids to correct ids
+1695773941695:# then filter on the on gene list -- which has to go through a similar process of id validation
+1695773941711:# gross
+1695773941728:meme_db <- universalmotif::read_meme('Data/fly_factor_survey.meme') %>%
+1695773941742:universalmotif::to_df() %>%
+1695773941756:dplyr::group_by(name) %>%
+1695773941770:dplyr::filter(!grepl('FBgn0051782|FBgn0265182', name)) %>%  #drop this FBgn, problematic update to multiple new FBgns of pseudogenes
+1695773941783:dplyr::mutate(basename = stringr::str_split_fixed(name, '_', n = 2)[[1]],
+1695773941798:fbgn.validated = fbgn.validated[fbgn.validated$FlyFactor == basename,]$Validated)
+1695773943495:meme_db_on <- meme_db %>%
+1695773943512:dplyr::filter(fbgn.validated %in% ON.genes.validated$Validated)
+1695773944302:options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
+1695773944384:## colors
+1695773944403:viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
+1695773944418:cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+1695773944437:cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
+1695773944453:cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
+1695773944478:## browser
+1695773944491:WTFAIRE.colors <- c("grey10","grey20","grey30","grey40","grey50","grey60")
+1695773944514:## peak subsets
+1695773944527:osaPeaks <- peaks$cnr.df %>%
+1695773944541:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695773944554:GRanges() %>%
+1695773944567:resize(width = 1, fix = "center")
+1695773944864:osaPeaks.full <- peaks$cnr.df %>%
+1695773944877:dplyr::filter(osa.cnr & !yw.cnr) %>%
+1695773944891:GRanges(seqlengths = seqlengths(dm6))
+1695773945101:osaPeaks.enhancers.full <- osaPeaks.full %>%
+1695773945119:data.frame() %>%
+1695773945133:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695773945147:GRanges()
+1695773945411:# uses rep1 summit coordinates
+1695773945426:osaPeaks.summits <- subsetByOverlaps(cnr.summits, osaPeaks.full)
+1695773945563:osaPeaks.faire.summits <- subsetByOverlaps(faire.wt.3LW.summits, osaPeaks.full)
+1695773945686:fairePeaks.wt <- peaks$faire.wt.df %>%
+1695773945700:#  dplyr::filter(assay == 'faire' & experiment == 'WT FAIRE Wing Timecourse') %>%
+1695773945715:GRanges() %>%
+1695773945731:resize(width = 1, fix = "center")
+1695773946345:#redundant... but used in a couple chunks for motif analysis
+1695773946361:fairePeaks.wt.full <- peaks$faire.wt.df %>%
+1695773946377:dplyr::filter(assay == 'faire'  & experiment == 'WT FAIRE Wing Timecourse')
+1695773946697:#DONE - remove the peakCat ? since now using log2fold change for these categories...
+1695773946710:# switched to using osaDeg.qF which is a peak set derived from diffbind, that has been subset using iranges by intersect
+1695773946723:# with quality filtered peak calls in peaks$faire.osaDeg.df
+1695773946737:osaDeg.center <- osaDeg.qF %>%
+1695773946750:GRanges() %>%
+1695773946764:resize(width = 1, fix = "center")
+1695773946854:# rotund peaks
+1695773946867:rn.peaks <- peaks$rn.df %>%
+1695773946880:GRanges()
+1695773946926:rn.distal <- rn.peaks %>%
+1695773946939:dplyr::filter(anno.new %in% c('Distal Intergenic', 'Intron')) %>%
+1695773946953:GRanges()
+1695773947220:# genomic 500bp
+1695773947241:dm6.500bp <- peaks$dm6.500bp %>%
+1695773947254:GRanges() %>%
+1695773947268:resize(width = 1, fix = 'center')
+1695773947899:#fairePeaks.osaDependent <- fairePeaks.deg %>%
+1695773947913:#  data.frame() %>%
+1695773947928:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Dependent') %>%
+1695773947941:#  GRanges()
+1695773947956:#
+1695773947971:#fairePeaks.osaIndependent <- fairePeaks.deg %>%
+1695773947985:#  data.frame() %>%
+1695773947999:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Independent') %>%
+1695773948013:#  GRanges()
+1695773948027:#
+1695773948040:#fairePeaks.osaEctopic <- fairePeaks.deg %>%
+1695773948054:#  data.frame() %>%
+1695773948068:#  dplyr::filter(faireCat.osaDeGrad == 'Osa Ectopic') %>%
+1695773948082:#  GRanges()
+1695773948124:## load bws
+1695773948158:#TODO - cleanup - move matrices?
+1695773948179:bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id')
+1695774024265:deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+1695774028164:deg.bws %<>% purrr::map(., function(x){
+1695774028184:x[!(seqnames(x) %in% c('chrM','chrY','chr4'))] # filter out unwanted chr from each granges in the list
+1695774028203:})
+1695774028398:#TODO move data to main project directory and fix path
+1695774028418:#TODO merge reps?
+1695774028438:#k27ac.bw <- rtracklayer::import.bw('~/mckay/h3k27ac_cnr/bigwig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw')
+1695774028456:#TODO put these notes in better place"
+1695774028473:## K27ac data- yeast spikein norm pel data is generally lower in rep2 than rep1, this is not seen in znorm or drosYak norm data
+1695774028490:## drosYak norm signal is "low" as in the absolute values are usually < 1, but the normalization between samples looks good, and the signal to noise still looks fine, not appreciably better or worse that znorm
+1695774028510:## using pellet because only have 2 reps of pel, only 1 of sup - the sup rep looks really good though I think
+1695774028528:## using large fragments only because all fractions/reps show poor signal in <120 bp frag split
+1695774028555:#k27ac.bw <- rtracklayer::import.bw('~/mckay/H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695774028572:k27ac.1.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695774029542:k27ac.2.bw <- rtracklayer::import.bw('BigWig/yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw')
+1695774031186:## functions
+1695774031209:plot.frac <- function(x) {
+1695774031226:lapply(unique(x$change), function(i) {
+1695774031241:x %>%
+1695774031256:dplyr::filter(change == i) %>%
+1695774031271:ggplot(aes(fraction, change, fill = Osa.Bound)) +
+1695774031287:geom_bar(stat = 'identity', width = 1) +
+1695774031302:geom_text(aes(label = per), position = position_fill(vjust = 0.6),  size = 7, fontface = "bold") +
+1695774031316:#geom_text(aes(label = per, position = position_stack(vjust = 0.5))) +
+1695774031331:scale_fill_manual(values = c('grey80','#41f0ad'), name = 'Osa Bound') +
+1695774031348:scale_y_discrete(position = 'right', ) +
+1695774031363:xlab('Percent Bound by Osa') +
+1695774031377:theme(legend.position = 'top',
+1695774031392:legend.key.size = unit(1, 'cm'),
+1695774031408:legend.text = element_text(size = 15),
+1695774031424:legend.title = element_text(size = 20),
+1695774031439:panel.background = element_blank(),
+1695774031454:axis.text = element_blank(),
+1695774031470:axis.title = element_blank(),
+1695774031487:axis.ticks = element_blank(),
+1695774031502:#           axis.text.y = element_text(size = 12),
+1695774031518:panel.grid = element_blank()) +
+1695774031534:NULL
+1695774031548:fn = paste0('rPlots/3E_',i,'.png')
+1695774031563:ggsave(fn, width = 6, height = 1.5, units = 'in', dpi = 300 )
+1695774031577:})
+1695774031591:}
+1695774031615:## .bed out
+1695774031630:osaPeaks %>%
+1695774031644:data.frame() %>%
+1695774031658:dplyr::select(seqnames, start, end) %>%
+1695774031672:write.table('osaPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695774031820:osaPeaks.full %>%
+1695774031836:data.frame() %>%
+1695774031852:dplyr::select(seqnames, start, end) %>%
+1695774031867:write.table('osaPeaks-full.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695774031995:peaks$cnr.df %>%
+1695774032012:data.frame() %>%
+1695774032029:dplyr::filter(yw.cnr) %>%
+1695774032045:dplyr::select(seqnames, start, end) %>%
+1695774032061:write.table('controlPeaks.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695774032122:#fairePeaks.osaDependent %>%
+1695774032136:#  data.frame() %>%
+1695774032152:#  dplyr::select(seqnames, start, end) %>%
+1695774032169:#  write.table('osaDependent.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695774032184:#
+1695774032201:#fairePeaks.osaEctopic %>%
+1695774032216:#  data.frame() %>%
+1695774032230:#  dplyr::select(seqnames, start, end) %>%
+1695774032245:#  write.table('osaEctopic.bed', quote = F, col.names = F, row.names = F, sep = '\t')
+1695774032262:#
+1695774032298:## gviz
+1695774032314:track.colors <- c("grey40","#D01C8B", "grey40","#D01C8B")
+1695774032340:cnr.ss.browser <- cnr.ss %>% dplyr::mutate(color = track.colors)
+1695774032410:mckay_enhancers <- read.table('bed/cloned_enhancers_dm6.bed', sep = '\t')
+1695774032440:colnames(mckay_enhancers) <- c('seqnames', 'start','end','name')
+1695774032463:mckay_enhancers %<>% GRanges()
+1695774032577:mckay_enhancertrack <- Gviz::AnnotationTrack(range = mckay_enhancers,
+1695774032594:genome = 'dm6',
+1695774032607:fill = 'black',
+1695774032621:col = 'transparent',
+1695774032636:background.title = 'white',
+1695774032651:showTitle = F)
+1695774033091:Delta_enhancers <- read.table('bed/cloned_Delta_enhancers.bed', sep = '\t')
+1695774033122:espl_enhancers <- read.table('bed/espl_enhancers-merge.bed', sep = '\t')
+1695774033164:enhancers <- dplyr::bind_rows(Delta_enhancers, espl_enhancers)
+1695774033191:colnames(enhancers) <- c('seqnames', 'start','end','name')
+1695774033217:enhancer.ranges <- GRanges(enhancers)
+1695774033349:enhancertrack <- Gviz::AnnotationTrack(range = enhancer.ranges,
+1695774033366:genome = 'dm6',
+1695774033380:fill = '#18c708',
+1695774033395:col = 'transparent',
+1695774033410:background.title = 'white',
+1695774033424:showTitle = F)
+1695774033853:dlpouch.track <- Gviz::AnnotationTrack(range = dlpouch,
+1695774033869:genome = 'dm6',
+1695774033883:fill = '#18c708',
+1695774033900:col = 'transparent',
+1695774033914:background.title = 'white',
+1695774033928:showTitle = F)
+1695774034358:genetrack <- Gviz::GeneRegionTrack(range = dm6.TxDb, fill = 'grey80', showTitle = F, background.title = 'white', stacking = 'squish')
+1695774043666:peakTrack <- Gviz::AnnotationTrack(range = osaPeaks.full,
+1695774043684:genome = 'dm6',
+1695774043702:fill = '#D01C8B',
+1695774043716:col = 'transparent',
+1695774043731:background.title = 'white',
+1695774043747:showTitle = F )
+1695774044575:#TODO - is osa.dependent annotation correct? using diffbind?
+1695774044592:osaDep.peakTrack <- Gviz::AnnotationTrack(range = GRanges(peaks$faire.osaDeg.df %>% dplyr::filter(osa.dependent)),
+1695774044607:#osaDep.peakTrack <- Gviz::AnnotationTrack(range = osaDeg.osaDep,
+1695774044622:genome = 'dm6',
+1695774044638:fill = '#469ae8',
+1695774044652:col = 'transparent',
+1695774044668:background.title = 'white',
+1695774044682:showTitle = F)
+1695774045204:hairless_peaks <- read.table('bed/hairless-dm6.bed', col.names = c('seqnames', 'start', 'end')) %>% GRanges()
+1695774045297:hTrack <- Gviz::AnnotationTrack(range = hairless_peaks,
+1695774045313:genome = 'dm6',
+1695774045328:fill = '#2ad4c3',
+1695774045348:col = 'transparent',
+1695774045362:background.title = 'white',
+1695774045376:showTitle = F)
+1695774045638:spacer <- Gviz::AnnotationTrack(background.title = 'white')
+1695774045890:## matrices for heatmaps
+1695774045912:mats <- purrr::map(bws, ~{
+1695774045926:normalizeToMatrix(., osaPeaks, value_column = 'score', keep = c(0.01, 0.99), extend = 2000)
+1695774045941:})
+1695774148669:names(mats) <- names(bws)
+1695774148782:#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
+1695774148826:cols <- c('black', '#469ae8')
+1695774148844:osaDeg.center
+1695774149498:# union osa degrad peaks
+1695774149515:deg.mats <- purrr::map(deg.bws, ~{
+1695774149535:normalizeToMatrix(.,
+1695774149552:osaDeg.center,
+1695774149568:value_column = 'score',
+1695774149586:keep = c(0.01,0.99),
+1695774149605:extend = 1000 )
+1695774149621:})
+1695774280490:names(deg.mats) <- faire.ss %>%
+1695774280506:dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+1695774280520:dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+1695774280532:'.',
+1695774280546:stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+1695774280559:.$nm
+1695774280593:common_min = min(unlist(deg.mats))
+1695774282972:common_max = max(unlist(deg.mats))
+1695774285084:col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+1695774285124:#deg.count <- fairePeaks.deg %>%
+1695774285140:#  data.frame() %>%
+1695774285154:#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
+1695774285169:#  dplyr::tally() %>%
+1695774285182:#  .$n
+1695774285202:#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+1695774285223:#groups <- fairePeaks.deg$faireCat.osaDeGrad
+1695774285264:#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
+1695774285286:deg.hms <- purrr::map(names(deg.mats), function(x) {
+1695774285300:if(grepl('control.Rep1',x)){
+1695774285314:EnrichedHeatmap(deg.mats[[x]],
+1695774285327:axis_name = c(-1000, 0, 1000),
+1695774285341:pos_line = F,
+1695774285357:column_title = x,
+1695774285371:col = col_fun,
+1695774285384:name = 'zScore',
+1695774285398:row_title = NULL,
+1695774285411:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2),
+1695774285425:axis_param = list(side = 'left', facing = 'outside'),
+1695774285438:ylim = c(0,6))),
+1695774285452:use_raster = F)
+1695774285470:}else{
+1695774285485:EnrichedHeatmap(deg.mats[[x]],
+1695774285498:axis_name = c(-1000, 0, 1000),
+1695774285512:pos_line = F,
+1695774285525:column_title = x,
+1695774285540:col = col_fun,
+1695774285555:show_heatmap_legend = F,
+1695774285569:row_title = NULL,
+1695774285583:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols,
+1695774285604:lwd = 2),
+1695774285619:ylim = c(0,6),
+1695774285634:axis = F)),
+1695774285648:use_raster = F)
+1695774285663:}
+1695774285677:})
+1695774290133:names(deg.hms) <- names(deg.mats)
+1695774290159:hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+1695774290186:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+1695774290206:ComplexHeatmap::draw(hms,
+1695774290219:# annotation_legend_list = c(lgd),
+1695774290232:# row_split = groups,
+1695774290246:merge_legend = T,
+1695774290260:heatmap_legend_side = 'right')
+1695774309875:dev.off()
+1695774310341:#fairePeaks.deg %>%
+1695774310359:#  data.frame() %>%
+1695774310373:#  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
+1695774310394:#  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
+1695774310410:#  dplyr::tally()
+1695774310428:#  dplyr::mutate(fraction = n / sum(n),
+1695774310447:#                change = faireCat.osaDeGrad) %>%
+1695774310462:#  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+1695774311484:#  plot.frac()
+1695774799123:#TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
+1695774799158:cols <- c('black', '#469ae8')
+1695774799195:osaDeg.center
+1695774799779:# union osa degrad peaks
+1695774799793:deg.mats <- purrr::map(deg.bws, ~{
+1695774799806:normalizeToMatrix(.,
+1695774799820:osaDeg.center,
+1695774799833:value_column = 'score',
+1695774799848:keep = c(0.01,0.99),
+1695774799862:extend = 1000 )
+1695774799877:})
+1695774916205:names(deg.mats) <- faire.ss %>%
+1695774916220:dplyr::filter(experiment == 'osaGFP deGrad FAIRE') %>%
+1695774916235:dplyr::mutate(nm = paste0(stringr::str_split_fixed(id,'_|\\.', n = 5)[,3],
+1695774916249:'.',
+1695774916263:stringr::str_split_fixed(id,'_|\\.', n = 5)[,5])) %>%
+1695774916277:.$nm
+1695774916316:common_min = min(unlist(deg.mats))
+1695774918913:common_max = max(unlist(deg.mats))
+1695774920977:col_fun = circlize::colorRamp2(seq(common_min, common_max, length.out = 6), viridis.hex)
+1695774921008:#deg.count <- fairePeaks.deg %>%
+1695774921021:#  data.frame() %>%
+1695774921034:#  dplyr::group_by(faireCat.osaDeGrad) %>% #peak category assigned in peaks.R
+1695774921047:#  dplyr::tally() %>%
+1695774921043:#  .$n
+1695774921064:#names(deg.count) <- c('Osa Dependent', 'Osa Ectopic', 'Osa Independent')
+1695774921084:#groups <- fairePeaks.deg$faireCat.osaDeGrad
+1695774921105:#lgd = Legend(at = c("Osa Dependent", "Osa Ectopic", "Osa Independent"), legend_gp = gpar(fill = cols))
+1695774921125:deg.hms <- purrr::map(names(deg.mats), function(x) {
+1695774921138:if(grepl('control.Rep1',x)){
+1695774921151:EnrichedHeatmap(deg.mats[[x]],
+1695774921165:axis_name = c(-1000, 0, 1000),
+1695774921181:pos_line = F,
+1695774921196:column_title = x,
+1695774921210:col = col_fun,
+1695774921223:name = 'zScore',
+1695774921236:row_title = NULL,
+1695774921249:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols, lwd = 2),
+1695774921262:axis_param = list(side = 'left', facing = 'outside'),
+1695774921274:ylim = c(0,6))),
+1695774921288:use_raster = F)
+1695774921301:}else{
+1695774921314:EnrichedHeatmap(deg.mats[[x]],
+1695774921355:axis_name = c(-1000, 0, 1000),
+1695774921369:pos_line = F,
+1695774921383:column_title = x,
+1695774921397:col = col_fun,
+1695774921410:show_heatmap_legend = F,
+1695774921423:row_title = NULL,
+1695774921436:top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = cols,
+1695774921450:lwd = 2),
+1695774921463:ylim = c(0,6),
+1695774921476:axis = F)),
+1695774921489:use_raster = F)
+1695774921502:}
+1695774921517:})
+1695774924492:names(deg.hms) <- names(deg.mats)
+1695774924516:hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
+1695774924541:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+1695774924557:ComplexHeatmap::draw(hms,
+1695774924570:# annotation_legend_list = c(lgd),
+1695774924583:# row_split = groups,
+1695774924598:merge_legend = T,
+1695774924611:heatmap_legend_side = 'right')
+1695774958498:dev.off()
+1695774959116:#fairePeaks.deg %>%
+1695774959132:#  data.frame() %>%
+1695774959148:#  dplyr::mutate(osa.cnr.specific = ifelse(osa.cnr & !yw.cnr,T,F)) %>%
+1695774959165:#  dplyr::group_by(faireCat.osaDeGrad, osa.cnr) %>%
+1695774959179:#  dplyr::tally()
+1695774959197:#  dplyr::mutate(fraction = n / sum(n),
+1695774959214:#                change = faireCat.osaDeGrad) %>%
+1695774959228:#  dplyr::mutate(per = paste0(round(100*fraction, digits = 1),'%')) %>%
+1695774959243:#  plot.frac()
+1695776145226:osaDeg.center
+1695776180928:deg.bws
+1695776201849:deg.bws %>% dplyr::filter(is.na(score))
+1695776278299:x %>%
+1695776278311:dplyr::filter(is.na(score))
+1695776279600:purrr::map(deg.bws, function(x){
+1695776279612:x %>%
+1695776279624:dplyr::filter(is.na(score))
+1695776279635:})
+1695776493830:jpeg('rPlots/3B.jpeg', width = 3, height = 5, units = 'in', res = 300)
+1695776493944:ComplexHeatmap::draw(hms,
+1695776493957:# annotation_legend_list = c(lgd),
+1695776493970:# row_split = groups,
+1695776493983:merge_legend = T,
+1695776493996:heatmap_legend_side = 'right')
+1695776516885:dev.off()
+1695776706049:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 600)
+1695776706070:ComplexHeatmap::draw(hms,
+1695776706082:# annotation_legend_list = c(lgd),
+1695776706093:# row_split = groups,
+1695776706106:merge_legend = T,
+1695776706119:heatmap_legend_side = 'right')
+1695776741327:dev.off()
+1695776830510:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+1695776830524:ComplexHeatmap::draw(hms,
+1695776830535:# annotation_legend_list = c(lgd),
+1695776830547:# row_split = groups,
+1695776830560:merge_legend = T,
+1695776830571:heatmap_legend_side = 'right')
+1695776845813:dev.off()
+1695776880561:png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 400)
+1695776880576:ComplexHeatmap::draw(hms,
+1695776880588:# annotation_legend_list = c(lgd),
+1695776880602:# row_split = groups,
+1695776880614:merge_legend = T,
+1695776880626:heatmap_legend_side = 'right')
+1695776897105:dev.off()
+1695777261503:e74 <- data.frame(seqnames = 'chr3L',
+1695777261519:start = 17580414,
+1695777261535:end = 17585073) %>%
+1695777261550:GRanges()
+1695777261806:#pk
+1695777261822:pk <- data.frame(seqnames = 'chr2R',
+1695777261838:start = 7168262,
+1695777261854:end = 7180560) %>%
+1695777261872:GRanges()
+1695777262001:track.colors <- c("#50c42d","#469ae8","grey70","grey60","grey50", 'grey40')
+1695777262027:deg.ss.browser <- faire.osaDeGrad.ssPool %>%
+1695777262047:dplyr::bind_rows(., faire.wt.ssPool[faire.wt.ssPool$grp == 'wt.3LW' |
+1695777262065:faire.wt.ssPool$grp == 'wt.24h' |
+1695777262084:faire.wt.ssPool$grp == 'wt.36h' |
+1695777262099:faire.wt.ssPool$grp == 'wt.44h',]) %>%
+1695777262142:dplyr::mutate(color = track.colors)
+1695777262260:cnr.tracks <- get_cnr_tracks(cnr.ss.browser, ylim = c(0,20))
+1695777262664:cnr.tracks <- list(cnr.tracks$osaGFP.rep1,
+1695777262680:cnr.tracks$osaGFP.rep2,
+1695777262696:peakTrack,
+1695777262712:cnr.tracks$yw.rep1,
+1695777262729:cnr.tracks$yw.rep2)
+1695777262773:deg.tracks <- get_cnr_tracks(deg.ss.browser, ylim = c(0,13))
+1695777263204:deg.tracks <- c(deg.tracks$wt_3LW,
+1695777263219:deg.tracks$wt_24h,
+1695777263234:deg.tracks$wt_36h,
+1695777263248:deg.tracks$wt_44h,
+1695777263264:deg.tracks$osaGFP.deGrad_control_faire,
+1695777263279:deg.tracks$osaGFP.deGrad_nubG4_faire)
+1695777263301:axis <- Gviz::GenomeAxisTrack(scale = 2000)
+1695777263435:### prickle
+1695777263460:png('rPlots/3F-prickle.png', width = 4, height = 4, res = 300, units = 'in')
+1695777263496:Gviz::plotTracks(c(axis,
+1695777263510:deg.tracks,
+1695777263526:spacer,
+1695777263543:spacer,
+1695777263557:osaDep.peakTrack,
+1695777263572:spacer,
+1695777263587:spacer,
+1695777263602:genetrack),
+1695777263617:chromosome = seqnames(pk) %>%  as.character(),
+1695777263634:from = start(pk-4000),
+1695777263650:to = end(pk-4000),
+1695777263665:cex.axis = 0.3,
+1695777263682:cex.title = 0.5,
+1695777263700:title.width = 1,
+1695777263718:innerMargin = 10)
+1695777271742:dev.off()
+1695777271874:#e74
+1695777271889:png('rPlots/3F-e74.png', width = 4, height = 4, res = 300, units = 'in')
+1695777271907:Gviz::plotTracks(c(axis,
+1695777271921:deg.tracks,
+1695777271937:spacer,
+1695777271951:spacer,
+1695777271964:osaDep.peakTrack,
+1695777271978:spacer,
+1695777271991:spacer,
+1695777272006:genetrack),
+1695777272021:chromosome = seqnames(e74) %>% as.character(),
+1695777272037:from = start(e74),
+1695777272052:to = end(e74),
+1695777272067:cex.axis = 0.3,
+1695777272083:cex.title = 0.5,
+1695777272099:title.width = 1,
+1695777272114:innerMargin = 10)
+1695777275266:dev.off()
+1695777406606:temp <- osaDeg.qF %>%
+1695777406622:dplyr::mutate(osaPeak = ifelse(GRanges(.) %over% osaPeaks.full, T, F)) %>%
+1695777406636:data.frame()
+1695777406832:temp %>%
+1695777406848:ggplot(aes(log2FoldChange, padj)) +
+1695777406863:geom_point(color = ifelse(data.frame(osaDeg.qF)$padj <= 0.1, 'red','black')) +
+1695777406878:geom_point(color = ifelse(temp$osaPeak, 'green',NA)) +
+1695777406892:theme(axis.title = element_text(size = 12),
+1695777406907:axis.text = element_text(size = 12))
+1695777407799:temp %>%
+1695777407815:dplyr::group_by(seqnames) %>%
+1695777407828:dplyr::tally()
+1695777408172:ggplot(aes())
+1695777421810:temp %>%
+1695777421823:dplyr::group_by(seqnames) %>%
+1695777421834:dplyr::tally()
+1695777443711:temp %>%
+1695777443723:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777443734:dplyr::group_by(dep, osaPeak) %>%
+1695777443746:dplyr::tally() %>%
+1695777443757:dplyr::ungroup() %>%
+1695777443767:dplyr::mutate(fract = n / sum(n))
+1695777588732:temp %>%
+1695777588744:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777588756:dplyr::group_by(dep, osaPeak) %>%
+1695777588778:dplyr::tally() %>%
+1695777588791:dplyr::ungroup() %>%
+1695777588804:dplyr::mutate(fract = n / sum(n)) %>%
+1695777588817:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777588830:geom_bar()
+1695777596513:temp %>%
+1695777596525:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777596538:dplyr::group_by(dep, osaPeak) %>%
+1695777596549:dplyr::tally() %>%
+1695777596560:dplyr::ungroup() %>%
+1695777596573:dplyr::mutate(fract = n / sum(n)) %>%
+1695777596585:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777596598:geom_bar(stat = 'identity')
+1695777609703:temp %>%
+1695777609717:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777609727:dplyr::group_by(dep, osaPeak) %>%
+1695777609739:dplyr::tally() %>%
+1695777609751:dplyr::ungroup() %>%
+1695777609763:dplyr::mutate(fract = n / sum(n))
+1695777614328:temp %>%
+1695777614340:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777614352:dplyr::group_by(dep, osaPeak) %>%
+1695777614364:dplyr::tally() %>%
+1695777614376:dplyr::mutate(fract = n / sum(n))
+1695777620519:temp %>%
+1695777620531:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777620541:dplyr::group_by(dep, osaPeak) %>%
+1695777620553:dplyr::tally() %>%
+1695777620564:dplyr::mutate(fract = n / sum(n)) %>%
+1695777620575:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777620587:geom_bar(stat = 'identity')
+1695777698700:temp %>%
+1695777698712:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777698724:dplyr::group_by(dep, osaPeak) %>%
+1695777698736:dplyr::tally() %>%
+1695777698748:dplyr::mutate(fract = n / sum(n)) %>%
+1695777698758:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777698769:geom_bar(stat = 'identity') +
+1695777698780:geom_text(aes(label = n))
+1695777713342:temp %>%
+1695777713353:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777713364:dplyr::group_by(dep, osaPeak) %>%
+1695777713375:dplyr::tally() %>%
+1695777713386:dplyr::mutate(fract = n / sum(n)) %>%
+1695777713397:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777713408:geom_bar(stat = 'identity') +
+1695777713419:geom_text(aes(label = n), position = n/2)
+1695777729553:temp %>%
+1695777729565:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777729578:dplyr::group_by(dep, osaPeak) %>%
+1695777729590:dplyr::tally() %>%
+1695777729604:dplyr::mutate(fract = n / sum(n)) %>%
+1695777729617:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777729631:geom_bar(stat = 'identity') +
+1695777729643:geom_text(aes(label = n), position = n)
+1695777733473:temp %>%
+1695777733485:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777733497:dplyr::group_by(dep, osaPeak) %>%
+1695777733508:dplyr::tally() %>%
+1695777733520:dplyr::mutate(fract = n / sum(n)) %>%
+1695777733532:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777733544:geom_bar(stat = 'identity') +
+1695777733556:geom_text(aes(label = n), position = frac/2)
+1695777736829:temp %>%
+1695777736842:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777736853:dplyr::group_by(dep, osaPeak) %>%
+1695777736865:dplyr::tally() %>%
+1695777736878:dplyr::mutate(fract = n / sum(n)) %>%
+1695777736889:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777736901:geom_bar(stat = 'identity') +
+1695777736913:geom_text(aes(label = n), position = fract/2)
+1695777743790:temp %>%
+1695777743803:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777743815:dplyr::group_by(dep, osaPeak) %>%
+1695777743826:dplyr::tally() %>%
+1695777743837:dplyr::mutate(fract = n / sum(n)) %>%
+1695777743849:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777743860:geom_bar(stat = 'identity') +
+1695777743873:geom_text(aes(label = n), position = fill)
+1695777746984:temp %>%
+1695777747007:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777747020:dplyr::group_by(dep, osaPeak) %>%
+1695777747033:dplyr::tally() %>%
+1695777747046:dplyr::mutate(fract = n / sum(n)) %>%
+1695777747057:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777747069:geom_bar(stat = 'identity') +
+1695777747081:geom_text(aes(label = n), position = fill)
+1695777788888:temp %>%
+1695777788899:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777788912:dplyr::group_by(dep, osaPeak) %>%
+1695777788923:dplyr::tally() %>%
+1695777788934:dplyr::mutate(fract = n / sum(n)) %>%
+1695777788947:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777788958:geom_bar(stat = 'identity') +
+1695777788971:geom_text(aes(label = n), vjust = -2)
+1695777794680:temp %>%
+1695777794692:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777794705:dplyr::group_by(dep, osaPeak) %>%
+1695777794717:dplyr::tally() %>%
+1695777794730:dplyr::mutate(fract = n / sum(n)) %>%
+1695777794742:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777794754:geom_bar(stat = 'identity') +
+1695777794766:geom_text(aes(label = n), vjust = 2)
+1695777811545:temp %>%
+1695777811557:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777811568:dplyr::group_by(dep, osaPeak) %>%
+1695777811581:dplyr::tally() %>%
+1695777811593:dplyr::mutate(fract = n / sum(n)) %>%
+1695777811606:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777811617:geom_bar(stat = 'identity') +
+1695777811629:geom_text(aes(label = paste('n = ',n)), vjust = 2)
+1695777838815:temp %>%
+1695777838826:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777838840:dplyr::group_by(dep, osaPeak) %>%
+1695777838852:dplyr::tally() %>%
+1695777838863:dplyr::mutate(fract = n / sum(n)) %>%
+1695777838875:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777838886:geom_bar(stat = 'identity') +
+1695777838898:geom_text(aes(label = n), vjust = 2)
+1695777936892:temp %>%
+1695777936904:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777936917:dplyr::group_by(dep, osaPeak) %>%
+1695777936930:dplyr::tally() %>%
+1695777936942:dplyr::mutate(fract = n / sum(n)) %>%
+1695777936954:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777936966:geom_bar(stat = 'identity') +
+1695777936977:geom_text(aes(label = n), vjust = 2) +
+1695777936991:scale_fill_manual(values = c('grey','blue'))
+1695777945532:temp %>%
+1695777945543:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777945554:dplyr::group_by(dep, osaPeak) %>%
+1695777945565:dplyr::tally() %>%
+1695777945576:dplyr::mutate(fract = n / sum(n)) %>%
+1695777945586:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777945597:geom_bar(stat = 'identity') +
+1695777945608:geom_text(aes(label = n), vjust = 2) +
+1695777945619:scale_fill_manual(values = c('grey20',''))
+1695777948861:temp %>%
+1695777948872:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777948884:dplyr::group_by(dep, osaPeak) %>%
+1695777948896:dplyr::tally() %>%
+1695777948907:dplyr::mutate(fract = n / sum(n)) %>%
+1695777948920:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777948933:geom_bar(stat = 'identity') +
+1695777948944:geom_text(aes(label = n), vjust = 2) +
+1695777948956:scale_fill_manual(values = c('grey20','green'))
+1695777956285:temp %>%
+1695777956296:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777956308:dplyr::group_by(dep, osaPeak) %>%
+1695777956318:dplyr::tally() %>%
+1695777956329:dplyr::mutate(fract = n / sum(n)) %>%
+1695777956340:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777956350:geom_bar(stat = 'identity') +
+1695777956361:geom_text(aes(label = n), vjust = 2) +
+1695777956373:scale_fill_manual(values = c('grey60','green'))
+1695777982257:temp %>%
+1695777982270:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695777982283:dplyr::group_by(dep, osaPeak) %>%
+1695777982295:dplyr::tally() %>%
+1695777982307:dplyr::mutate(fract = n / sum(n)) %>%
+1695777982319:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695777982330:geom_bar(stat = 'identity') +
+1695777982343:geom_text(aes(label = n), vjust = 2) +
+1695777982355:scale_fill_manual(values = c('grey60','#43dbe6'))
+1695778026578:temp %>%
+1695778026591:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778026700:dplyr::group_by(dep, osaPeak) %>%
+1695778026857:dplyr::tally() %>%
+1695778026868:dplyr::mutate(fract = n / sum(n)) %>%
+1695778026880:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778026892:geom_bar(stat = 'identity') +
+1695778026903:geom_text(aes(label = n), vjust = 2) +
+1695778026914:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778026924:theme(axis.title = element_blank(),
+1695778026935:axis.text = element_text(size = 12))
+1695778034945:temp %>%
+1695778034957:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778034968:dplyr::group_by(dep, osaPeak) %>%
+1695778034978:dplyr::tally() %>%
+1695778034989:dplyr::mutate(fract = n / sum(n)) %>%
+1695778035000:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778035011:geom_bar(stat = 'identity') +
+1695778035022:geom_text(aes(label = n), vjust = 2, size = 12) +
+1695778035034:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778035046:theme(axis.title = element_blank(),
+1695778035059:axis.text = element_text(size = 12))
+1695778041327:temp %>%
+1695778041340:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778041352:dplyr::group_by(dep, osaPeak) %>%
+1695778041362:dplyr::tally() %>%
+1695778041373:dplyr::mutate(fract = n / sum(n)) %>%
+1695778041385:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778041397:geom_bar(stat = 'identity') +
+1695778041409:geom_text(aes(label = n), vjust = 2, size = 8) +
+1695778041423:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778041435:theme(axis.title = element_blank(),
+1695778041446:axis.text = element_text(size = 12))
+1695778046316:temp %>%
+1695778046327:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778046339:dplyr::group_by(dep, osaPeak) %>%
+1695778046350:dplyr::tally() %>%
+1695778046360:dplyr::mutate(fract = n / sum(n)) %>%
+1695778046371:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778046384:geom_bar(stat = 'identity') +
+1695778046396:geom_text(aes(label = n), vjust = 2, size = 4) +
+1695778046407:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778046418:theme(axis.title = element_blank(),
+1695778046430:axis.text = element_text(size = 12))
+1695778051042:temp %>%
+1695778051054:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778051065:dplyr::group_by(dep, osaPeak) %>%
+1695778051078:dplyr::tally() %>%
+1695778051089:dplyr::mutate(fract = n / sum(n)) %>%
+1695778051100:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778051113:geom_bar(stat = 'identity') +
+1695778051124:geom_text(aes(label = n), vjust = 2, size = 5) +
+1695778051136:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778051148:theme(axis.title = element_blank(),
+1695778051159:axis.text = element_text(size = 12))
+1695778137919:ggsave('S6-cnr-faire.png', width = 4, height = 6, dpi = 300)
+1695778178891:ggsave('S6-cnr-faire.png', width = 6, height = 7, dpi = 300)
+1695778234403:ggsave('rPlots/S6-cnr-faire.png', width = 6, height = 6, dpi = 300)
+1695778246413:ggsave('rPlots/S6-cnr-faire.png', width = 4, height = 4, dpi = 300)
+1695778267238:temp %>%
+1695778267251:dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
+1695778267264:dplyr::group_by(dep, osaPeak) %>%
+1695778267275:dplyr::tally() %>%
+1695778267286:dplyr::mutate(fract = n / sum(n)) %>%
+1695778267297:ggplot(aes(dep, fract, fill = osaPeak)) +
+1695778267308:geom_bar(stat = 'identity') +
+1695778267321:geom_text(aes(label = n), vjust = 1.5, size = 5) +
+1695778267334:scale_fill_manual(values = c('grey60','#43dbe6')) +
+1695778267345:theme(axis.title = element_blank(),
+1695778267356:axis.text = element_text(size = 12))
+1695778271410:ggsave('rPlots/S6-cnr-faire.png', width = 4, height = 4, dpi = 300)

@@ -1,0 +1,14 @@
+"0","png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 400)
+ComplexHeatmap::draw(hms,
+                    # annotation_legend_list = c(lgd), 
+                    # row_split = groups, 
+                     merge_legend = T, 
+                     heatmap_legend_side = 'right')
+dev.off()
+"
+"1","null device "
+"1","
+"
+"1","          1 "
+"1","
+"

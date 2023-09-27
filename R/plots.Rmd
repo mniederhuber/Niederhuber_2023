@@ -228,7 +228,11 @@ dm6.500bp <- peaks$dm6.500bp %>%
 
 bws <- get_bws(dplyr::bind_rows(cnr.ss, faire.wt.ssPool), 'id') 
 
-deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id')
+deg.bws <- get_bws(faire.ss %>% dplyr::filter(experiment == 'osaGFP deGrad FAIRE'), 'id') 
+deg.bws %<>% purrr::map(., function(x){
+  x[!(seqnames(x) %in% c('chrM','chrY','chr4'))] # filter out unwanted chr from each granges in the list
+})
+
 
 #TODO move data to main project directory and fix path
 #TODO merge reps?
@@ -506,12 +510,18 @@ fixing...
 osaDeg.center -- 6826
 osaDeg.qF -- 6826
 
+9/26 - added step in peaks.R that removes FAIRE peakes on chrY and chr4 
+this reduces total peak count from 6826 to 6791 (35 peaks removed)
 ```{r}
 
 #TODO - are heatmaps misleading? is this difficult to parse when split by these different peak call groups?
 
 
 cols <- c('black', '#469ae8')
+purrr::map(deg.bws, function(x){
+  x %>%
+    dplyr::filter(is.na(score))
+}) 
 
 # union osa degrad peaks
 deg.mats <- purrr::map(deg.bws, ~{
@@ -579,7 +589,7 @@ names(deg.hms) <- names(deg.mats)
 
 hms <- deg.hms$control.Rep1 + deg.hms$control.Rep2 + deg.hms$nubG4.Rep1 + deg.hms$nubG4.Rep2
 
-png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 300)
+png('rPlots/3B.png', width = 3, height = 5, units = 'in', res = 400)
 ComplexHeatmap::draw(hms,
                     # annotation_legend_list = c(lgd), 
                     # row_split = groups, 
@@ -643,11 +653,6 @@ Gviz::plotTracks(c(axis,
 dev.off()
 ```
 ## E - Diff Bind
-osaDeg.qF -- 6877 peaks
-
-This peak list is slightly more than the peaks$faire.osaDeg.df
-These are ranges from diffbind, which i need for the log2 and pvals. 
-I don't currently have a clean way to annotate the main df with those values.
 
 
 ```{r}
@@ -2504,21 +2509,18 @@ temp %>%
   theme(axis.title = element_text(size = 12),
         axis.text = element_text(size = 12))
 
-temp %>%
-  dplyr::group_by(seqnames) %>%
-  dplyr::tally()
-  ggplot(aes())
-  
-
 temp %>% 
   dplyr::mutate(dep = ifelse(log2FoldChange <= -1, 'Osa-Dependent', 'Osa-Independent')) %>%
   dplyr::group_by(dep, osaPeak) %>%
   dplyr::tally() %>%
-  dplyr::ungroup() %>%
-  dplyr::mutate(fract = n / sum(n))
-  ggplot(aes())
-
-
+  dplyr::mutate(fract = n / sum(n)) %>%
+  ggplot(aes(dep, fract, fill = osaPeak)) +
+  geom_bar(stat = 'identity') +
+  geom_text(aes(label = n), vjust = 1.5, size = 5) +
+  scale_fill_manual(values = c('grey60','#43dbe6')) +
+  theme(axis.title = element_blank(),
+        axis.text = element_text(size = 12))
+ggsave('rPlots/S6-cnr-faire.png', width = 4, height = 4, dpi = 300)
 ```
 
 # Fig 6 - Developmental Consequences of Hyperactivation
