@@ -757,6 +757,8 @@ dev.off()
 
 ## G - Osa Dependent Dynamic Clustering
 ```{r}
+#osaDeg.qF %>% dplyr::filter(log2FoldChange <= -1)
+#osaDeg.qF %>% dplyr::filter(log2FoldChange <= -1 & padj <= 0.1)
 
 plot.df <- osaDep.anno %>% #osaDep.anno has the wt faire data added
   dplyr::select(peak, dplyr::matches("faire.\\d{1,2}h.zScore|faire.3LW.zScore")) %>%
@@ -2581,9 +2583,9 @@ dlD.ratio %>%
   geom_boxplot(aes(fill = rnai)) +
   geom_point(position = position_jitter(width = 0.08)) +
   scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
-  #annotate(geom = 'segment', x = 1, xend = 2, y = 1.5, yend = 1.5) +
-  #annotate(geom = 'text', x = 1.5, y = 1.51, label = '***') +
-  ylab('Dl-D A/P Ratio') +
+  annotate(geom = 'segment', x = 1, xend = 2, y = 4.5, yend = 4.5) +
+  annotate(geom = 'text', x = 1.5, y = 4.53, label = '***') +
+  ylab(bquote('Dl pouch A/P Ratio')) +
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
         axis.title.y = element_text(size = 12),

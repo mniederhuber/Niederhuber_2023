@@ -1,12 +1,108 @@
 "0","library(magrittr)"
 "0","library(ggplot2)"
+"2","RStudio Community is a great place to get help: https://community.rstudio.com/c/tidyverse
+"
 "0","#library(ggrepel)"
 "0","library(GenomicRanges)"
-"0",""
+"2","Loading required package: stats4
+"
+"2","Loading required package: BiocGenerics
+"
+"2","
+Attaching package: 'BiocGenerics'
+
+"
+"2","The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+"
+"2","The following objects are masked from 'package:base':
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind, colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find, get,
+    grep, grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget, order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply, union, unique, unsplit, which.max, which.min
+
+"
+"2","Loading required package: S4Vectors
+"
+"2","
+Attaching package: 'S4Vectors'
+
+"
+"2","The following objects are masked from 'package:base':
+
+    expand.grid, I, unname
+
+"
+"2","Loading required package: IRanges
+"
+"2","Loading required package: GenomeInfoDb
+"
+"2","
+Attaching package: 'GenomicRanges'
+
+"
+"2","The following object is masked from 'package:magrittr':
+
+    subtract
+
+"
 "0","library(org.Dm.eg.db)"
+"2","Loading required package: AnnotationDbi
+"
+"2","Loading required package: Biobase
+"
+"2","Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with 'browseVignettes()'. To cite Bioconductor, see 'citation(""Biobase"")', and for packages
+    'citation(""pkgname"")'.
+
+"
+"2","
+"
 "0","library(AnnotationDbi)"
 "0",""
 "0","library(EnrichedHeatmap)"
+"2","Loading required package: grid
+"
+"2","Loading required package: ComplexHeatmap
+"
+"2","========================================
+ComplexHeatmap version 2.14.0
+Bioconductor page: http://bioconductor.org/packages/ComplexHeatmap/
+Github page: https://github.com/jokergoo/ComplexHeatmap
+Documentation: http://jokergoo.github.io/ComplexHeatmap-reference
+
+If you use it in published research, please cite either one:
+- Gu, Z. Complex Heatmap Visualization. iMeta 2022.
+- Gu, Z. Complex heatmaps reveal patterns and correlations in multidimensional 
+    genomic data. Bioinformatics 2016.
+
+
+The new InteractiveComplexHeatmap package can directly export static 
+complex heatmaps into an interactive Shiny app with zero effort. Have a try!
+
+This message can be suppressed by:
+  suppressPackageStartupMessages(library(ComplexHeatmap))
+========================================
+
+"
+"2","========================================
+EnrichedHeatmap version 1.28.1
+Bioconductor page: http://bioconductor.org/packages/EnrichedHeatmap/
+Github page: https://github.com/jokergoo/EnrichedHeatmap
+Documentation: http://bioconductor.org/packages/EnrichedHeatmap/
+
+If you use it in published research, please cite:
+Gu, Z. EnrichedHeatmap: an R/Bioconductor package for comprehensive 
+visualization of genomic signal associations. BMC Genomics 2018.
+
+This message can be suppressed by:
+  suppressPackageStartupMessages(library(EnrichedHeatmap))
+========================================
+
+"
 "0","library(ComplexHeatmap)"
 "0",""
 "0","#library(GO.db)"
@@ -48,10 +144,9 @@
 "0",""
 "0","dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100) "
 "0","dm6.genes <- GenomicFeatures::genes(dm6.TxDb)"
-"2","  1 gene was dropped because it has exons located on both strands of the same reference sequence or on more than one
-  reference sequence, so cannot be represented by a single genomic range.
-  Use 'single.strand.genes.only=FALSE' to get all the genes in a GRangesList object, or use suppressMessages() to
-  suppress this message.
+"2","  1 gene was dropped because it has exons located on both strands of the same reference sequence or on more than one reference sequence, so
+  cannot be represented by a single genomic range.
+  Use 'single.strand.genes.only=FALSE' to get all the genes in a GRangesList object, or use suppressMessages() to suppress this message.
 "
 "0","brD <- data.frame('seqnames' = 'chrX',"
 "0","                  'start' = 1565708,"

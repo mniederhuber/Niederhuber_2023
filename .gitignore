@@ -15,6 +15,7 @@ R/Peaks
 R/Bam
 R/rPlots
 R/bed
+R/.local
 .Rproj.user
 dm6.ensGene.gtf
 featureCounts/

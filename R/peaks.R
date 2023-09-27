@@ -221,8 +221,9 @@ osaDeg.db_sheet  <- faire.ss.osaDeg %>%
 # looks like there is a problem with parallel processing within a container -- possibly because of osx docker linux vm? 
 # disabelling "RunParallel" seems to fix the problem
 osaDeg.db <- DiffBind::dba(sampleSheet = osaDeg.db_sheet,
+                           bRemoveM = T, 
                            config=data.frame(RunParallel=FALSE, 
-                                             doBlackList = T)) ## testing the addition of the dm6 encode blacklist
+                                             doBlackList = T))
 
 osaDeg.db <- DiffBind::dba.count(osaDeg.db)
 

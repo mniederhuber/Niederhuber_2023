@@ -1,881 +1,4 @@
 
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m22864[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m27654[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28378[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m20650[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m24470[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m24535[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28856[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m15232[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[1mRows: [22m[34m13953[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m18007[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m13959[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m17048[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m14570[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h
-        ==========     _____ _    _ ____  _____  ______          _____  
-        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
-          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
-            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
-              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
-        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
-       Rsubread 2.12.3
-
-//========================== featureCounts setting ===========================\\
-||                                                                            ||
-||             Input files : 4 BAM files                                      ||
-||                                                                            ||
-||                           yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_du ... ||
-||                           osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q ... ||
-||                           yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_du ... ||
-||                           osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q ... ||
-||                                                                            ||
-||              Paired-end : yes                                              ||
-||        Count read pairs : yes                                              ||
-||              Annotation : R data.frame                                     ||
-||      Dir for temp files : .                                                ||
-||                 Threads : 4                                                ||
-||                   Level : meta-feature level                               ||
-||      Multimapping reads : counted                                          ||
-|| Multi-overlapping reads : counted                                          ||
-||   Min overlapping bases : 1                                                ||
-||                                                                            ||
-\\============================================================================//
-
-//================================= Running ==================================\\
-||                                                                            ||
-|| Load annotation file .Rsubread_UserProvidedAnnotation_pid11195 ...         ||
-||    Features : 9542                                                         ||
-||    Meta-features : 9542                                                    ||
-||    Chromosomes/contigs : 5                                                 ||
-||                                                                            ||
-|| Process BAM file yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved ... ||
-||    Paired-end reads are included.                                          ||
-||    Total alignments : 105452                                               ||
-||    Successfully assigned alignments : 20981 (19.9%)                        ||
-||    Running time : 0.01 minutes                                             ||
-||                                                                            ||
-|| Process BAM file osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRem ... ||
-||    Paired-end reads are included.                                          ||
-||    Total alignments : 531303                                               ||
-||    Successfully assigned alignments : 231487 (43.6%)                       ||
-||    Running time : 0.02 minutes                                             ||
-||                                                                            ||
-|| Process BAM file yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved ... ||
-||    Paired-end reads are included.                                          ||
-||    Total alignments : 520143                                               ||
-||    Successfully assigned alignments : 118058 (22.7%)                       ||
-||    Running time : 0.01 minutes                                             ||
-||                                                                            ||
-|| Process BAM file osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRem ... ||
-||    Paired-end reads are included.                                          ||
-||    Total alignments : 480481                                               ||
-||    Successfully assigned alignments : 182288 (37.9%)                       ||
-||    Running time : 0.01 minutes                                             ||
-||                                                                            ||
-|| Write the final count table.                                               ||
-|| Write the read assignment summary.                                         ||
-||                                                                            ||
-\\============================================================================//
-
-[?25h[?25hestimating size factors
-estimating dispersions
-gene-wise dispersion estimates
-mean-dispersion relationship
-final dispersion estimates
-fitting model and testing
-Warning message:
-In DESeqDataSet(se, design = design, ignoreRank) :
-  some variables in design formula are characters, converting to factors
-[?25h[?25h[?25hcompleted cut&run deseq
-[?25h[?25hosaGFP.deGrad_control_faire.Rep1   control  1 narrow
-osaGFP.deGrad_control_faire.Rep2   control  2 narrow
-osaGFP.deGrad_nubG4_faire.Rep1   nubG4  1 narrow
-osaGFP.deGrad_nubG4_faire.Rep2   nubG4  2 narrow
-[?25hComputing summits...
-Sample: Bam/osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Sample: Bam/osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Re-centering peaks...
-Sample: Bam/osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Reads will be counted as Paired-end.
-Sample: Bam/osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Reads will be counted as Paired-end.
-Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Reads will be counted as Paired-end.
-Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
-Reads will be counted as Paired-end.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hComputing results names...
-[?25hApplying Blacklist/Greylists...
-Genome detected: Dmelanogaster.UCSC.dm6
-Applying blacklist...
-Removed: 8 of 15089 intervals.
-Re-normalizing...
-Removed 8 (of 15089) consensus peaks.
-Analyzing...
-gene-wise dispersion estimates
-mean-dispersion relationship
-final dispersion estimates
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h
-Registered S3 methods overwritten by 'treeio':
-  method              from    
-  MRCA.phylo          tidytree
-  MRCA.treedata       tidytree
-  Nnode.treedata      tidytree
-  Ntip.treedata       tidytree
-  ancestor.phylo      tidytree
-  ancestor.treedata   tidytree
-  child.phylo         tidytree
-  child.treedata      tidytree
-  full_join.phylo     tidytree
-  full_join.treedata  tidytree
-  groupClade.phylo    tidytree
-  groupClade.treedata tidytree
-  groupOTU.phylo      tidytree
-  groupOTU.treedata   tidytree
-  is.rooted.treedata  tidytree
-  nodeid.phylo        tidytree
-  nodeid.treedata     tidytree
-  nodelab.phylo       tidytree
-  nodelab.treedata    tidytree
-  offspring.phylo     tidytree
-  offspring.treedata  tidytree
-  parent.phylo        tidytree
-  parent.treedata     tidytree
-  root.treedata       tidytree
-  rootnode.phylo      tidytree
-  sibling.phylo       tidytree
->> preparing features information...		 2023-09-12 06:15:05 PM 
->> identifying nearest features...		 2023-09-12 06:15:06 PM 
->> calculating distance from peak to TSS...	 2023-09-12 06:15:07 PM 
->> assigning genomic annotation...		 2023-09-12 06:15:07 PM 
->> adding gene annotation...			 2023-09-12 06:15:13 PM 
-'select()' returned 1:many mapping between keys and columns
->> assigning chromosome lengths			 2023-09-12 06:15:13 PM 
->> done...					 2023-09-12 06:15:14 PM 
->> preparing features information...		 2023-09-12 06:16:05 PM 
->> identifying nearest features...		 2023-09-12 06:16:05 PM 
->> calculating distance from peak to TSS...	 2023-09-12 06:16:05 PM 
->> assigning genomic annotation...		 2023-09-12 06:16:05 PM 
->> adding gene annotation...			 2023-09-12 06:16:06 PM 
-'select()' returned 1:many mapping between keys and columns
->> assigning chromosome lengths			 2023-09-12 06:16:06 PM 
->> done...					 2023-09-12 06:16:06 PM 
->> preparing features information...		 2023-09-12 06:16:27 PM 
->> identifying nearest features...		 2023-09-12 06:16:27 PM 
->> calculating distance from peak to TSS...	 2023-09-12 06:16:27 PM 
->> assigning genomic annotation...		 2023-09-12 06:16:27 PM 
->> adding gene annotation...			 2023-09-12 06:16:28 PM 
-'select()' returned 1:many mapping between keys and columns
->> assigning chromosome lengths			 2023-09-12 06:16:28 PM 
->> done...					 2023-09-12 06:16:28 PM 
->> preparing features information...		 2023-09-12 06:16:36 PM 
->> identifying nearest features...		 2023-09-12 06:16:36 PM 
->> calculating distance from peak to TSS...	 2023-09-12 06:16:36 PM 
->> assigning genomic annotation...		 2023-09-12 06:16:36 PM 
->> adding gene annotation...			 2023-09-12 06:16:37 PM 
-'select()' returned 1:many mapping between keys and columns
->> assigning chromosome lengths			 2023-09-12 06:16:37 PM 
->> done...					 2023-09-12 06:16:37 PM 
->> preparing features information...		 2023-09-12 06:16:39 PM 
->> identifying nearest features...		 2023-09-12 06:16:39 PM 
->> calculating distance from peak to TSS...	 2023-09-12 06:16:42 PM 
->> assigning genomic annotation...		 2023-09-12 06:16:42 PM 
->> adding gene annotation...			 2023-09-12 06:16:44 PM 
-'select()' returned 1:many mapping between keys and columns
->> assigning chromosome lengths			 2023-09-12 06:16:45 PM 
->> done...					 2023-09-12 06:16:45 PM 
-[?25hSaving output...
-pwd
-[?2004l/home/rstudio
-]0;/home/rstudio[?2004hrstudio@4ecb3ced7562:~$ ls
-[?2004lBam  bed  BigWig  Data	Dockerfile  Peaks  rData  renv.lock  Rmd  Rotund-ChIP  rOut  rPlots  R.Rproj  scripts  sheets
-]0;/home/rstudio[?2004hrstudio@4ecb3ced7562:~$ [Krstudio@4ecb3ced7562:~$ ls
-[?2004lBam  bed  BigWig  Data	Dockerfile  Peaks  rData  renv.lock  Rmd  Rotund-ChIP  rOut  rPlots  R.Rproj  scripts  sheets
-]0;/home/rstudio[?2004hrstudio@4ecb3ced7562:~$ ls bigWi[K[K[K[K[KBigWig
-[?2004lBigWig
-h3k27ac_test
-lucRNAi_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-lucRNAi_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-lucRNAi-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-lucRNAi-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-lucRNAi-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-lucRNAi-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bg
-osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-osaGFP_deGrad_control_faire_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-osaGFP_deGrad_control_faire_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaGFP_deGrad_nubG4_faire_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-osaGFP_deGrad_nubG4_faire_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaRNAi_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-osaRNAi_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-osaRNAi-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaRNAi-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-osaRNAi-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-osaRNAi-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_18h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_18h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_18h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_18h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_18h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_18h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_18h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_18h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_18h-Rep4_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_18h-Rep4_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_24h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_24h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_24h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_24h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_24h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_24h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_24h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_24h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_36h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_36h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_36h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_36h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_36h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_36h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_36h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_36h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_3LW_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_3LW-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_3LW-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_3LW-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_3LW-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_3LW-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_3LW-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_44h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_44h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_44h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_44h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_44h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_44h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_44h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_44h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_6h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm.bw
-wt_6h_dm6_trim_q5_sorted_dupsRemoved_POOLED_rpgcNorm_zNorm.bw
-wt_6h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_6h-Rep1_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_6h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_6h-Rep2_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-wt_6h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm.bw
-wt_6h-Rep3_dm6_trim_q5_sorted_dupsRemoved_rpgcNorm_zNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags.bg
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags.bw
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bg
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bg
-yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags.bg
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags.bw
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bg
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bg
-yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_150to700_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_20to120_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_150to700_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_20to120.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_20to120_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_20to120_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_allFrags.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_allFrags_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-pel-Rep2_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_150to700_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_20to120_sacCer3-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_droYak2-spikeNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_rpgcNorm_zNorm.bw
-yw-3LW-wing-ak27ac-sup-Rep1_dm6_trim_q5_dupsRemoved_allFrags_sacCer3-spikeNorm.bw
-Rs[K[Ksc[K[KRscript peaks.r[K[K.R 
-[?2004l[?25hLoading required package: stats4
-Loading required package: BiocGenerics
-
-Attaching package: ‘BiocGenerics’
-
-The following objects are masked from ‘package:stats’:
-
-    IQR, mad, sd, var, xtabs
-
-The following objects are masked from ‘package:base’:
-
-    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
-    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
-    get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
-    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
-    Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
-    table, tapply, union, unique, unsplit, which.max, which.min
-
-Loading required package: S4Vectors
-
-Attaching package: ‘S4Vectors’
-
-The following objects are masked from ‘package:base’:
-
-    expand.grid, I, unname
-
-Loading required package: IRanges
-Loading required package: GenomeInfoDb
-
-Attaching package: ‘GenomicRanges’
-
-The following object is masked from ‘package:magrittr’:
-
-    subtract
-
-[?25hLoading required package: AnnotationDbi
-Loading required package: Biobase
-Welcome to Bioconductor
-
-    Vignettes contain introductory material; view with
-    'browseVignettes()'. To cite Bioconductor, see
-    'citation("Biobase")', and for packages 'citation("pkgname")'.
-
-
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m5836[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m5009[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m784[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m4564[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m24777[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m13703[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m31645[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m39934[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m23851[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28665[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m25250[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m20715[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m23910[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m26342[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m22864[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m27654[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28378[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m20650[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m24470[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m24535[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28856[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m15232[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[1mRows: [22m[34m13953[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m18007[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m13959[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m17048[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hError in enc2utf8(path) : argument is not a character vector
-Calls: getPeakData ... <Anonymous> -> <Anonymous> -> standardise_path -> as.list
-Execution halted
-[?25h]0;/home/rstudio[?2004hrstudio@56920f0ebc11:~$ Rscript peaks.R 
-[?2004l[?25hLoading required package: stats4
-Loading required package: BiocGenerics
-
-Attaching package: ‘BiocGenerics’
-
-The following objects are masked from ‘package:stats’:
-
-    IQR, mad, sd, var, xtabs
-
-The following objects are masked from ‘package:base’:
-
-    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
-    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
-    get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
-    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
-    Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
-    table, tapply, union, unique, unsplit, which.max, which.min
-
-Loading required package: S4Vectors
-
-Attaching package: ‘S4Vectors’
-
-The following objects are masked from ‘package:base’:
-
-    expand.grid, I, unname
-
-Loading required package: IRanges
-Loading required package: GenomeInfoDb
-
-Attaching package: ‘GenomicRanges’
-
-The following object is masked from ‘package:magrittr’:
-
-    subtract
-
-[?25hLoading required package: AnnotationDbi
-Loading required package: Biobase
-Welcome to Bioconductor
-
-    Vignettes contain introductory material; view with
-    'browseVignettes()'. To cite Bioconductor, see
-    'citation("Biobase")', and for packages 'citation("pkgname")'.
-
-
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m5836[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m5009[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m784[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m4564[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m24777[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m13703[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m31645[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m39934[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m23851[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28665[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m25250[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m20715[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m23910[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m26342[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m22864[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m27654[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
-[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
-[1mRows: [22m[34m28378[39m [1mColumns: [22m[34m10[39m
-[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
-[1mDelimiter:[22m "\t"
-[31mchr[39m (3): X1, X4, X6
-[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
-
-[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
 [36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
 [1mRows: [22m[34m20650[39m [1mColumns: [22m[34m10[39m
 [36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
@@ -1876,4 +999,356 @@ Registered S3 methods overwritten by 'treeio':
 >> assigning chromosome lengths			 2023-09-26 06:37:02 PM 
 >> done...					 2023-09-26 06:37:02 PM 
 [?25hDone, saving output...
-[?25h[?25h[?25h]0;/home/rstudio[?2004hrstudio@fe5ae22e27eb:~$ 
+Rscript peaks.R 
+[?2004l[?25hLoading required package: stats4
+Loading required package: BiocGenerics
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+    Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
+    table, tapply, union, unique, unsplit, which.max, which.min
+
+Loading required package: S4Vectors
+
+Attaching package: ‘S4Vectors’
+
+The following objects are masked from ‘package:base’:
+
+    expand.grid, I, unname
+
+Loading required package: IRanges
+Loading required package: GenomeInfoDb
+
+Attaching package: ‘GenomicRanges’
+
+The following object is masked from ‘package:magrittr’:
+
+    subtract
+
+[?25hLoading required package: AnnotationDbi
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+[?25h[?25hsourcing utilities...
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hloading peak lists...
+[?25h[1mRows: [22m[34m5836[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m5009[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m784[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m4564[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m24777[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m13703[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m31645[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m39934[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m23851[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m28665[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m25250[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m20715[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m23910[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m26342[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m22864[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m27654[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m28378[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m20650[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m24470[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m24535[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m28856[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m15232[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[?25h[?25h[?25h[1mRows: [22m[34m13953[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m18007[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m13959[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[1mRows: [22m[34m17048[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[1mRows: [22m[34m14570[39m [1mColumns: [22m[34m10[39m
+[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "\t"
+[31mchr[39m (3): X1, X4, X6
+[32mdbl[39m (7): X2, X3, X5, X7, X8, X9, X10
+
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message.
+[?25h[?25h[?25h[?25h[?25h[?25hannotating peak lists...
+[?25h[?25h[?25h[?25h[?25h[?25hrunning CUT&RUN deSeq2...
+[?25h
+        ==========     _____ _    _ ____  _____  ______          _____  
+        =====         / ____| |  | |  _ \|  __ \|  ____|   /\   |  __ \ 
+          =====      | (___ | |  | | |_) | |__) | |__     /  \  | |  | |
+            ====      \___ \| |  | |  _ <|  _  /|  __|   / /\ \ | |  | |
+              ====    ____) | |__| | |_) | | \ \| |____ / ____ \| |__| |
+        ==========   |_____/ \____/|____/|_|  \_\______/_/    \_\_____/
+       Rsubread 2.12.3
+
+//========================== featureCounts setting ===========================\\
+||                                                                            ||
+||             Input files : 4 BAM files                                      ||
+||                                                                            ||
+||                           yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_du ... ||
+||                           osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q ... ||
+||                           yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_du ... ||
+||                           osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q ... ||
+||                                                                            ||
+||              Paired-end : yes                                              ||
+||        Count read pairs : yes                                              ||
+||              Annotation : R data.frame                                     ||
+||      Dir for temp files : .                                                ||
+||                 Threads : 4                                                ||
+||                   Level : meta-feature level                               ||
+||      Multimapping reads : counted                                          ||
+|| Multi-overlapping reads : counted                                          ||
+||   Min overlapping bases : 1                                                ||
+||                                                                            ||
+\\============================================================================//
+
+//================================= Running ==================================\\
+||                                                                            ||
+|| Load annotation file .Rsubread_UserProvidedAnnotation_pid486 ...           ||
+||    Features : 9542                                                         ||
+||    Meta-features : 9542                                                    ||
+||    Chromosomes/contigs : 5                                                 ||
+||                                                                            ||
+|| Process BAM file yw-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRemoved ... ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 105452                                               ||
+||    Successfully assigned alignments : 20981 (19.9%)                        ||
+||    Running time : 0.01 minutes                                             ||
+||                                                                            ||
+|| Process BAM file osaGFP-3LW-wing-aGFP-CnR-sup-rep1_dm6_trim_q5_dupsRem ... ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 531303                                               ||
+||    Successfully assigned alignments : 231487 (43.6%)                       ||
+||    Running time : 0.05 minutes                                             ||
+||                                                                            ||
+|| Process BAM file yw-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRemoved ... ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 520143                                               ||
+||    Successfully assigned alignments : 118058 (22.7%)                       ||
+||    Running time : 0.03 minutes                                             ||
+||                                                                            ||
+|| Process BAM file osaGFP-3LW-wing-aGFP-CnR-sup-rep2_dm6_trim_q5_dupsRem ... ||
+||    Paired-end reads are included.                                          ||
+||    Total alignments : 480481                                               ||
+||    Successfully assigned alignments : 182288 (37.9%)                       ||
+||    Running time : 0.02 minutes                                             ||
+||                                                                            ||
+|| Write the final count table.                                               ||
+|| Write the read assignment summary.                                         ||
+||                                                                            ||
+\\============================================================================//
+
+[?25h[?25hestimating size factors
+estimating dispersions
+gene-wise dispersion estimates
+mean-dispersion relationship
+final dispersion estimates
+fitting model and testing
+Warning message:
+In DESeqDataSet(se, design = design, ignoreRank) :
+  some variables in design formula are characters, converting to factors
+[?25h[?25h[?25hrunning Osa GFP deGrad FAIRE-seq diffbind
+[?25h[?25hosaGFP.deGrad_control_faire.Rep1   control  1 narrow
+osaGFP.deGrad_control_faire.Rep2   control  2 narrow
+osaGFP.deGrad_nubG4_faire.Rep1   nubG4  1 narrow
+osaGFP.deGrad_nubG4_faire.Rep2   nubG4  2 narrow
+[?25hComputing summits...
+Sample: Bam/osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
+Sample: Bam/osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
+Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
+Sample: Bam/osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved.bam125 
+Re-centering peaks...
+Sample: Bam/osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved.bam125 
+Reads will be counted as Paired-end.
