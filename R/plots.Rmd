@@ -508,7 +508,8 @@ rnaiScreen_filtered %>%
   ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
   geom_vline(xintercept = 1, color = "grey50") +
   geom_boxplot(aes(fill = bap_hits), outlier.size = 0.5) +
-  scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
+ # scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
+  scale_fill_manual(values = c("#0072B2",'#F059A2','white')) +
   scale_x_continuous(trans = "log2") + # trying out a log transformation rather than using the log2 FC data
   xlab("brD KD/WT (log2 trans)") +
   theme(#axis.text.y = element_text(size = 10),
