@@ -2,6 +2,7 @@
 ```{r setup}
 library(magrittr)
 library(ggplot2)
+library(ggtext)
 #library(ggrepel)
 library(GenomicRanges)
 
@@ -148,7 +149,7 @@ options(meme_db = universalmotif::to_list(meme_db_on, extrainfo = F))
 
 ## colors
 viridis.hex <- c("#440154","#3b528b","#21918c","#5ec962","#5ec962","#fde725")
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPalette <- c( "#0072B2","#E69F00","black","#56B4E9","#009E73", "#999999","#D55E00", "#CC79A7")
 cbPalette.4 <- c("#D81B60","#1E88E5","#FFC107","#004D40")
 cbPalette.ibm <- c('#332288','#117733','#44AA99','#88CCEE','#DDCC77','#CC6677','#AA4499','#882255')
 
@@ -424,7 +425,7 @@ nubv <- data.frame('seqnames' = 'chr2L',
                    'start' = 12580391,
                    'end' = 12581350) %>%
   GRanges()
-faire.wt.ssPool
+
 #TODO - best way to generate replicate average signal tracks
 #TODO - functionalize givz plotting -- see SLN e93 gof repo - wrote series of functions for browser shot plotting
 
@@ -462,37 +463,64 @@ dev.off()
 # Fig 2 - RNAi Screen
 ## D - Image Quantification
 ```{r}
+
+ACF.CHRAC <- c('Acf', 'Chrac-16','ISWI')
+SWISNF <- c('osa', 'Bap111', 'brm','polybromo','Snr1','Act5C','mor')
+INO80 <- c('Arp5','Ino80','pho')
+ATAC <- c('Atac2','Atac3','D12','NC2beta') #lacks ATPase activity but associated with sliding
+NURF <- c('Caf1-55','Nurf-38','E(bx)','ISWI')
+NURD <- c('Mi-2','MTA1-like')
+Domino <- c('dom','Nipped-A','pont','Tip60')
+SNF_2like <- c('kis','okr','Etl1','Chd1','lexA') # including cotrol lexA here because it get's manually colored in the figure later
+
+complexlist <- c('ACF','Swi/Snf','INO80','ATAC','NURF','NURD','Domino','SNF2-like','control')
+colorlist <- RColorBrewer::brewer.pal(length(complexlist), 'Set1')
+color_lookup <- data.frame(complex = complexlist, hex = c('black',cbPalette))
+
 replicate_sheet <- read.csv('Data/rnaiScreen_replicate_wings.csv') %>%
   dplyr::mutate(replicate = paste(symbol, line, date, drop, sep = '_'))
 
 rnaiScreen_filtered <- rnaiScreen %>%
   dplyr::mutate(replicate = paste(symbol, line, date, scene, sep = '_')) %>%
-  dplyr::filter(!replicate %in% replicate_sheet$replicate | sampleID == 'osa_31266_210503') # filter out replicate images, or 31266_210503 -- images of 3LW
+  dplyr::filter(!replicate %in% replicate_sheet$replicate | sampleID == 'osa_31266_210503') %>% # filter out replicate images, or 31266_210503 -- images of 3LW
+  dplyr:: mutate(complex = dplyr::case_when(symbol %in% ACF ~ 'ACF',
+                                                    symbol %in% INO80 ~ 'INO80',
+                                                    symbol %in% ATAC ~ 'ATAC',
+                                                    symbol %in% NURF ~ 'NURF',
+                                                    symbol %in% NURD ~ 'NURD',
+                                                    symbol %in% Domino ~ 'Domino',
+                                                    symbol %in% SWISNF ~ 'Swi/Snf',
+                                                    symbol %in% SNF_2like ~ 'SNF2-like')) %>%
+  dplyr::inner_join(., color_lookup)# %>%
+ # dplyr::mutate(id = glue::glue("<i style='color:{hex};font-size:10pt'>{id}</i>"))
+  
 
-
+rnaiScreen_filtered
 tables1 <- rnaiScreen_filtered %>%
   dplyr::mutate(symbol = stringr::str_to_title(symbol)) %>%
   dplyr::group_by(symbol, line) %>%
   dplyr::summarise(m = mean(KDtoWT),
                    sd = sd(KDtoWT),
                    n = dplyr::n()) 
-  
+ 
 write.csv('rPlots/TableS1-data.csv', x = tables1)
 
 rnaiScreen_filtered %>%
   ggplot(aes(KDtoWT, forcats::fct_reorder(id, KDtoWT) )) +
   geom_vline(xintercept = 1, color = "grey50") +
-#  geom_vline(xintercept = 1.2, color = "grey50", linetype = "longdash") + # somewhat arbitrary cutoff - based on visually confirmed hits 
   geom_boxplot(aes(fill = bap_hits), outlier.size = 0.5) +
-  scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
+ # scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
+  scale_fill_manual(values = c("#87C2FF",'#F059A2','white')) +
   scale_x_continuous(trans = "log2") + # trying out a log transformation rather than using the log2 FC data
   xlab("brD KD/WT (log2 trans)") +
-  theme(axis.text.y = element_text(size = 10, ),
+  theme(#axis.text.y = element_text(size = 10),
+        #axis.text.y = element_markdown(),
         axis.title.y = element_blank(),
         panel.background = element_rect(fill = 'white', colour = 'grey10'),
         panel.grid.major  = element_line(color = 'grey90'),
         legend.title = element_blank(),
-        legend.position = 'bottom')
+        legend.position = 'bottom',
+        plot.background = element_rect(fill='transparent'))
 ggsave('rPlots/2D.png', width = 5, height = 8)
 ```
 
@@ -2062,7 +2090,7 @@ dev.off()
 
 
 ####
-
+#TODO -- need to move this averaged bigwig to the main project directory and add code to generate
 k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
                              ylim = c(0,5), 
                              fill = 'black', 
@@ -2580,7 +2608,7 @@ t.test(osa_dlD, luc_dlD, paired = F)
 
 dlD.ratio %>%
   ggplot(aes(rnai, ratio)) + 
-  geom_boxplot(aes(fill = rnai)) +
+  geom_boxplot(aes(fill = rnai), outlier.shape = NA) +
   geom_point(position = position_jitter(width = 0.08)) +
   scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
   annotate(geom = 'segment', x = 1, xend = 2, y = 4.5, yend = 4.5) +
@@ -2611,7 +2639,7 @@ t.test(osa_dl, lexA_dl, paired = F)
 
 dl_quant_ratio %>%
   ggplot(aes(genotype, ratio)) + 
-  geom_boxplot(aes(fill = genotype)) +
+  geom_boxplot(aes(fill = genotype), outlier.shape = NA) +
   geom_point(position = position_jitter(width = 0.08)) +
   scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
   annotate(geom = 'segment', x = 1, xend = 2, y = 1.5, yend = 1.5) +
