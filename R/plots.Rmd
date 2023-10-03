@@ -464,10 +464,10 @@ dev.off()
 ## D - Image Quantification
 ```{r}
 
-ACF <- c('Acf', 'Chrac-16')
+ACF.CHRAC <- c('Acf', 'Chrac-16','ISWI')
 SWISNF <- c('osa', 'Bap111', 'brm','polybromo','Snr1','Act5C','mor')
 INO80 <- c('Arp5','Ino80','pho')
-ATAC <- c('Atac2','Atac3','D12','NC2beta')
+ATAC <- c('Atac2','Atac3','D12','NC2beta') #lacks ATPase activity but associated with sliding
 NURF <- c('Caf1-55','Nurf-38','E(bx)','ISWI')
 NURD <- c('Mi-2','MTA1-like')
 Domino <- c('dom','Nipped-A','pont','Tip60')
@@ -491,8 +491,9 @@ rnaiScreen_filtered <- rnaiScreen %>%
                                                     symbol %in% Domino ~ 'Domino',
                                                     symbol %in% SWISNF ~ 'Swi/Snf',
                                                     symbol %in% SNF_2like ~ 'SNF2-like')) %>%
-  dplyr::inner_join(., color_lookup) %>%
-  dplyr::mutate(id = glue::glue("<i style='color:{hex};font-size:10pt'>{id}</i>"))
+  dplyr::inner_join(., color_lookup)# %>%
+ # dplyr::mutate(id = glue::glue("<i style='color:{hex};font-size:10pt'>{id}</i>"))
+  
 
 rnaiScreen_filtered
 tables1 <- rnaiScreen_filtered %>%
@@ -509,11 +510,11 @@ rnaiScreen_filtered %>%
   geom_vline(xintercept = 1, color = "grey50") +
   geom_boxplot(aes(fill = bap_hits), outlier.size = 0.5) +
  # scale_fill_manual(values = c("#66C2A6",'#F059A2','white')) +
-  scale_fill_manual(values = c("#0072B2",'#F059A2','white')) +
+  scale_fill_manual(values = c("#87C2FF",'#F059A2','white')) +
   scale_x_continuous(trans = "log2") + # trying out a log transformation rather than using the log2 FC data
   xlab("brD KD/WT (log2 trans)") +
   theme(#axis.text.y = element_text(size = 10),
-        axis.text.y = element_markdown(),
+        #axis.text.y = element_markdown(),
         axis.title.y = element_blank(),
         panel.background = element_rect(fill = 'white', colour = 'grey10'),
         panel.grid.major  = element_line(color = 'grey90'),
@@ -2089,7 +2090,7 @@ dev.off()
 
 
 ####
-
+#TODO -- need to move this averaged bigwig to the main project directory and add code to generate
 k27ac.track <- get_cnr_track('../../H3K27ac_CnR/BigWig/yw-3LW-wing-ak27ac-pel-MEAN_dm6_trim_q5_dupsRemoved_150to700_rpgcNorm_zNorm.bw', 
                              ylim = c(0,5), 
                              fill = 'black', 
