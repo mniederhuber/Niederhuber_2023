@@ -837,6 +837,7 @@ plot.df
 ChIPpeakAnno::makeVennDiagram(list(osaDeg.qF %>% dplyr::filter(osaDeg) %>% GRanges(),
                                    osaDeg.qF %>% dplyr::filter(osaDeg.control) %>% GRanges()))
 
+
 ```
 ### B - multiBWsum
 ```{bash engine.opts='-l'}
@@ -1939,7 +1940,6 @@ enrichtest <- ChIPseeker::enrichPeakOverlap('bed/osaPeaks-enhancers-full.bed',
                               pAdjustMethod = "BH",
                               nShuffle = 1000)
 
-enrichtest                           
 ```
 
 
