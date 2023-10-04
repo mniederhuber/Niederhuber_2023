@@ -52,6 +52,11 @@ dm6.TxDb <- TxDb.Dmelanogaster.UCSC.dm6.ensGene::TxDb.Dmelanogaster.UCSC.dm6.ens
 dm6.promoters <- ChIPseeker::getPromoters(dm6.TxDb, upstream = 500, downstream = 100) 
 dm6.genes <- GenomicFeatures::genes(dm6.TxDb)
 
+e74 <- data.frame(seqnames = 'chr3L',
+                  start = 17580414,
+                  end = 17585073) %>%
+  GRanges()
+
 brD <- data.frame('seqnames' = 'chrX',
                   'start' = 1565708,
                   'end' = 1567401) %>%
@@ -704,10 +709,7 @@ ggsave('rPlots/3E-diffBind.png', width =4, height = 3.5, dpi = 300)
 ## F - Osa Dependent browser shot
 ```{r, 4D}
 
-e74 <- data.frame(seqnames = 'chr3L',
-                  start = 17580414,
-                  end = 17585073) %>%
-  GRanges()
+
 
 #pk
 pk <- data.frame(seqnames = 'chr2R',
@@ -2607,18 +2609,20 @@ luc_dlD <- dlD.ratio[dlD.ratio$rnai == 'luc',]$ratio
 t.test(osa_dlD, luc_dlD, paired = F)
 
 dlD.ratio %>%
-  ggplot(aes(rnai, ratio)) + 
+  ggplot(aes(ratio, rnai)) + 
   geom_boxplot(aes(fill = rnai), outlier.shape = NA) +
-  geom_point(position = position_jitter(width = 0.08)) +
+  geom_point(position = position_jitter(height = 0.08), size = 1) +
   scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
-  annotate(geom = 'segment', x = 1, xend = 2, y = 4.5, yend = 4.5) +
-  annotate(geom = 'text', x = 1.5, y = 4.53, label = '***') +
-  ylab(bquote('Dl pouch A/P Ratio')) +
+  xlim(c(1,4.5)) +
+  annotate(geom = 'segment', x = 4.5, xend = 4.5, y = 1, yend = 2) +
+#  annotate(geom = 'text', x = 1.5, y = 4.53, label = '***') +
+#  ylab(bquote('Dl pouch A/P Ratio')) +
   theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.title.y = element_text(size = 12),
-        axis.text.y = element_text(size = 12))
-ggsave('rPlots/6D.png', width = 3, height = 4, dpi = 300)
+        axis.text.x = element_text(size = 10),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none")
+ggsave('rPlots/6D.png', width = 4, height = 1.5, dpi = 300)
 
 ```
 ## F - Dl upregulation quantification
@@ -2638,18 +2642,20 @@ lexA_dl <- dl_quant_ratio[dl_quant_ratio$genotype == 'lexA',]$ratio
 t.test(osa_dl, lexA_dl, paired = F)
 
 dl_quant_ratio %>%
-  ggplot(aes(genotype, ratio)) + 
+  ggplot(aes(ratio, genotype)) + 
   geom_boxplot(aes(fill = genotype), outlier.shape = NA) +
-  geom_point(position = position_jitter(width = 0.08)) +
+  geom_point(position = position_jitter(height = 0.08), size = 1) +
   scale_fill_manual(values = c('grey60','#CC0066'), name = 'RNAi') +
-  annotate(geom = 'segment', x = 1, xend = 2, y = 1.5, yend = 1.5) +
-  annotate(geom = 'text', x = 1.5, y = 1.51, label = '***') +
-  ylab('Dl A/P Ratio') +
+  annotate(geom = 'segment', x = 1.49, xend = 1.49, y = 1, yend = 2) +
+ # annotate(geom = 'text', x = 1.5, y = 1.5, label = '***') +
+  xlim(c(1,1.5))+
+  ylab('RNAi') +
   theme(axis.title.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.title.y = element_text(size = 12),
-        axis.text.y = element_text(size = 12))
-ggsave('rPlots/6F.png', width = 3, height = 4, dpi = 300)
+        axis.text.x = element_text(size = 10),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none")
+ggsave('rPlots/6F.png', width = 5, height = 1.5, dpi = 300)
 
 dl_quant_ratio %>%
   dplyr::filter(genotype == 'osa')
