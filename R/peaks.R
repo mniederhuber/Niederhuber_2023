@@ -29,8 +29,8 @@ dm6.500bp <- purrr::map(seqnames(dm6), function(x) {
 ##### load peaks #####
 message('loading peak lists...')
 ### get CUT&RUN peaks
-#TODO - error here with getPeakData when running from command line?
-cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags')
+
+cnr.peaks <- getPeakData(cnr.ss, by = 'id', narrowPeak_colname = 'peak_allFrags') # load peaks by sample and replicate
 cnr.byID <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$id)
 cnr.byGrp <- cnr.peaks %>% GRanges() %>% split(., mcols(.)$grp)
 

@@ -1,0 +1,21 @@
+Sample	Samtools Flagstat_mqc-generalstats-samtools_flagstat-mapped_passed	Bowtie 2_mqc-generalstats-bowtie_2-overall_alignment_rate	Picard_mqc-generalstats-picard-PERCENT_DUPLICATION	MACS2_mqc-generalstats-macs2-treatment_redundant_rate	MACS2_mqc-generalstats-macs2-d	MACS2_mqc-generalstats-macs2-control_redundant_rate
+osaGFP_deGrad_control_faire-Rep1_dm6_trim	4335252					
+osaGFP_deGrad_control_faire-Rep1_dm6_trim_pe_bowtie2		35.74				
+osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5	2915011					
+osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted			0.459856			
+osaGFP_deGrad_control_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved	1574525			0.06	125.0	0.0
+osaGFP_deGrad_control_faire-Rep2_dm6_trim	8880983					
+osaGFP_deGrad_control_faire-Rep2_dm6_trim_pe_bowtie2		39.44				
+osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5	7487129					
+osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted			0.514966			
+osaGFP_deGrad_control_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved	3631513			0.06	125.0	0.0
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim	5483411					
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_pe_bowtie2		31.01				
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5	4221064					
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted			0.5385			
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_q5_sorted_dupsRemoved	1948020					
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim	10374639					
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_pe_bowtie2		42.69				
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5	9046401					
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted			0.462283			
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_q5_sorted_dupsRemoved	4864403					

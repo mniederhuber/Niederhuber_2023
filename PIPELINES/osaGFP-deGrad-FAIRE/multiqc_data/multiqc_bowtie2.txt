@@ -1,0 +1,5 @@
+Sample	overall_alignment_rate	paired_aligned_none	paired_total	paired_aligned_multi	paired_aligned_one	total_reads
+osaGFP_deGrad_control_faire-Rep1_dm6_trim_pe_bowtie2	35.74	8720237	13570440	3150060	1700143	13570440
+osaGFP_deGrad_control_faire-Rep2_dm6_trim_pe_bowtie2	39.44	10056197	16606619	2663097	3887325	16606619
+osaGFP_deGrad_nubG4_faire-Rep1_dm6_trim_pe_bowtie2	31.01	12160422	17625536	3215829	2249285	17625536
+osaGFP_deGrad_nubG4_faire-Rep2_dm6_trim_pe_bowtie2	42.69	9182221	16022105	2283707	4556177	16022105
