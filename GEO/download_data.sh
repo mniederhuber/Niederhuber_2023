@@ -1,4 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#SBATCH -p general
+
 curl -L ftp:// -o SRR26266480_GSM7819025_wingDisc-aH3K27ac-CnR-Rep1_Drosophila_melanogaster_OTHER
 curl -L ftp:// -o SRR26266484_GSM7819055_wingPupal-OsaGFP-deGrad-FAIRE-rep1_Drosophila_melanogaster_FAIRE-seq
 curl -L ftp:// -o SRR26266479_GSM7819026_wingDisc-aH3K27ac-CnR-Rep2_Drosophila_melanogaster_OTHER
