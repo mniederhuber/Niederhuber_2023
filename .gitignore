@@ -20,3 +20,5 @@ R/.local
 dm6.ensGene.gtf
 featureCounts/
 geo-submission/
+
+.DS_Store
