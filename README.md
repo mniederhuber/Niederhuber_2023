@@ -3,9 +3,10 @@
 ## Code repository for Niederhuber, Leatham-Jensen, and McKay, 2023.
 
 **Published Paper:** [The SWI/SNF nucleosome remodeler constrains enhancer activity during _Drosophila_ wing development](https://academic.oup.com/genetics/article/226/2/iyad196/7394852?login=true) (Genetics)
+
 **Preprint:** [The SWI/SNF nucleosome remodeler constrains enhancer activity during _Drosophila_ wing development](https://www.biorxiv.org/content/10.1101/2023.07.17.549384v1) (bioRxiv)
 
-**🚧 NOTE: This repository is currently undergoing active refactoring and containerization. Instructions for use will be updated once this process is complete. 🚧**
+**🚧 NOTE: I am currently refactoring and containerizing the codebase for this project. The current workflows may throw errors as a result - please reach out if you need access to any analysis. 🚧**
 
 ### Abstract
 Chromatin remodeling is central to the dynamic changes in gene expression that drive cell fate determination. During development, the sets of enhancers that are accessible for use change globally as cells transition between stages. While transcription factors and nucleosome remodeling complexes are known to work together to control access to enhancers, it is unclear how the short stretches of DNA that they individually unmask yield the kilobase-sized accessible regions that are characteristic of active enhancers.
